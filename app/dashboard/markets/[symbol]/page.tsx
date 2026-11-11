@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import AgentChat from "@/components/AgentChat";
-import AuthGate from "@/components/AuthGate";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import LangToggle from "@/components/LangToggle";
 import PriceChart from "@/components/PriceChart";
@@ -19,6 +19,9 @@ import {
 } from "@/components/market-ui";
 import { buildChartSeries } from "@/lib/us-stocks";
 import { getInstrumentDetail } from "@/lib/instruments";
+import { isSymbolUnlocked, type ViewerPlan } from "@/lib/access";
+import { getSessionUser } from "@/lib/server/auth-service";
+import { COOKIE_NAME } from "@/lib/server/auth";
 import { dict, parseLang } from "@/lib/i18n";
 
 export async function generateMetadata({
@@ -52,19 +55,72 @@ export default async function MarketDetailPage({
   const tx = dict[lang].detail;
   const tm = dict[lang].markets;
 
+  const store = await cookies();
+  const token = store.get(COOKIE_NAME)?.value;
+  let viewer = null;
+  try {
+    viewer = token ? await getSessionUser(token) : null;
+  } catch {
+    viewer = null;
+  }
+  const plan: ViewerPlan = viewer?.plan === "pro" ? "pro" : viewer ? "free" : "anon";
+
   const detail = await getInstrumentDetail(symbol.toUpperCase());
   if (!detail) notFound();
 
   const { quote, bars, demo, currency, market } = detail;
-  const series = bars.length >= 2 ? buildChartSeries(bars, 60) : null;
-  const valuation = quote.valuation;
   const basePath = `/dashboard/markets/${quote.symbol}`;
   const px = (n: number) => `${currency}${fmtPrice(n)}`;
 
-  return (
-    <AuthGate lang={lang}>
+  if (!isSymbolUnlocked(market, quote.symbol, plan)) {
+    return (
       <div className="relative min-h-screen">
         <BackgroundEffects />
+        <header className="relative z-10 mx-auto max-w-5xl px-5 pt-6">
+          <nav className="glass flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
+            <Link
+              href={`/dashboard?lang=${lang}`}
+              className="text-sm text-slate-400 transition hover:text-white"
+            >
+              {tx.backToDashboard}
+            </Link>
+            <Link href="/" className="text-xl font-bold gradient-text">
+              GUI
+            </Link>
+            <LangToggle lang={lang} path={basePath} />
+          </nav>
+        </header>
+        <main className="relative z-10 mx-auto max-w-3xl px-5 py-16">
+          <div className="glass rounded-2xl p-10 text-center">
+            <p className="text-3xl">🔒</p>
+            <h1 className="mt-4 text-xl font-semibold text-white">{tx.lockedTitle}</h1>
+            <p className="mt-2 text-sm text-slate-400">{tx.lockedBody}</p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link
+                href={plan === "free" ? "/pricing" : "/register"}
+                className="btn-primary rounded-full px-6 py-2.5 text-sm font-medium text-white"
+              >
+                {plan === "free" ? tm.upgradeCta : tm.registerCta}
+              </Link>
+              <Link
+                href={`/dashboard?lang=${lang}`}
+                className="btn-secondary rounded-full px-6 py-2.5 text-sm text-white"
+              >
+                {tx.backToDashboard}
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const series = bars.length >= 2 ? buildChartSeries(bars, 60) : null;
+  const valuation = quote.valuation;
+
+  return (
+    <div className="relative min-h-screen">
+      <BackgroundEffects />
 
         <header className="relative z-10 mx-auto max-w-5xl px-5 pt-6">
         <nav className="glass flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
@@ -207,7 +263,6 @@ export default async function MarketDetailPage({
         </article>
       </main>
       <AgentChat lang={lang} />
-      </div>
-    </AuthGate>
+    </div>
   );
 }

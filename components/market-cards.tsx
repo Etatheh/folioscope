@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { UsQuote } from "@/lib/us-stocks";
+import type { ViewerPlan } from "@/lib/access";
 import { dict, type Lang } from "@/lib/i18n";
 import {
   ChangeChip,
@@ -12,6 +13,34 @@ import {
   fmtPrice,
   fmtSigned,
 } from "./market-ui";
+
+export function UnlockCta({
+  lang,
+  plan,
+  count,
+}: {
+  lang: Lang;
+  plan: ViewerPlan;
+  count: number;
+}) {
+  const t = dict[lang].markets;
+  const href = plan === "free" ? "/pricing" : "/register";
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-purple-400/30 bg-purple-500/[0.06] p-6 text-center transition hover:border-purple-400/60 hover:bg-purple-500/10"
+    >
+      <span className="text-2xl">🔒</span>
+      <p className="text-sm font-medium text-slate-200">
+        {t.unlockAll} <span className="text-slate-500">(+{count})</span>
+      </p>
+      <p className="text-[11px] text-slate-500">{t.unlockHint}</p>
+      <span className="mt-1 text-xs text-purple-400 group-hover:text-purple-300">
+        {plan === "free" ? t.upgradeCta : t.registerCta}
+      </span>
+    </Link>
+  );
+}
 
 function CardShell({
   href,

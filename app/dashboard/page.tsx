@@ -1,16 +1,19 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import AgentChat from "@/components/AgentChat";
-import AuthGate from "@/components/AuthGate";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import LangToggle from "@/components/LangToggle";
 import MarketBoard from "@/components/MarketBoard";
 import PortfolioSimulator from "@/components/PortfolioSimulator";
 import UsStockPanel from "@/components/UsStockPanel";
 import UserMenu from "@/components/UserMenu";
+import { FREE_STOCK_SYMBOLS, type ViewerPlan } from "@/lib/access";
 import { getCnMarketSnapshot } from "@/lib/cn-markets";
 import { getAsiaMarketSnapshot, ASIA_CURRENCY } from "@/lib/asia-markets";
 import { getSimulationData } from "@/lib/us-stocks";
+import { getSessionUser } from "@/lib/server/auth-service";
+import { COOKIE_NAME } from "@/lib/server/auth";
 import { dict, parseLang } from "@/lib/i18n";
 
 const stats = [
@@ -105,11 +108,37 @@ export default async function DashboardPage({
   const { lang: rawLang } = await searchParams;
   const lang = parseLang(rawLang);
   const t = dict[lang];
+
+  const store = await cookies();
+  const token = store.get(COOKIE_NAME)?.value;
+  let viewer = null;
+  try {
+    viewer = token ? await getSessionUser(token) : null;
+  } catch {
+    viewer = null;
+  }
+  const plan: ViewerPlan = viewer?.plan === "pro" ? "pro" : viewer ? "free" : "anon";
+
   const [simData, cnData, asiaData] = await Promise.all([
     getSimulationData(),
     getCnMarketSnapshot(),
     getAsiaMarketSnapshot(),
   ]);
+
+  // Free / anonymous viewers only get the free stock slice in the simulator too.
+  const allowedSymbols = new Set<string>(
+    plan === "pro" ? Object.keys(simData.series) : FREE_STOCK_SYMBOLS.us
+  );
+  const sim = {
+    ...simData,
+    series: Object.fromEntries(
+      Object.entries(simData.series).filter(([symbol]) => allowedSymbols.has(symbol))
+    ),
+  };
+  const simDefaults =
+    plan === "pro"
+      ? ["AAPL", "MSFT", "NVDA", "AMZN", "JPM"]
+      : ["AAPL", "MSFT", "NVDA", "GOOGL"];
 
   const navItems = [
     { id: "overview", icon: "grid" },
@@ -122,9 +151,8 @@ export default async function DashboardPage({
   ] as const;
 
   return (
-    <AuthGate lang={lang}>
-      <div className="relative min-h-screen">
-        <BackgroundEffects />
+    <div className="relative min-h-screen">
+      <BackgroundEffects />
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-purple-500/10 bg-[#050917]/85 px-5 py-6 backdrop-blur-xl lg:flex lg:flex-col">
         <Link href="/" className="px-3 text-2xl font-bold gradient-text">
           GUI
@@ -205,7 +233,7 @@ export default async function DashboardPage({
 
         <section id="markets" className="mt-5">
           <Suspense fallback={<MarketsSkeleton />}>
-            <UsStockPanel lang={lang} />
+            <UsStockPanel lang={lang} plan={plan} />
           </Suspense>
         </section>
 
@@ -213,6 +241,7 @@ export default async function DashboardPage({
           <Suspense fallback={<MarketsSkeleton />}>
             <MarketBoard
               lang={lang}
+              plan={plan}
               title={t.boards.cn.title}
               titleEn={t.boards.cn.titleEn}
               snapshot={cnData}
@@ -225,6 +254,7 @@ export default async function DashboardPage({
           <Suspense fallback={<MarketsSkeleton />}>
             <MarketBoard
               lang={lang}
+              plan={plan}
               title={t.boards.asia.title}
               titleEn={t.boards.asia.titleEn}
               snapshot={asiaData}
@@ -235,11 +265,7 @@ export default async function DashboardPage({
         </section>
 
         <section id="investments" className="mt-5 grid gap-5 xl:grid-cols-[1.65fr_1fr]">
-          <PortfolioSimulator
-            lang={lang}
-            data={simData}
-            defaults={["AAPL", "MSFT", "NVDA", "AMZN", "JPM"]}
-          />
+          <PortfolioSimulator lang={lang} data={sim} defaults={simDefaults} />
 
           <article className="glass rounded-2xl p-5 sm:p-6">
             <div className="flex items-center justify-between">
@@ -323,7 +349,6 @@ export default async function DashboardPage({
         </section>
       </main>
       <AgentChat lang={lang} />
-      </div>
-    </AuthGate>
+    </div>
   );
 }

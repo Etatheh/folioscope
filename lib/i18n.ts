@@ -83,6 +83,10 @@ const zh = {
     macdTip: "MACD DIF 值",
     noData: "行情数据暂不可用，请稍后刷新重试。",
     viewDetail: "查看详情",
+    unlockAll: "解锁全部股票",
+    unlockHint: "免费版每个市场可看 4 只股票",
+    registerCta: "免费注册解锁更多",
+    upgradeCta: "升级 Pro 解锁全部",
   },
   detail: {
     backToDashboard: "← 返回 Dashboard",
@@ -105,6 +109,8 @@ const zh = {
     highC: "高",
     lowC: "低",
     closeC: "收",
+    lockedTitle: "该标的仅对 Pro 开放",
+    lockedBody: "免费版每个市场可看 4 只股票，升级 Pro 解锁全部。",
   },
   simulator: {
     title: "投资模拟器",
@@ -210,6 +216,10 @@ type Dict = {
     macdTip: string;
     noData: string;
     viewDetail: string;
+    unlockAll: string;
+    unlockHint: string;
+    registerCta: string;
+    upgradeCta: string;
   };
   detail: {
     backToDashboard: string;
@@ -232,6 +242,8 @@ type Dict = {
     highC: string;
     lowC: string;
     closeC: string;
+    lockedTitle: string;
+    lockedBody: string;
   };
   simulator: {
     title: string;
@@ -357,6 +369,10 @@ const en: Dict = {
     macdTip: "MACD DIF",
     noData: "Market data temporarily unavailable — refresh to retry.",
     viewDetail: "View details",
+    unlockAll: "Unlock all stocks",
+    unlockHint: "Free plan shows 4 stocks per market",
+    registerCta: "Sign up free to unlock more",
+    upgradeCta: "Upgrade to Pro for all",
   },
   detail: {
     backToDashboard: "← Back to Dashboard",
@@ -379,6 +395,8 @@ const en: Dict = {
     highC: "H",
     lowC: "L",
     closeC: "C",
+    lockedTitle: "This instrument is locked",
+    lockedBody: "Free plan includes 4 stocks per market. Upgrade to Pro to unlock all.",
   },
   simulator: {
     title: "Investment Simulator",

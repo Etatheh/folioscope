@@ -1,6 +1,7 @@
 import { getUsMarketSnapshot } from "@/lib/us-stocks";
 import { dict, type Lang } from "@/lib/i18n";
-import { IndexCard, StockCard } from "./market-cards";
+import { FREE_STOCK_COUNT, type ViewerPlan } from "@/lib/access";
+import { IndexCard, StockCard, UnlockCta } from "./market-cards";
 
 function fmtTime(ms: number) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -13,11 +14,19 @@ function fmtTime(ms: number) {
   }).format(new Date(ms));
 }
 
-export default async function UsStockPanel({ lang }: { lang: Lang }) {
+export default async function UsStockPanel({
+  lang,
+  plan,
+}: {
+  lang: Lang;
+  plan: ViewerPlan;
+}) {
   const t = dict[lang].markets;
   const snapshot = await getUsMarketSnapshot();
   const { indices, stocks, demo, fetchedAt } = snapshot;
   const hrefFor = (symbol: string) => `/dashboard/markets/${symbol}?lang=${lang}`;
+  const visibleStocks = plan === "pro" ? stocks : stocks.slice(0, FREE_STOCK_COUNT);
+  const lockedCount = stocks.length - visibleStocks.length;
 
   return (
     <article className="glass rounded-2xl p-5 sm:p-6">
@@ -60,9 +69,9 @@ export default async function UsStockPanel({ lang }: { lang: Lang }) {
         </div>
       )}
 
-      {stocks.length > 0 ? (
+      {visibleStocks.length > 0 ? (
         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {stocks.map((quote) => (
+          {visibleStocks.map((quote) => (
             <StockCard
               key={quote.symbol}
               quote={quote}
@@ -71,6 +80,9 @@ export default async function UsStockPanel({ lang }: { lang: Lang }) {
               href={hrefFor(quote.symbol)}
             />
           ))}
+          {lockedCount > 0 && (
+            <UnlockCta lang={lang} plan={plan} count={lockedCount} />
+          )}
         </div>
       ) : (
         <p className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-sm text-slate-500">

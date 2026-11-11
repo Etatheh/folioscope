@@ -1,6 +1,7 @@
 import { dict, type Lang } from "@/lib/i18n";
 import type { UsMarketSnapshot } from "@/lib/us-stocks";
-import { IndexCard, StockCard } from "./market-cards";
+import { FREE_STOCK_COUNT, type ViewerPlan } from "@/lib/access";
+import { IndexCard, StockCard, UnlockCta } from "./market-cards";
 
 function fmtTime(ms: number) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -15,6 +16,7 @@ function fmtTime(ms: number) {
 
 export default function MarketBoard({
   lang,
+  plan,
   title,
   titleEn,
   snapshot,
@@ -24,6 +26,7 @@ export default function MarketBoard({
   detailBase = "/dashboard/markets",
 }: {
   lang: Lang;
+  plan: ViewerPlan;
   title: string;
   titleEn: string;
   snapshot: UsMarketSnapshot;
@@ -36,6 +39,8 @@ export default function MarketBoard({
   const { indices, stocks, demo, fetchedAt } = snapshot;
   const hrefFor = (symbol: string) => `${detailBase}/${symbol}?lang=${lang}`;
   const empty = indices.length === 0 && stocks.length === 0;
+  const visibleStocks = plan === "pro" ? stocks : stocks.slice(0, FREE_STOCK_COUNT);
+  const lockedCount = stocks.length - visibleStocks.length;
 
   return (
     <article className="glass rounded-2xl p-5 sm:p-6">
@@ -78,9 +83,9 @@ export default function MarketBoard({
         </div>
       )}
 
-      {stocks.length > 0 && (
+      {visibleStocks.length > 0 && (
         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {stocks.map((quote) => (
+          {visibleStocks.map((quote) => (
             <StockCard
               key={quote.symbol}
               quote={quote}
@@ -89,6 +94,9 @@ export default function MarketBoard({
               href={stockDetail ? hrefFor(quote.symbol) : undefined}
             />
           ))}
+          {lockedCount > 0 && (
+            <UnlockCta lang={lang} plan={plan} count={lockedCount} />
+          )}
         </div>
       )}
 
