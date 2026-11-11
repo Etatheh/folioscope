@@ -1,0 +1,196 @@
+// Japan & Korea market data.
+// - Indices (Nikkei 225, KOSPI): Eastmoney quotes + klines (full technicals).
+// - Stocks (Toyota, Samsung...): Tencent quotes only — Tencent does not serve
+//   JP/KR stock history, so those cards show quotes without indicators.
+
+import { fetchKlinesSecid } from "./klines";
+import {
+  computeTechnicals,
+  type UsMarketSnapshot,
+  type UsQuote,
+} from "./us-stocks";
+
+type EmIndex = { symbol: string; name: string; nameEn: string; em: string };
+
+type TencentStock = {
+  symbol: string;
+  name: string;
+  nameEn: string;
+  tencent: string;
+  currency: string;
+};
+
+const INDICES: EmIndex[] = [
+  { symbol: "N225", name: "日经225", nameEn: "Nikkei 225", em: "100.N225" },
+  { symbol: "KS11", name: "韩国KOSPI", nameEn: "KOSPI", em: "100.KS11" },
+];
+
+const STOCKS: TencentStock[] = [
+  { symbol: "7203", name: "丰田汽车", nameEn: "Toyota Motor", tencent: "jp7203", currency: "¥" },
+  { symbol: "6758", name: "索尼", nameEn: "Sony", tencent: "jp6758", currency: "¥" },
+  { symbol: "9984", name: "软银集团", nameEn: "SoftBank Group", tencent: "jp9984", currency: "¥" },
+  { symbol: "7974", name: "任天堂", nameEn: "Nintendo", tencent: "jp7974", currency: "¥" },
+  { symbol: "8035", name: "东京电子", nameEn: "Tokyo Electron", tencent: "jp8035", currency: "¥" },
+  { symbol: "005930", name: "三星电子", nameEn: "Samsung Electronics", tencent: "kr005930", currency: "₩" },
+  { symbol: "000660", name: "SK海力士", nameEn: "SK hynix", tencent: "kr000660", currency: "₩" },
+  { symbol: "005380", name: "现代汽车", nameEn: "Hyundai Motor", tencent: "kr005380", currency: "₩" },
+  { symbol: "373220", name: "LG新能源", nameEn: "LG Energy Solution", tencent: "kr373220", currency: "₩" },
+];
+
+export const ASIA_KLINE_SECID: Record<string, string> = Object.fromEntries(
+  INDICES.map((item) => [item.symbol, item.em])
+);
+
+export const ASIA_CURRENCY: Record<string, string> = Object.fromEntries(
+  STOCKS.map((item) => [item.symbol, item.currency])
+);
+
+const QUOTE_ENDPOINT = "https://qt.gtimg.cn/q=";
+const EM_QUOTE_ENDPOINT = "https://push2.eastmoney.com/api/qt/stock/get?";
+const REQUEST_TIMEOUT_MS = 8_000;
+const QUOTE_TTL_MS = 60_000;
+
+function toNum(value: string | undefined): number | null {
+  if (value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Eastmoney global-index quote (prices are scaled by decimal places, 2 here). */
+async function fetchEmIndex(item: EmIndex): Promise<UsQuote | null> {
+  const params = new URLSearchParams({
+    secid: item.em,
+    fields: "f43,f44,f45,f57,f58,f60,f169,f170",
+  });
+  const response = await fetch(`${EM_QUOTE_ENDPOINT}${params.toString()}`, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`asia index quote ${response.status}`);
+  const json = (await response.json()) as {
+    data?: {
+      f43?: number;
+      f44?: number;
+      f45?: number;
+      f57?: string;
+      f58?: string;
+      f60?: number;
+      f169?: number;
+      f170?: number;
+    };
+  };
+  const d = json.data;
+  if (!d || typeof d.f43 !== "number" || d.f43 <= 0) return null;
+  const price = d.f43 / 100;
+  const prevClose = (d.f60 ?? d.f43) / 100;
+  const change = (d.f169 ?? 0) / 100;
+  const changePct = (d.f170 ?? 0) / 100;
+  return {
+    symbol: item.symbol,
+    code: d.f57 || item.symbol,
+    name: item.name,
+    nameEn: item.nameEn,
+    price,
+    prevClose,
+    change,
+    changePct,
+    open: price,
+    high: (d.f44 ?? d.f43) / 100,
+    low: (d.f45 ?? d.f43) / 100,
+    volume: 0,
+    pe: null,
+    marketCapUsd: null,
+    week52High: null,
+    week52Low: null,
+    quoteTime: null,
+    tech: null,
+    valuation: null,
+  };
+}
+
+/** Tencent JP/KR stock quote — layout matches the US payload. */
+function parseTencentStock(fields: string[], item: TencentStock): UsQuote | null {
+  const price = toNum(fields[3]);
+  const prevClose = toNum(fields[4]);
+  if (price === null || prevClose === null || price <= 0 || prevClose <= 0) {
+    return null;
+  }
+  const change = price - prevClose;
+  return {
+    symbol: item.symbol,
+    code: fields[2] || item.tencent,
+    name: item.name,
+    nameEn: item.nameEn,
+    price,
+    prevClose,
+    change,
+    changePct: (change / prevClose) * 100,
+    open: toNum(fields[5]) ?? price,
+    high: toNum(fields[33]) ?? price,
+    low: toNum(fields[34]) ?? price,
+    volume: toNum(fields[6]) ?? 0,
+    pe: toNum(fields[39]),
+    marketCapUsd: null,
+    week52High: toNum(fields[48]),
+    week52Low: toNum(fields[49]),
+    quoteTime: fields[30] || null,
+    tech: null,
+    valuation: null,
+  };
+}
+
+async function fetchTencentStocks(): Promise<UsQuote[]> {
+  const codes = STOCKS.map((item) => item.tencent).join(",");
+  const response = await fetch(`${QUOTE_ENDPOINT}${codes}`, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`asia stock quote ${response.status}`);
+  const text = new TextDecoder("gbk").decode(await response.arrayBuffer());
+  const records: Record<string, string[]> = {};
+  for (const match of text.matchAll(/v_(\w+)="([^"]*)"/g)) {
+    records[match[1]] = match[2].split("~");
+  }
+  return STOCKS.map((item) => {
+    const fields = records[item.tencent];
+    return fields ? parseTencentStock(fields, item) : null;
+  }).filter((q): q is UsQuote => q !== null);
+}
+
+async function attachIndexTechnicals(indices: UsQuote[]): Promise<void> {
+  const results = await Promise.all(
+    indices.map(async (quote) => {
+      try {
+        const bars = await fetchKlinesSecid(quote.symbol, ASIA_KLINE_SECID[quote.symbol]);
+        return bars.length >= 5 ? computeTechnicals(bars) : null;
+      } catch {
+        return null;
+      }
+    })
+  );
+  indices.forEach((quote, i) => {
+    quote.tech = results[i];
+  });
+}
+
+let cache: { at: number; data: UsMarketSnapshot } | null = null;
+
+export async function getAsiaMarketSnapshot(): Promise<UsMarketSnapshot> {
+  const now = Date.now();
+  if (cache && now - cache.at < QUOTE_TTL_MS) return cache.data;
+  try {
+    const indices = (await Promise.all(INDICES.map(fetchEmIndex))).filter(
+      (q): q is UsQuote => q !== null
+    );
+    const stocks = await fetchTencentStocks();
+    if (indices.length === 0 && stocks.length === 0) {
+      throw new Error("empty asia snapshot");
+    }
+    await attachIndexTechnicals(indices);
+    const data: UsMarketSnapshot = { demo: false, fetchedAt: now, indices, stocks };
+    cache = { at: now, data };
+    return data;
+  } catch {
+    return { demo: true, fetchedAt: now, indices: [], stocks: [] };
+  }
+}

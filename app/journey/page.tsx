@@ -29,6 +29,12 @@ export default function JourneyPage() {
             学习、开发、投资和随想都放在这里。像 Notion 一样清晰，像 Linear 一样克制，
             像 Apple 页面一样保留呼吸感。
           </p>
+          <Link
+            href="/"
+            className="btn-secondary mt-8 inline-flex rounded-full px-6 py-3 text-sm font-semibold text-slate-700 dark:text-white"
+          >
+            Back to Home
+          </Link>
         </section>
 
         <section className="mt-16 grid gap-4 md:grid-cols-4">

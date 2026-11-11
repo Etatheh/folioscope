@@ -1,21 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "GUI — AI Developer, Investor & Student",
+  title: "GUI Markets — Three markets, one dashboard",
   description:
-    "Personal portfolio of GUI — AI Developer, Investor, and Student building at the intersection of technology and ambition.",
+    "Live US, China and Japan/Korea market data with technical indicators, a backtest simulator and an AI market assistant.",
 };
 
 export default function RootLayout({
@@ -24,10 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
-    >
+    <html lang="en" className="h-full scroll-smooth antialiased">
       <body className="min-h-full overflow-x-hidden bg-[#030712] text-slate-100">
         {children}
       </body>
