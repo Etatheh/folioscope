@@ -148,9 +148,9 @@ export default async function DashboardPage({
   const navItems = [
     { id: "overview", icon: "grid" },
     { id: "markets", icon: "trend" },
+    { id: "investments", icon: "chart" },
     { id: "cn", icon: "globe" },
     { id: "asia", icon: "globe" },
-    { id: "investments", icon: "chart" },
     { id: "projects", icon: "folder" },
     { id: "learning", icon: "book" },
   ] as const;
@@ -251,33 +251,6 @@ export default async function DashboardPage({
           </Suspense>
         </section>
 
-        <section id="cn" className="mt-5">
-          <Suspense fallback={<MarketsSkeleton />}>
-            <MarketBoard
-              lang={lang}
-              plan={plan}
-              title={t.boards.cn.title}
-              titleEn={t.boards.cn.titleEn}
-              snapshot={cnData}
-              stockCurrency="¥"
-            />
-          </Suspense>
-        </section>
-
-        <section id="asia" className="mt-5">
-          <Suspense fallback={<MarketsSkeleton />}>
-            <MarketBoard
-              lang={lang}
-              plan={plan}
-              title={t.boards.asia.title}
-              titleEn={t.boards.asia.titleEn}
-              snapshot={asiaData}
-              stockCurrencies={ASIA_CURRENCY}
-              stockDetail={false}
-            />
-          </Suspense>
-        </section>
-
         <section id="insights" className="mt-5 grid gap-5 xl:grid-cols-2">
           <AiSummaryCard lang={lang} plan={plan} />
           <DcaBacktestCard lang={lang} plan={plan} series={dcaSeries} />
@@ -315,6 +288,33 @@ export default async function DashboardPage({
               </p>
             </div>
           </article>
+        </section>
+
+        <section id="cn" className="mt-5">
+          <Suspense fallback={<MarketsSkeleton />}>
+            <MarketBoard
+              lang={lang}
+              plan={plan}
+              title={t.boards.cn.title}
+              titleEn={t.boards.cn.titleEn}
+              snapshot={cnData}
+              stockCurrency="¥"
+            />
+          </Suspense>
+        </section>
+
+        <section id="asia" className="mt-5">
+          <Suspense fallback={<MarketsSkeleton />}>
+            <MarketBoard
+              lang={lang}
+              plan={plan}
+              title={t.boards.asia.title}
+              titleEn={t.boards.asia.titleEn}
+              snapshot={asiaData}
+              stockCurrencies={ASIA_CURRENCY}
+              stockDetail={false}
+            />
+          </Suspense>
         </section>
 
         <section id="projects" className="data-card mt-5 rounded-2xl p-5 sm:p-6">

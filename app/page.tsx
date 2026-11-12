@@ -4,16 +4,16 @@ import Navbar from "@/components/Navbar";
 import { PLANS } from "@/lib/plans";
 
 export const metadata = {
-  title: "GUI Markets — Three markets, one dashboard",
+  title: "GUI Markets — US market intelligence, one dashboard",
   description:
-    "Live US, China and Japan/Korea market data with technical indicators, a backtest simulator and an AI market assistant.",
+    "Live US market data with technical indicators, backtesting and an AI market analyst. A-shares and Japan/Korea included for global context.",
 };
 
 const features = [
   {
-    icon: "🌍",
-    title: "Three markets in one place",
-    desc: "Live quotes for US, China and Japan/Korea indices and stocks, plus daily candlestick charts with technical indicators.",
+    icon: "🇺🇸",
+    title: "US markets, front and center",
+    desc: "Real-time US indices and stocks — Dow, Nasdaq, S&P 500 and Nasdaq 100 — with daily candlesticks and technical indicators.",
   },
   {
     icon: "📊",
@@ -30,6 +30,11 @@ const features = [
     title: "AI market assistant",
     desc: "Ask about quotes, indicators and valuations. Connect an LLM key for free-form conversations.",
   },
+  {
+    icon: "🌏",
+    title: "Global context, kept quiet",
+    desc: "A-shares and Japan/Korea panels sit below the fold — Chinese names stay Chinese, everything else stays English.",
+  },
 ];
 
 export default function Home() {
@@ -43,14 +48,14 @@ export default function Home() {
             GUI Markets
           </p>
           <h1 className="mt-6 text-4xl font-bold leading-tight text-white sm:text-6xl">
-            Three markets.
+            US markets,
             <br />
-            <span className="gradient-text">One dashboard.</span>
+            <span className="gradient-text">in depth.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">
-            Live markets across the US, China and Japan/Korea, with technical
-            indicators, a backtest simulator and an AI analyst — all in one
-            clean, fast personal workspace.
+            Live US indices and stocks with technical indicators, a backtest
+            simulator and an AI analyst — plus A-share and Japan/Korea context
+            when you want the bigger picture.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
