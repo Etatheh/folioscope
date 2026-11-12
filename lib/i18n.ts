@@ -21,7 +21,7 @@ const zh = {
   },  settings: "设置",
   backToSite: "返回网站",
   eyebrow: "个人指挥中心",
-  greeting: "早上好，GUI",
+  greeting: "早上好",
   stats: {
     portfolio: "投资组合估值",
     ai: "AI 项目",
@@ -429,7 +429,7 @@ const en: Dict = {
   settings: "Settings",
   backToSite: "Back to website",
   eyebrow: "Personal command center",
-  greeting: "Good morning, GUI",
+  greeting: "Good morning",
   stats: {
     portfolio: "Portfolio value",
     ai: "AI projects",

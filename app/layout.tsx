@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GUI Markets — Three markets, one dashboard",
+  title: "US market intelligence, one dashboard",
   description:
     "Live US, China and Japan/Korea market data with technical indicators, a backtest simulator and an AI market assistant.",
 };

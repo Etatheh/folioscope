@@ -5,8 +5,8 @@ import UpgradeButton from "@/components/UpgradeButton";
 import { PLANS } from "@/lib/plans";
 
 export const metadata = {
-  title: "Pricing — GUI Markets",
-  description: "GUI Markets pricing: start free, upgrade to Pro whenever you need more.",
+  title: "Pricing",
+  description: "Start free, upgrade to Pro whenever you need more.",
 };
 
 const faqs = [
@@ -102,7 +102,7 @@ export default function PricingPage() {
       </main>
 
       <footer className="relative z-10 border-t border-purple-500/10 py-8 text-center text-sm text-slate-500">
-        <p>&copy; {new Date().getFullYear()} GUI Markets · For reference only — not investment advice</p>
+        <p>&copy; {new Date().getFullYear()} · For reference only — not investment advice</p>
       </footer>
     </>
   );

@@ -4,7 +4,7 @@ import { getJourneyPosts, journeyCategories } from "@/lib/journey";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Journey | GUI",
+  title: "Journey",
   description: "Learning notes, coding logs, investment thinking, and personal reflections.",
 };
 

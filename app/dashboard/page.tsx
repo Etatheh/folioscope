@@ -20,11 +20,6 @@ import { getSessionUser } from "@/lib/server/auth-service";
 import { COOKIE_NAME } from "@/lib/server/auth";
 import { dict, parseLang } from "@/lib/i18n";
 
-const stats = [
-  { key: "ai" as const, value: "08", zh: "+本月新增 2", en: "+2 this month" },
-  { key: "learning" as const, value: "164h", zh: "+本周 18h", en: "+18h this week" },
-];
-
 const projects = [
   {
     name: "Market Signal AI",
@@ -148,7 +143,6 @@ export default async function DashboardPage({
 
   const navItems = (
     [
-      { id: "overview", icon: "grid" },
       { id: "markets", icon: "trend" },
       { id: "investments", icon: "chart" },
       { id: "cn", icon: "globe" },
@@ -162,16 +156,13 @@ export default async function DashboardPage({
     <div className="relative min-h-screen">
       <BackgroundEffects />
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-purple-500/10 bg-[#050917]/85 px-5 py-6 backdrop-blur-xl lg:flex lg:flex-col">
-        <Link href="/" className="px-3 text-2xl font-bold gradient-text">
-          GUI
-        </Link>
-        <nav className="mt-12 space-y-2">
+        <nav className="mt-2 space-y-2">
           {navItems.map(({ id, icon }) => (
             <a
               key={id}
               href={`#${id}`}
               className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${
-                id === "overview"
+                id === "markets"
                   ? "bg-gradient-to-r from-blue-500/15 to-purple-500/15 text-white ring-1 ring-purple-400/20"
                   : "text-slate-500 hover:bg-white/5 hover:text-slate-200"
               }`}
@@ -229,26 +220,7 @@ export default async function DashboardPage({
           </div>
         </header>
 
-        <section id="overview" className="mt-8 grid gap-4 sm:grid-cols-2">
-          {stats.map((stat) => (
-            <article
-              key={stat.key}
-              className="data-card rounded-2xl p-5"
-            >
-              <p className="text-sm text-slate-500">{t.stats[stat.key]}</p>
-              <div className="mt-3 flex items-end justify-between gap-3">
-                <strong className="text-2xl font-semibold text-white sm:text-3xl">
-                  {stat.value}
-                </strong>
-                <span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-xs text-emerald-400">
-                  {lang === "zh" ? stat.zh : stat.en}
-                </span>
-              </div>
-            </article>
-          ))}
-        </section>
-
-        <section id="markets" className="mt-5">
+        <section id="markets" className="mt-8">
           <Suspense fallback={<MarketsSkeleton />}>
             <UsStockPanel lang={lang} plan={plan} />
           </Suspense>

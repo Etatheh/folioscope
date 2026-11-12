@@ -58,10 +58,7 @@ function RegisterForm() {
     <div className="relative flex min-h-screen items-center justify-center px-5">
       <BackgroundEffects />
       <div className="glass relative z-10 w-full max-w-md rounded-2xl p-8">
-        <Link href="/" className="text-xl font-bold gradient-text">
-          GUI
-        </Link>
-        <h1 className="mt-6 text-2xl font-semibold text-white">Create account</h1>
+        <h1 className="text-2xl font-semibold text-white">Create account</h1>
         <p className="mt-1 text-xs text-slate-500">
           Free to start. Preview: accounts live in the local demo store until
           Supabase is configured.

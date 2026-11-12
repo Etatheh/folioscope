@@ -19,9 +19,6 @@ export default function Navbar() {
     <header className="fixed top-0 left-0 right-0 z-50 animate-fade-in opacity-0-start">
       <nav className="glass mx-4 mt-4 rounded-2xl px-6 py-4 md:mx-auto md:max-w-5xl">
         <div className="flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold tracking-tight gradient-text">
-            GUI
-          </Link>
 
           <ul className="hidden items-center gap-8 md:flex">
             {navLinks.map((link) => (

@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import { PLANS } from "@/lib/plans";
 
 export const metadata = {
-  title: "GUI Markets — US market intelligence, one dashboard",
+  title: "US market intelligence, one dashboard",
   description:
     "Live US market data with technical indicators, backtesting and an AI market analyst. A-shares and Japan/Korea included for global context.",
 };
@@ -44,10 +44,7 @@ export default function Home() {
       <Navbar />
       <main>
         <section className="relative z-10 mx-auto max-w-5xl px-6 pb-14 pt-40 text-center">
-          <p className="text-xs uppercase tracking-[0.25em] text-purple-400">
-            GUI Markets
-          </p>
-          <h1 className="mt-6 text-4xl font-bold leading-tight text-white sm:text-6xl">
+          <h1 className="text-4xl font-bold leading-tight text-white sm:text-6xl">
             US markets,
             <br />
             <span className="gradient-text">in depth.</span>
@@ -150,7 +147,7 @@ export default function Home() {
       </main>
 
       <footer className="relative z-10 border-t border-purple-500/10 py-8 text-center text-sm text-slate-500">
-        <p>&copy; {new Date().getFullYear()} GUI Markets · For reference only — not investment advice</p>
+        <p>&copy; {new Date().getFullYear()} · For reference only — not investment advice</p>
       </footer>
     </>
   );
