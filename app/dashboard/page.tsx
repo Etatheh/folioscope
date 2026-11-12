@@ -123,11 +123,12 @@ export default async function DashboardPage({
   }
   const plan: ViewerPlan = viewer?.plan === "pro" ? "pro" : viewer ? "free" : "anon";
 
-  const [simData, cnData, asiaData, dcaSeries] = await Promise.all([
+  const showCn = lang === "zh";
+  const [simData, asiaData, dcaSeries, cnData] = await Promise.all([
     getSimulationData(),
-    getCnMarketSnapshot(),
     getAsiaMarketSnapshot(),
     getDcaSeries(),
+    showCn ? getCnMarketSnapshot() : Promise.resolve(null),
   ]);
 
   // Free / anonymous viewers only get the free stock slice in the simulator too.
@@ -145,15 +146,17 @@ export default async function DashboardPage({
       ? ["AAPL", "MSFT", "NVDA", "AMZN", "JPM"]
       : ["AAPL", "MSFT", "NVDA", "GOOGL"];
 
-  const navItems = [
-    { id: "overview", icon: "grid" },
-    { id: "markets", icon: "trend" },
-    { id: "investments", icon: "chart" },
-    { id: "cn", icon: "globe" },
-    { id: "asia", icon: "globe" },
-    { id: "projects", icon: "folder" },
-    { id: "learning", icon: "book" },
-  ] as const;
+  const navItems = (
+    [
+      { id: "overview", icon: "grid" },
+      { id: "markets", icon: "trend" },
+      { id: "investments", icon: "chart" },
+      { id: "cn", icon: "globe" },
+      { id: "asia", icon: "globe" },
+      { id: "projects", icon: "folder" },
+      { id: "learning", icon: "book" },
+    ] as const
+  ).filter((item) => showCn || item.id !== "cn");
 
   return (
     <div className="relative min-h-screen">
@@ -290,18 +293,20 @@ export default async function DashboardPage({
           </article>
         </section>
 
-        <section id="cn" className="mt-5">
-          <Suspense fallback={<MarketsSkeleton />}>
-            <MarketBoard
-              lang={lang}
-              plan={plan}
-              title={t.boards.cn.title}
-              titleEn={t.boards.cn.titleEn}
-              snapshot={cnData}
-              stockCurrency="¥"
-            />
-          </Suspense>
-        </section>
+        {showCn && cnData && (
+          <section id="cn" className="mt-5">
+            <Suspense fallback={<MarketsSkeleton />}>
+              <MarketBoard
+                lang={lang}
+                plan={plan}
+                title={t.boards.cn.title}
+                titleEn={t.boards.cn.titleEn}
+                snapshot={cnData}
+                stockCurrency="¥"
+              />
+            </Suspense>
+          </section>
+        )}
 
         <section id="asia" className="mt-5">
           <Suspense fallback={<MarketsSkeleton />}>

@@ -54,8 +54,8 @@ export default function Home() {
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">
             Live US indices and stocks with technical indicators, a backtest
-            simulator and an AI analyst — plus A-share and Japan/Korea context
-            when you want the bigger picture.
+            simulator and an AI analyst. Japan/Korea context is included, and
+            the A-share board appears in the Chinese version of the site.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link

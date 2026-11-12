@@ -111,6 +111,9 @@ const zh = {
     closeC: "收",
     lockedTitle: "该标的仅对 Pro 开放",
     lockedBody: "免费版每个市场可看 4 只股票，升级 Pro 解锁全部。",
+    cnNoticeTitle: "A股行情仅支持中文界面",
+    cnNoticeBody: "英文版不展示 A 股板块，切换到中文即可查看。",
+    switchToChinese: "切换到中文",
   },
   simulator: {
     title: "投资模拟器",
@@ -306,6 +309,9 @@ type Dict = {
     closeC: string;
     lockedTitle: string;
     lockedBody: string;
+    cnNoticeTitle: string;
+    cnNoticeBody: string;
+    switchToChinese: string;
   };
   simulator: {
     title: string;
@@ -513,6 +519,9 @@ const en: Dict = {
     closeC: "C",
     lockedTitle: "This instrument is locked",
     lockedBody: "Free plan includes 4 stocks per market. Upgrade to Pro to unlock all.",
+    cnNoticeTitle: "A-shares are available in the Chinese version",
+    cnNoticeBody: "The English site focuses on US markets. Switch to Chinese to see the A-share board.",
+    switchToChinese: "Switch to Chinese",
   },
   simulator: {
     title: "Investment Simulator",

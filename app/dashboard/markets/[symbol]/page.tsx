@@ -72,6 +72,50 @@ export default async function MarketDetailPage({
   const basePath = `/dashboard/markets/${quote.symbol}`;
   const px = (n: number) => `${currency}${fmtPrice(n)}`;
 
+  // A-shares are only presented in the Chinese version of the site.
+  if (lang === "en" && market === "cn") {
+    return (
+      <div className="relative min-h-screen">
+        <BackgroundEffects />
+        <header className="relative z-10 mx-auto max-w-5xl px-5 pt-6">
+          <nav className="glass flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
+            <Link
+              href={`/dashboard?lang=${lang}`}
+              className="text-sm text-slate-400 transition hover:text-white"
+            >
+              {tx.backToDashboard}
+            </Link>
+            <Link href="/" className="text-xl font-bold gradient-text">
+              GUI
+            </Link>
+            <LangToggle lang={lang} path={basePath} />
+          </nav>
+        </header>
+        <main className="relative z-10 mx-auto max-w-3xl px-5 py-16">
+          <div className="glass rounded-2xl p-10 text-center">
+            <p className="text-3xl">🇨🇳</p>
+            <h1 className="mt-4 text-xl font-semibold text-white">{tx.cnNoticeTitle}</h1>
+            <p className="mt-2 text-sm text-slate-400">{tx.cnNoticeBody}</p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link
+                href={`${basePath}?lang=zh`}
+                className="btn-primary rounded-full px-6 py-2.5 text-sm font-medium text-white"
+              >
+                {tx.switchToChinese}
+              </Link>
+              <Link
+                href={`/dashboard?lang=${lang}`}
+                className="btn-secondary rounded-full px-6 py-2.5 text-sm text-white"
+              >
+                {tx.backToDashboard}
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (!isSymbolUnlocked(market, quote.symbol, plan)) {
     return (
       <div className="relative min-h-screen">
