@@ -214,11 +214,16 @@ const zh = {
     invested: "累计投入",
     finalValue: "期末市值",
     totalReturn: "总收益",
-    cagr: "年化收益",
+    xirr: "资金加权年化（XIRR）",
     months: "个月",
-    demo: "示例数据",
+    asOf: "截至",
+    stale: "缓存数据",
+    unavailable: "数据不可用",
+    unavailableTitle: "暂时无法生成回测",
+    unavailableBody: "需要完整的 60 个月历史收盘价。数据恢复后将自动生成真实回测结果。",
     locked: "5 年定投回测为 Pro 功能，升级后可调整金额并查看完整曲线。",
-    disclaimer: "回测基于历史收盘价，不含股息与税费，仅供参考，不构成投资建议。",
+    assumptions: "每月最后一个交易日收盘后买入 · 可买碎股 · 零手续费 · 美元计价",
+    disclaimer: "回测使用历史日线收盘价，不含股息、税费和滑点，仅供参考，不构成投资建议。",
   },
 };
 
@@ -404,10 +409,15 @@ type Dict = {
     invested: string;
     finalValue: string;
     totalReturn: string;
-    cagr: string;
+    xirr: string;
     months: string;
-    demo: string;
+    asOf: string;
+    stale: string;
+    unavailable: string;
+    unavailableTitle: string;
+    unavailableBody: string;
     locked: string;
+    assumptions: string;
     disclaimer: string;
   };
 };
@@ -623,12 +633,17 @@ const en: Dict = {
     invested: "Total invested",
     finalValue: "Final value",
     totalReturn: "Total return",
-    cagr: "Annualized",
+    xirr: "Money-weighted annual return (XIRR)",
     months: "months",
-    demo: "Demo data",
+    asOf: "As of",
+    stale: "Cached data",
+    unavailable: "Data unavailable",
+    unavailableTitle: "Backtest temporarily unavailable",
+    unavailableBody: "A full 60 months of historical closes is required before results are shown.",
     locked: "The 5-year DCA backtest is a Pro feature — upgrade to tune the amount and see the full curve.",
+    assumptions: "Buy at the close of the last trading day each month · fractional shares · zero fees · USD",
     disclaimer:
-      "Backtest uses historical closes only, excluding dividends and taxes. For reference only — not investment advice.",
+      "Backtest uses historical daily closes and excludes dividends, taxes, and slippage. For reference only — not investment advice.",
   },
 };
 

@@ -18,6 +18,44 @@ const fmtMoney = (value: number) =>
 const fmtPct = (value: number) =>
   `${value >= 0 ? "+" : "-"}${Math.abs(value * 100).toFixed(1)}%`;
 
+/**
+ * Money-weighted annual return for equally spaced monthly contributions.
+ * Contributions happen at each month-end close; the final portfolio value is
+ * valued at the last contribution date. This is the monthly equivalent of XIRR.
+ */
+function computeXirr(points: DcaSeries["points"], monthly: number, finalValue: number) {
+  if (points.length < 2 || monthly <= 0 || finalValue <= 0) return null;
+
+  const years = (index: number) => index / 12;
+  const npv = (rate: number) => {
+    const base = 1 + rate;
+    let value = 0;
+    for (let index = 0; index < points.length; index += 1) {
+      value -= monthly / Math.pow(base, years(index));
+    }
+    return value + finalValue / Math.pow(base, years(points.length - 1));
+  };
+
+  let low = -0.9999;
+  let high = 1;
+  const lowValue = npv(low);
+  let highValue = npv(high);
+  while (highValue > 0 && high < 10_000) {
+    high *= 2;
+    highValue = npv(high);
+  }
+  if (!Number.isFinite(lowValue) || !Number.isFinite(highValue) || lowValue <= 0 || highValue >= 0) {
+    return null;
+  }
+
+  for (let iteration = 0; iteration < 80; iteration += 1) {
+    const mid = (low + high) / 2;
+    if (npv(mid) > 0) low = mid;
+    else high = mid;
+  }
+  return (low + high) / 2;
+}
+
 function computeDca(points: DcaSeries["points"], monthly: number) {
   let units = 0;
   let invested = 0;
@@ -29,13 +67,9 @@ function computeDca(points: DcaSeries["points"], monthly: number) {
 
   const finalValue = curve.at(-1)?.value ?? 0;
   const totalReturn = invested > 0 ? finalValue / invested - 1 : 0;
-  const years = points.length / 12;
-  const cagr =
-    invested > 0 && years > 0 && finalValue > 0
-      ? Math.pow(finalValue / invested, 1 / years) - 1
-      : 0;
+  const xirr = computeXirr(points, monthly, finalValue);
 
-  return { curve, invested, finalValue, totalReturn, cagr, months: points.length };
+  return { curve, invested, finalValue, totalReturn, xirr, months: points.length };
 }
 
 /**
@@ -56,6 +90,7 @@ export default function DcaBacktestCard({
   const isPro = plan === "pro";
   const [monthly, setMonthly] = useState(500);
   const gradientId = useId();
+  const hasData = series.dataState !== "unavailable" && series.points.length > 0;
 
   const stats = useMemo(() => computeDca(series.points, monthly), [series.points, monthly]);
 
@@ -96,7 +131,11 @@ export default function DcaBacktestCard({
     { label: t.invested, value: `$${fmtMoney(stats.invested)}`, tone: "text-slate-200" },
     { label: t.finalValue, value: `$${fmtMoney(stats.finalValue)}`, tone: "text-white" },
     { label: t.totalReturn, value: fmtPct(stats.totalReturn), tone: stats.totalReturn >= 0 ? "text-emerald-400" : "text-rose-400" },
-    { label: t.cagr, value: fmtPct(stats.cagr), tone: stats.cagr >= 0 ? "text-emerald-400" : "text-rose-400" },
+    {
+      label: t.xirr,
+      value: stats.xirr === null ? "—" : fmtPct(stats.xirr),
+      tone: stats.xirr === null || stats.xirr >= 0 ? "text-emerald-400" : "text-rose-400",
+    },
   ];
 
   return (
@@ -111,11 +150,18 @@ export default function DcaBacktestCard({
           </h2>
           <p className="mt-1 flex items-center gap-2 text-[11px] text-slate-600">
             <span>
-              {series.name} · {stats.months} {t.months}
+              {series.name}
+              {hasData ? ` · ${stats.months} ${t.months}` : ""}
+              {series.asOf ? ` · ${t.asOf} ${series.asOf}` : ""}
             </span>
-            {series.demo && (
+            {series.dataState === "stale" && (
               <span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] text-amber-300">
-                {t.demo}
+                {t.stale}
+              </span>
+            )}
+            {series.dataState === "unavailable" && (
+              <span className="rounded-full bg-rose-400/10 px-2 py-0.5 text-[10px] text-rose-300">
+                {t.unavailable}
               </span>
             )}
           </p>
@@ -123,6 +169,8 @@ export default function DcaBacktestCard({
         <ProBadge title={dict[lang].pro.badgeTip} />
       </header>
 
+      {hasData ? (
+        <>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <label className="flex w-full max-w-xs items-center gap-3 text-[11px] text-slate-500">
           <span className="whitespace-nowrap">{t.monthly}</span>
@@ -246,8 +294,19 @@ export default function DcaBacktestCard({
           </div>
         )}
       </div>
+        </>
+      ) : (
+        <div className="mt-4 flex min-h-52 flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-6 text-center">
+          <p className="text-sm font-medium text-slate-300">{t.unavailableTitle}</p>
+          <p className="mt-2 max-w-sm text-xs leading-relaxed text-slate-500">{t.unavailableBody}</p>
+        </div>
+      )}
 
-      <p className="mt-3 text-[11px] leading-relaxed text-slate-600">{t.disclaimer}</p>
+      <p className="mt-3 text-[11px] leading-relaxed text-slate-600">
+        {t.assumptions}
+        <br />
+        {t.disclaimer}
+      </p>
     </article>
   );
 }
