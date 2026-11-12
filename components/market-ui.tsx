@@ -1,5 +1,6 @@
 import type { Technicals, UsQuote } from "@/lib/us-stocks";
 import { dict, type Lang } from "@/lib/i18n";
+import AnimatedNumber from "./ui/AnimatedNumber";
 
 export const fmtPrice = (n: number) =>
   n.toLocaleString("en-US", {
@@ -35,7 +36,9 @@ export function ChangeChip({ quote }: { quote: UsQuote }) {
         up ? "bg-emerald-400/10 text-emerald-400" : "bg-rose-400/10 text-rose-400"
       }`}
     >
-      {up ? "↑" : "↓"} {fmtSigned(quote.change)} ({fmtSigned(quote.changePct)}%)
+      {up ? "↑" : "↓"}{" "}
+      <AnimatedNumber value={quote.change} digits={2} signed /> (
+      <AnimatedNumber value={quote.changePct} digits={2} signed />%)
     </span>
   );
 }
@@ -94,7 +97,7 @@ export function MaValue({
   const cls = price >= value ? "text-emerald-400" : "text-rose-400";
   return (
     <span className="text-slate-600" title={price >= value ? t.above(label) : t.below(label)}>
-      {label} <span className={cls}>{fmtPrice(value)}</span>
+      {label} <AnimatedNumber value={value} digits={2} group className={cls} />
     </span>
   );
 }
@@ -109,7 +112,8 @@ export function RsiValue({ value, lang = "zh" }: { value: number | null; lang?: 
   const note = value >= 70 ? t.rsiOverbought : value <= 30 ? t.rsiOversold : t.rsiNeutral;
   return (
     <span className="text-slate-600" title={`RSI(14) ${note}`}>
-      RSI14 <span className={cls}>{value.toFixed(1)}</span>
+      RSI14{" "}
+      <AnimatedNumber value={value} digits={1} className={cls} />
     </span>
   );
 }
@@ -124,9 +128,11 @@ export function MacdValue({ tech, lang = "zh" }: { tech: Technicals; lang?: Lang
     <span className="inline-flex items-center gap-1.5">
       <span className="text-slate-600" title={t.macdTip}>
         MACD{" "}
-        <span className={bullish ? "text-emerald-400" : "text-rose-400"}>
-          {tech.macd.toFixed(2)}
-        </span>
+        <AnimatedNumber
+          value={tech.macd}
+          digits={2}
+          className={bullish ? "text-emerald-400" : "text-rose-400"}
+        />
       </span>
       {tech.macdCross && (
         <span

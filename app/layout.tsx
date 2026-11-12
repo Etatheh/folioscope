@@ -14,9 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full scroll-smooth antialiased">
-      <body className="min-h-full overflow-x-hidden bg-[#030712] text-slate-100">
-        {children}
-      </body>
+      <body className="min-h-full overflow-x-hidden text-slate-100">{children}</body>
     </html>
   );
 }

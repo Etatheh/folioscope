@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { UsQuote } from "@/lib/us-stocks";
 import type { ViewerPlan } from "@/lib/access";
 import { dict, type Lang } from "@/lib/i18n";
+import AnimatedNumber from "./ui/AnimatedNumber";
+import UnlockCtaButton from "./ui/UnlockCtaButton";
 import {
   ChangeChip,
   MaValue,
@@ -11,7 +13,6 @@ import {
   ValuationChip,
   fmtCap,
   fmtPrice,
-  fmtSigned,
 } from "./market-ui";
 
 export function UnlockCta({
@@ -23,23 +24,7 @@ export function UnlockCta({
   plan: ViewerPlan;
   count: number;
 }) {
-  const t = dict[lang].markets;
-  const href = plan === "free" ? "/pricing" : "/register";
-  return (
-    <Link
-      href={href}
-      className="group flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-purple-400/30 bg-purple-500/[0.06] p-6 text-center transition hover:border-purple-400/60 hover:bg-purple-500/10"
-    >
-      <span className="text-2xl">🔒</span>
-      <p className="text-sm font-medium text-slate-200">
-        {t.unlockAll} <span className="text-slate-500">(+{count})</span>
-      </p>
-      <p className="text-[11px] text-slate-500">{t.unlockHint}</p>
-      <span className="mt-1 text-xs text-purple-400 group-hover:text-purple-300">
-        {plan === "free" ? t.upgradeCta : t.registerCta}
-      </span>
-    </Link>
-  );
+  return <UnlockCtaButton lang={lang} plan={plan} count={count} />;
 }
 
 function CardShell({
@@ -52,7 +37,7 @@ function CardShell({
   children: React.ReactNode;
 }) {
   const body = (
-    <article className="h-full rounded-xl border border-white/5 bg-white/[0.025] p-4 transition hover:-translate-y-0.5 hover:border-purple-400/30 hover:bg-white/[0.04]">
+    <article className="data-card h-full rounded-xl p-4">
       {children}
     </article>
   );
@@ -72,7 +57,7 @@ function DayRangeBar({ quote }: { quote: UsQuote }) {
   return (
     <div className="relative mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800">
       <div
-        className={`absolute inset-y-0 left-0 rounded-full ${
+        className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out ${
           up
             ? "bg-gradient-to-r from-emerald-500/50 to-emerald-400"
             : "bg-gradient-to-r from-rose-500/50 to-rose-400"
@@ -80,7 +65,7 @@ function DayRangeBar({ quote }: { quote: UsQuote }) {
         style={{ width: `${pct}%` }}
       />
       <div
-        className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow"
+        className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow transition-[left] duration-500 ease-out"
         style={{ left: `${pct}%` }}
       />
     </div>
@@ -110,7 +95,7 @@ export function IndexCard({
       </div>
       <div className="mt-3 flex items-end justify-between gap-3">
         <p className="text-xl font-semibold tabular-nums text-white">
-          {fmtPrice(quote.price)}
+          <AnimatedNumber value={quote.price} digits={2} group />
         </p>
         {tech && <Sparkline points={tech.sparkline} />}
       </div>
@@ -188,14 +173,15 @@ export function StockCard({
           <div className="text-right">
             <p className="text-base font-semibold tabular-nums text-white">
               {currency}
-              {fmtPrice(quote.price)}
+              <AnimatedNumber value={quote.price} digits={2} group />
             </p>
             <p
               className={`mt-0.5 text-xs tabular-nums ${
                 quote.change >= 0 ? "text-emerald-400" : "text-rose-400"
               }`}
             >
-              {fmtSigned(quote.change)} ({fmtSigned(quote.changePct)}%)
+              <AnimatedNumber value={quote.change} digits={2} signed /> (
+              <AnimatedNumber value={quote.changePct} digits={2} signed />%)
             </p>
           </div>
         </div>

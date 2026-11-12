@@ -149,7 +149,7 @@ export default async function MarketDetailPage({
       </header>
 
       <main className="relative z-10 mx-auto max-w-5xl px-5 pb-16 pt-5">
-        <article className="glass rounded-2xl p-5 sm:p-6">
+        <article className="data-card rounded-2xl p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-white">
@@ -241,7 +241,7 @@ export default async function MarketDetailPage({
           )}
         </article>
 
-        <article className="glass mt-5 rounded-2xl p-5 sm:p-6">
+        <article className="data-card mt-5 rounded-2xl p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-semibold text-white">{tx.dailyKline}</h2>

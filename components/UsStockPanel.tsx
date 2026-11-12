@@ -2,6 +2,7 @@ import { getUsMarketSnapshot } from "@/lib/us-stocks";
 import { dict, type Lang } from "@/lib/i18n";
 import { FREE_STOCK_COUNT, type ViewerPlan } from "@/lib/access";
 import { IndexCard, StockCard, UnlockCta } from "./market-cards";
+import StaggerGrid from "./ui/StaggerGrid";
 
 function fmtTime(ms: number) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -57,7 +58,7 @@ export default async function UsStockPanel({
       </header>
 
       {indices.length > 0 && (
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <StaggerGrid className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {indices.map((quote) => (
             <IndexCard
               key={quote.symbol}
@@ -66,11 +67,15 @@ export default async function UsStockPanel({
               href={hrefFor(quote.symbol)}
             />
           ))}
-        </div>
+        </StaggerGrid>
       )}
 
       {visibleStocks.length > 0 ? (
-        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <StaggerGrid
+          className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+          stagger={0.05}
+          delay={0.12}
+        >
           {visibleStocks.map((quote) => (
             <StockCard
               key={quote.symbol}
@@ -83,7 +88,7 @@ export default async function UsStockPanel({
           {lockedCount > 0 && (
             <UnlockCta lang={lang} plan={plan} count={lockedCount} />
           )}
-        </div>
+        </StaggerGrid>
       ) : (
         <p className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-sm text-slate-500">
           {t.noData}

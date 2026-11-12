@@ -351,6 +351,50 @@ export async function upgradeBySession(token: string): Promise<AuthUser | null> 
   return localUpgrade(token);
 }
 
+/**
+ * Applies a billing result (Lemon Squeezy webhook) to the account owning
+ * `email`. Returns the updated user, or null when no account matches — the
+ * webhook then reports `upgraded: false` instead of failing the delivery.
+ */
+export async function setPlanByEmail(
+  email: string,
+  plan: "free" | "pro"
+): Promise<AuthUser | null> {
+  const candidates = [...new Set([email.trim(), email.trim().toLowerCase()])].filter(Boolean);
+  if (candidates.length === 0) return null;
+
+  const env = readSupabaseEnv();
+  if (env?.secretKey) {
+    try {
+      for (const candidate of candidates) {
+        const filter = `email=eq.${encodeURIComponent(candidate)}`;
+        const rows = await pgUpdate<UserRow>(env, "users", filter, { plan });
+        if (rows[0]) return userFromRow(rows[0]);
+        const fresh = await pgSelect<UserRow>(
+          env,
+          "users",
+          `${filter}&select=id,email,nickname,plan,created_at`
+        );
+        if (fresh[0]) return userFromRow(fresh[0]);
+      }
+      return null;
+    } catch (error) {
+      if (!((isMissingTable(error) || isNetworkError(error)) && allowLocalFallback())) {
+        return null;
+      }
+    }
+  }
+
+  if (!allowLocalFallback()) return null;
+  for (const candidate of candidates) {
+    const row = dbFindUserByEmail(candidate);
+    if (!row) continue;
+    const updated = dbUpdatePlan(row.id, plan);
+    return updated ? userFromRow(updated) : null;
+  }
+  return null;
+}
+
 export async function logoutBySession(token: string): Promise<void> {
   const env = readSupabaseEnv();
   if (env?.secretKey) {

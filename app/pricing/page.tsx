@@ -12,7 +12,7 @@ export const metadata = {
 const faqs = [
   {
     q: "How do I pay for Pro?",
-    a: "Payments are not live yet. During the preview, clicking “Upgrade to Pro” activates Pro on your local account instantly; the flow stays the same once billing is connected.",
+    a: "Pro is billed through Lemon Squeezy. Once the store keys are configured, “Upgrade to Pro” opens the hosted checkout; until then the same button activates Pro instantly in demo mode so you can try every feature.",
   },
   {
     q: "Where does the market data come from?",

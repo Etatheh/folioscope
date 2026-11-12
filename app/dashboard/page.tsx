@@ -2,13 +2,17 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import AgentChat from "@/components/AgentChat";
+import AiSummaryCard from "@/components/AiSummaryCard";
 import BackgroundEffects from "@/components/BackgroundEffects";
+import DcaBacktestCard from "@/components/DcaBacktestCard";
 import LangToggle from "@/components/LangToggle";
 import MarketBoard from "@/components/MarketBoard";
 import PortfolioSimulator from "@/components/PortfolioSimulator";
 import UsStockPanel from "@/components/UsStockPanel";
 import UserMenu from "@/components/UserMenu";
+import ProUpgradeButton from "@/components/ui/ProUpgradeButton";
 import { FREE_STOCK_SYMBOLS, type ViewerPlan } from "@/lib/access";
+import { getDcaSeries } from "@/lib/dca";
 import { getCnMarketSnapshot } from "@/lib/cn-markets";
 import { getAsiaMarketSnapshot, ASIA_CURRENCY } from "@/lib/asia-markets";
 import { getSimulationData } from "@/lib/us-stocks";
@@ -119,10 +123,11 @@ export default async function DashboardPage({
   }
   const plan: ViewerPlan = viewer?.plan === "pro" ? "pro" : viewer ? "free" : "anon";
 
-  const [simData, cnData, asiaData] = await Promise.all([
+  const [simData, cnData, asiaData, dcaSeries] = await Promise.all([
     getSimulationData(),
     getCnMarketSnapshot(),
     getAsiaMarketSnapshot(),
+    getDcaSeries(),
   ]);
 
   // Free / anonymous viewers only get the free stock slice in the simulator too.
@@ -202,6 +207,15 @@ export default async function DashboardPage({
           </div>
           <div className="flex items-center gap-3">
             <LangToggle lang={lang} path="/dashboard" />
+            {plan !== "pro" && (
+              <ProUpgradeButton
+                lang={lang}
+                variant="secondary"
+                label={t.pro.upgrade}
+                source="dashboard-header"
+                className="bg-gradient-to-r from-blue-500/20 to-purple-500/20"
+              />
+            )}
             <button
               aria-label="Notifications"
               className="glass flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:text-white"
@@ -216,7 +230,7 @@ export default async function DashboardPage({
           {stats.map((stat) => (
             <article
               key={stat.key}
-              className="glass rounded-2xl p-5 transition hover:-translate-y-1 hover:border-purple-400/30"
+              className="data-card rounded-2xl p-5"
             >
               <p className="text-sm text-slate-500">{t.stats[stat.key]}</p>
               <div className="mt-3 flex items-end justify-between gap-3">
@@ -264,10 +278,15 @@ export default async function DashboardPage({
           </Suspense>
         </section>
 
+        <section id="insights" className="mt-5 grid gap-5 xl:grid-cols-2">
+          <AiSummaryCard lang={lang} plan={plan} />
+          <DcaBacktestCard lang={lang} plan={plan} series={dcaSeries} />
+        </section>
+
         <section id="investments" className="mt-5 grid gap-5 xl:grid-cols-[1.65fr_1fr]">
           <PortfolioSimulator lang={lang} data={sim} defaults={simDefaults} />
 
-          <article className="glass rounded-2xl p-5 sm:p-6">
+          <article className="data-card rounded-2xl p-5 sm:p-6">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-white">{t.activity.title}</h2>
               <button className="text-xs text-purple-400 hover:text-purple-300">
@@ -298,7 +317,7 @@ export default async function DashboardPage({
           </article>
         </section>
 
-        <section id="projects" className="glass mt-5 rounded-2xl p-5 sm:p-6">
+        <section id="projects" className="data-card mt-5 rounded-2xl p-5 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-semibold text-white">{t.projects.title}</h2>

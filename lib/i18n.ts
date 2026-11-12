@@ -155,6 +155,68 @@ const zh = {
     pro: "PRO 会员",
     free: "免费版",
   },
+  pro: {
+    feature: "PRO FEATURE",
+    badgeTip: "Pro 专属功能",
+    upgrade: "升级 Pro",
+    active: "Pro 已激活",
+    modal: {
+      title: "升级到 Pro",
+      subtitle: "解锁 5 年定投回测、每日 AI 摘要与更高的 AI 额度。",
+      price: "$9",
+      period: "/ 月",
+      cancel: "随时可取消 · 通过 Lemon Squeezy 安全结算",
+      compare: "权益对比",
+      feature: "功能",
+      free: "免费版",
+      pro: "Pro",
+      rows: [
+        { label: "每个市场可看股票", free: "4 只", pro: "全部" },
+        { label: "定投回测周期", free: "1 个月", pro: "5 年" },
+        { label: "AI 市场摘要", free: "—", pro: "每日生成" },
+        { label: "AI 助手额度", free: "5 次/天", pro: "200 次/天" },
+        { label: "自选股与组合", free: "—", pro: "即将上线" },
+      ],
+      cta: "使用 Lemon Squeezy 升级",
+      ctaBusy: "正在前往结算…",
+      ctaDemo: "立即开通 Pro（演示）",
+      demo: "支付通道尚未接入：当前点击会以演示方式立即开通 Pro。",
+      demoBusy: "正在开通…",
+      login: "请先登录再升级",
+      done: "已开通 Pro ✓",
+      error: "升级失败，请稍后再试。",
+      close: "关闭",
+    },
+  },
+  aiSummary: {
+    title: "AI 市场摘要",
+    subtitle: "基于实时指数与个股数据，每日一段话",
+    generate: "生成摘要",
+    regenerate: "重新生成",
+    loading: "正在生成摘要…",
+    empty: "点击「生成摘要」，用几句话看懂今天的市场。",
+    locked: "AI 摘要为 Pro 功能：升级后每天自动生成市场简报。",
+    lockedPreview:
+      "三大指数整体收涨，科技与半导体板块领涨，资金继续流向成长股；能源板块受油价回落拖累，防御性板块表现平淡。",
+    updated: "生成于",
+    error: "生成失败，请稍后重试。",
+    quota: (remaining: number, limit: number) => `今日剩余 ${remaining}/${limit} 次`,
+    prompt:
+      "请用不超过 120 字的中文总结当前美股主要指数的涨跌、领涨与领跌板块，不要给投资建议。",
+  },
+  dca: {
+    title: "5 年定投回测",
+    subtitle: "标普 500 · 每月定投，长期复利测算",
+    monthly: "每月定投",
+    invested: "累计投入",
+    finalValue: "期末市值",
+    totalReturn: "总收益",
+    cagr: "年化收益",
+    months: "个月",
+    demo: "示例数据",
+    locked: "5 年定投回测为 Pro 功能，升级后可调整金额并查看完整曲线。",
+    disclaimer: "回测基于历史收盘价，不含股息与税费，仅供参考，不构成投资建议。",
+  },
 };
 
 type Dict = {
@@ -287,6 +349,60 @@ type Dict = {
     logout: string;
     pro: string;
     free: string;
+  };
+  pro: {
+    feature: string;
+    badgeTip: string;
+    upgrade: string;
+    active: string;
+    modal: {
+      title: string;
+      subtitle: string;
+      price: string;
+      period: string;
+      cancel: string;
+      compare: string;
+      feature: string;
+      free: string;
+      pro: string;
+      rows: { label: string; free: string; pro: string }[];
+      cta: string;
+      ctaBusy: string;
+      ctaDemo: string;
+      demo: string;
+      demoBusy: string;
+      login: string;
+      done: string;
+      error: string;
+      close: string;
+    };
+  };
+  aiSummary: {
+    title: string;
+    subtitle: string;
+    generate: string;
+    regenerate: string;
+    loading: string;
+    empty: string;
+    locked: string;
+    lockedPreview: string;
+    updated: string;
+    error: string;
+    quota: (remaining: number, limit: number) => string;
+    prompt: string;
+  };
+  dca: {
+    title: string;
+    subtitle: string;
+    monthly: string;
+    invested: string;
+    finalValue: string;
+    totalReturn: string;
+    cagr: string;
+    months: string;
+    demo: string;
+    locked: string;
+    disclaimer: string;
   };
 };
 
@@ -440,6 +556,70 @@ const en: Dict = {
     logout: "Log out",
     pro: "PRO",
     free: "FREE",
+  },
+  pro: {
+    feature: "PRO FEATURE",
+    badgeTip: "Pro feature",
+    upgrade: "Upgrade to Pro",
+    active: "Pro active",
+    modal: {
+      title: "Upgrade to Pro",
+      subtitle:
+        "Unlock the 5-year DCA backtest, a daily AI summary and a larger AI budget.",
+      price: "$9",
+      period: "/ month",
+      cancel: "Cancel anytime · secure checkout by Lemon Squeezy",
+      compare: "What you get",
+      feature: "Feature",
+      free: "Free",
+      pro: "Pro",
+      rows: [
+        { label: "Stocks per market", free: "4", pro: "All" },
+        { label: "DCA backtest range", free: "1 month", pro: "5 years" },
+        { label: "AI market summary", free: "—", pro: "Daily" },
+        { label: "AI assistant quota", free: "5 / day", pro: "200 / day" },
+        { label: "Watchlists & portfolios", free: "—", pro: "Coming soon" },
+      ],
+      cta: "Continue with Lemon Squeezy",
+      ctaBusy: "Opening checkout…",
+      ctaDemo: "Activate Pro now (demo)",
+      demo: "Billing is not connected yet — this button activates Pro in demo mode.",
+      demoBusy: "Activating…",
+      login: "Log in first to upgrade",
+      done: "Pro activated ✓",
+      error: "Upgrade failed. Please try again.",
+      close: "Close",
+    },
+  },
+  aiSummary: {
+    title: "AI Market Summary",
+    subtitle: "One paragraph a day, built from live index and stock data",
+    generate: "Generate summary",
+    regenerate: "Regenerate",
+    loading: "Writing the summary…",
+    empty: "Hit “Generate summary” for a short read on today's market.",
+    locked: "The AI summary is a Pro feature — upgrade to get a daily briefing.",
+    lockedPreview:
+      "All three major indices closed higher, led by technology and semiconductors as flows kept moving into growth; energy lagged on softer crude, while defensives stayed flat.",
+    updated: "Generated",
+    error: "Could not generate the summary. Please try again.",
+    quota: (remaining: number, limit: number) => `${remaining}/${limit} questions left today`,
+    prompt:
+      "Summarize today's U.S. index moves and the leading/lagging sectors in under 100 words. No investment advice.",
+  },
+  dca: {
+    title: "5-Year DCA Backtest",
+    subtitle: "S&P 500 · monthly contributions, long-horizon compounding",
+    monthly: "Monthly contribution",
+    invested: "Total invested",
+    finalValue: "Final value",
+    totalReturn: "Total return",
+    cagr: "Annualized",
+    months: "months",
+    demo: "Demo data",
+    locked: "The 5-year DCA backtest is a Pro feature — upgrade to tune the amount and see the full curve.",
+    disclaimer:
+      "Backtest uses historical closes only, excluding dividends and taxes. For reference only — not investment advice.",
   },
 };
 

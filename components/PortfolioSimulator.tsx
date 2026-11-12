@@ -1,17 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState, type MouseEvent } from "react";
 import { dict, type Lang } from "@/lib/i18n";
 import type { SimulationData } from "@/lib/us-stocks";
 import { useSession } from "@/lib/use-session";
 import { fmtSigned } from "./market-ui";
+import AnimatedNumber from "./ui/AnimatedNumber";
+import ProUpgradeButton from "./ui/ProUpgradeButton";
 
 const RANGES = [21, 63, 126, 252];
 const FREE_RANGE_MAX = 1;
-
-const fmtMoney = (v: number) =>
-  v.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
 export default function PortfolioSimulator({
   lang,
@@ -178,7 +176,7 @@ export default function PortfolioSimulator({
   const retColor = (v: number) => (v >= 0 ? "text-emerald-400" : "text-rose-400");
 
   return (
-    <article className="glass rounded-2xl p-5 sm:p-6">
+    <article className="data-card rounded-2xl p-5 sm:p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold text-white">
@@ -233,9 +231,13 @@ export default function PortfolioSimulator({
       {limitHit && (
         <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[11px] text-amber-300">
           {t.proRange} ·{" "}
-          <Link href="/pricing" className="underline hover:text-amber-200">
-            {t.upgrade}
-          </Link>
+          <ProUpgradeButton
+            lang={lang}
+            variant="link"
+            label={t.upgrade}
+            source="simulator-range"
+            className="underline decoration-dotted hover:text-amber-200"
+          />
         </p>
       )}
 
@@ -305,30 +307,47 @@ export default function PortfolioSimulator({
       {calc ? (
         <>
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
               <p className="text-[11px] text-slate-600">{t.finalValue}</p>
               <p className="mt-1 text-lg font-semibold tabular-nums text-white">
-                ${fmtMoney(calc.finalValue)}
+                $<AnimatedNumber value={calc.finalValue} digits={0} group />
               </p>
             </div>
-            <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
               <p className="text-[11px] text-slate-600">{t.totalReturn}</p>
               <p className={`mt-1 text-lg font-semibold tabular-nums ${retColor(calc.totalReturn)}`}>
-                {fmtSigned(calc.totalReturn * 100)}%
+                <AnimatedNumber
+                  value={calc.totalReturn * 100}
+                  digits={2}
+                  signed
+                  suffix="%"
+                />
               </p>
             </div>
-            <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
               <p className="text-[11px] text-slate-600">{t.maxDrawdown}</p>
               <p className="mt-1 text-lg font-semibold tabular-nums text-rose-400">
-                -{(calc.maxDd * 100).toFixed(1)}%
+                -
+                <AnimatedNumber
+                  value={calc.maxDd * 100}
+                  digits={1}
+                  suffix="%"
+                />
               </p>
             </div>
-            <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
               <p className="text-[11px] text-slate-600">{t.vsBenchmark}</p>
               <p className={`mt-1 text-lg font-semibold tabular-nums ${retColor(calc.totalReturn - calc.benchReturn)}`}>
-                {Number.isFinite(calc.benchReturn)
-                  ? `${fmtSigned((calc.totalReturn - calc.benchReturn) * 100)}%`
-                  : "—"}
+                {Number.isFinite(calc.benchReturn) ? (
+                  <AnimatedNumber
+                    value={(calc.totalReturn - calc.benchReturn) * 100}
+                    digits={2}
+                    signed
+                    suffix="%"
+                  />
+                ) : (
+                  "—"
+                )}
               </p>
             </div>
           </div>

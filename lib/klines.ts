@@ -10,8 +10,13 @@ const KLINE_BARS = 320;
 
 const cache = new Map<string, { at: number; bars: Candle[] }>();
 
-export async function fetchKlinesSecid(symbol: string, secid: string): Promise<Candle[]> {
-  const cached = cache.get(symbol);
+export async function fetchKlinesSecid(
+  symbol: string,
+  secid: string,
+  limit = KLINE_BARS
+): Promise<Candle[]> {
+  const key = `${symbol}:${limit}`;
+  const cached = cache.get(key);
   if (cached && Date.now() - cached.at < KLINE_TTL_MS) return cached.bars;
 
   const params = new URLSearchParams({
@@ -19,7 +24,7 @@ export async function fetchKlinesSecid(symbol: string, secid: string): Promise<C
     klt: "101", // daily
     fqt: "1", // 前复权
     end: "20500101",
-    lmt: String(KLINE_BARS),
+    lmt: String(limit),
     fields1: "f1,f2,f3,f4,f5,f6",
     fields2: "f51,f52,f53,f54,f55,f56,f57,f58",
   });
@@ -51,6 +56,6 @@ export async function fetchKlinesSecid(symbol: string, secid: string): Promise<C
     });
   }
   if (bars.length === 0) throw new Error(`empty kline payload for ${symbol}`);
-  cache.set(symbol, { at: Date.now(), bars });
+  cache.set(key, { at: Date.now(), bars });
   return bars;
 }
