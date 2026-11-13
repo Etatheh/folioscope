@@ -278,6 +278,60 @@ function localUpgrade(token: string): AuthUser | null {
 // Public API
 // ---------------------------------------------------------------------------
 
+/**
+ * Turns an infrastructure failure into an actionable 503 instead of a blank
+ * "login failed": missing schema, rejected key, or an unreachable database all
+ * look the same to the browser otherwise.
+ */
+function authUnavailable(error: unknown, lang: Lang): AuthFailure | null {
+  if (isMissingTable(error)) {
+    return {
+      ok: false,
+      status: 503,
+      error: msg(
+        lang,
+        "数据库还没初始化（缺少 users/sessions 表），请先在 Supabase 执行 supabase/schema.sql",
+        "Database is not initialised (missing users/sessions tables). Run supabase/schema.sql first."
+      ),
+    };
+  }
+  if (error instanceof RestError && (error.status === 401 || error.status === 403)) {
+    return {
+      ok: false,
+      status: 503,
+      error: msg(
+        lang,
+        "数据库密钥无效或权限不足，请检查 SUPABASE_SECRET_KEY",
+        "Database rejected the key (invalid or insufficient permissions) — check SUPABASE_SECRET_KEY"
+      ),
+    };
+  }
+  if (isNetworkError(error) || (error instanceof RestError && error.status >= 500)) {
+    return {
+      ok: false,
+      status: 503,
+      error: msg(
+        lang,
+        "认证服务暂时连不上数据库，请稍后重试",
+        "Auth service cannot reach the database — please retry shortly"
+      ),
+    };
+  }
+  return null;
+}
+
+function missingConfig(lang: Lang): AuthFailure {
+  return {
+    ok: false,
+    status: 503,
+    error: msg(
+      lang,
+      "线上未配置数据库（缺少 SUPABASE_URL / SUPABASE_SECRET_KEY 环境变量）",
+      "Database is not configured (missing SUPABASE_URL / SUPABASE_SECRET_KEY env vars)"
+    ),
+  };
+}
+
 export async function registerAccount(
   email: string,
   password: string,
@@ -292,10 +346,12 @@ export async function registerAccount(
       if ((isMissingTable(error) || isNetworkError(error)) && allowLocalFallback()) {
         return localRegister(email, password, nickname, lang);
       }
+      const unavailable = authUnavailable(error, lang);
+      if (unavailable) return unavailable;
       throw error;
     }
   }
-  if (!allowLocalFallback()) throw new Error("Supabase is required in production");
+  if (!allowLocalFallback()) return missingConfig(lang);
   return localRegister(email, password, nickname, lang);
 }
 
@@ -312,10 +368,12 @@ export async function loginAccount(
       if ((isMissingTable(error) || isNetworkError(error)) && allowLocalFallback()) {
         return localLogin(email, password, lang);
       }
+      const unavailable = authUnavailable(error, lang);
+      if (unavailable) return unavailable;
       throw error;
     }
   }
-  if (!allowLocalFallback()) throw new Error("Supabase is required in production");
+  if (!allowLocalFallback()) return missingConfig(lang);
   return localLogin(email, password, lang);
 }
 
