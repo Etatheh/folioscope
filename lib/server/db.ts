@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 // Local SQLite store (built-in node:sqlite).
 // Loaded lazily: production (serverless) deployments never touch SQLite, and
 // older Node runtimes that lack node:sqlite simply won't reach this code.
@@ -16,10 +19,22 @@ type SqliteModule = typeof import("node:sqlite");
 let sqlite: SqliteModule | null = null;
 let db: import("node:sqlite").DatabaseSync | null = null;
 
+/**
+ * Resolves node:sqlite through process.getBuiltinModule instead of require().
+ * The bundler rewrites require() inside server bundles (it fails with
+ * "Unsupported external type Url for commonjs reference"), while
+ * getBuiltinModule is a plain runtime lookup and needs no resolution.
+ */
 function loadSqlite(): SqliteModule {
   if (!sqlite) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    sqlite = require("node:sqlite") as SqliteModule;
+    const getBuiltinModule = (
+      process as unknown as { getBuiltinModule?: (id: string) => unknown }
+    ).getBuiltinModule;
+    const builtin = getBuiltinModule?.("node:sqlite") as SqliteModule | undefined;
+    if (!builtin) {
+      throw new Error("node:sqlite is not available in this Node runtime");
+    }
+    sqlite = builtin;
   }
   return sqlite;
 }
@@ -27,10 +42,6 @@ function loadSqlite(): SqliteModule {
 export function getDb(): import("node:sqlite").DatabaseSync {
   if (db) return db;
   const { DatabaseSync } = loadSqlite();
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const fs = require("node:fs") as typeof import("node:fs");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const path = require("node:path") as typeof import("node:path");
   const dir = path.join(process.cwd(), "data");
   fs.mkdirSync(dir, { recursive: true });
   db = new DatabaseSync(path.join(dir, "app.db"));
