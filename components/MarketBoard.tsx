@@ -1,6 +1,10 @@
 import { dict, type Lang } from "@/lib/i18n";
 import type { UsMarketSnapshot } from "@/lib/us-stocks";
-import { FREE_STOCK_COUNT, type ViewerPlan } from "@/lib/access";
+import {
+  hasFullDashboardAccess,
+  isSymbolUnlocked,
+  type ViewerPlan,
+} from "@/lib/access";
 import { IndexCard, StockCard, UnlockCta } from "./market-cards";
 import StaggerGrid from "./ui/StaggerGrid";
 
@@ -18,6 +22,7 @@ function fmtTime(ms: number) {
 export default function MarketBoard({
   lang,
   plan,
+  market,
   title,
   titleEn,
   snapshot,
@@ -28,6 +33,7 @@ export default function MarketBoard({
 }: {
   lang: Lang;
   plan: ViewerPlan;
+  market: "cn" | "asia";
   title: string;
   titleEn: string;
   snapshot: UsMarketSnapshot;
@@ -40,7 +46,9 @@ export default function MarketBoard({
   const { indices, stocks, demo, fetchedAt } = snapshot;
   const hrefFor = (symbol: string) => `${detailBase}/${symbol}?lang=${lang}`;
   const empty = indices.length === 0 && stocks.length === 0;
-  const visibleStocks = plan === "pro" ? stocks : stocks.slice(0, FREE_STOCK_COUNT);
+  const visibleStocks = hasFullDashboardAccess(plan)
+    ? stocks
+    : stocks.filter((stock) => isSymbolUnlocked(market, stock.symbol, plan));
   const lockedCount = stocks.length - visibleStocks.length;
 
   return (

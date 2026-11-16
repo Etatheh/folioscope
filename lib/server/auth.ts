@@ -19,6 +19,7 @@ export type PublicUser = {
   nickname: string;
   plan: "free" | "pro";
   createdAt: string;
+  isAdmin?: boolean;
 };
 
 /** Returns "scrypt$<salt>$<hash>" */

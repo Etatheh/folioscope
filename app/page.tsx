@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import Navbar from "@/components/Navbar";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { PLANS } from "@/lib/plans";
 
 export const metadata = {
@@ -9,29 +10,29 @@ export const metadata = {
     "Live US market data with technical indicators, backtesting and an AI market analyst. A-shares and Japan/Korea included for global context.",
 };
 
-const features = [
+const features: { icon: IconName; title: string; desc: string }[] = [
   {
-    icon: "🇺🇸",
+    icon: "us",
     title: "US markets, front and center",
     desc: "Real-time US indices and stocks — Dow, Nasdaq, S&P 500 and Nasdaq 100 — with daily candlesticks and technical indicators.",
   },
   {
-    icon: "📊",
+    icon: "indicators",
     title: "Indicators & valuations",
     desc: "MA / RSI / MACD, 52-week ranges and PE/PB percentiles. Every detail page speaks both English and Chinese.",
   },
   {
-    icon: "🧪",
+    icon: "backtest",
     title: "Backtest simulator",
     desc: "Pick stocks, set weights and backtest against real historical daily data — benchmarked against the S&P 500.",
   },
   {
-    icon: "🤖",
+    icon: "ai",
     title: "AI market assistant",
     desc: "Ask about quotes, indicators and valuations. Connect an LLM key for free-form conversations.",
   },
   {
-    icon: "🌏",
+    icon: "globe",
     title: "Global context, kept quiet",
     desc: "A-shares and Japan/Korea panels sit below the fold — Chinese names stay Chinese, everything else stays English.",
   },
@@ -83,7 +84,9 @@ export default function Home() {
                 key={f.title}
                 className="glass rounded-2xl p-6 transition hover:-translate-y-1 hover:border-purple-400/30"
               >
-                <p className="text-2xl">{f.icon}</p>
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-500/15 to-purple-500/15 text-purple-300 ring-1 ring-purple-400/20">
+                  <Icon name={f.icon} className="h-5 w-5" />
+                </span>
                 <h3 className="mt-3 font-semibold text-white">{f.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-400">{f.desc}</p>
               </article>

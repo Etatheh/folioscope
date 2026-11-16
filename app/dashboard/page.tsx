@@ -11,45 +11,26 @@ import PortfolioSimulator from "@/components/PortfolioSimulator";
 import UsStockPanel from "@/components/UsStockPanel";
 import UserMenu from "@/components/UserMenu";
 import ProUpgradeButton from "@/components/ui/ProUpgradeButton";
-import { FREE_STOCK_SYMBOLS, type ViewerPlan } from "@/lib/access";
-import { getDcaSeries } from "@/lib/dca";
+import {
+  FREE_STOCK_SYMBOLS,
+  getViewerPlan,
+  hasFullDashboardAccess,
+} from "@/lib/access";
+import { getDcaDataset } from "@/lib/dca";
 import { getCnMarketSnapshot } from "@/lib/cn-markets";
 import { getAsiaMarketSnapshot, ASIA_CURRENCY } from "@/lib/asia-markets";
 import { getSimulationData } from "@/lib/us-stocks";
 import { getSessionUser } from "@/lib/server/auth-service";
 import { COOKIE_NAME } from "@/lib/server/auth";
 import { dict, parseLang } from "@/lib/i18n";
-
-const projects = [
-  {
-    name: "Market Signal AI",
-    typeEn: "Machine Learning",
-    typeZh: "机器学习",
-    progress: 82,
-    status: "planning" as const,
-  },
-  {
-    name: "Research Copilot",
-    typeEn: "Generative AI",
-    typeZh: "生成式 AI",
-    progress: 64,
-    status: "building" as const,
-  },
-  {
-    name: "Personal Website",
-    typeEn: "Web Development",
-    typeZh: "Web 开发",
-    progress: 100,
-    status: "live" as const,
-  },
-];
+import { LANG_COOKIE } from "@/lib/lang-pref";
 
 const activityColors = ["bg-blue-400", "bg-purple-400", "bg-emerald-400"];
 
 function Icon({
   name,
 }: {
-  name: "grid" | "trend" | "globe" | "chart" | "folder" | "book" | "settings";
+  name: "grid" | "trend" | "globe" | "chart" | "book" | "settings";
 }) {
   const paths = {
     grid: "M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z",
@@ -57,7 +38,6 @@ function Icon({
     globe:
       "M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18Zm0 0c2.5 2.2 4 5.4 4 9 0 3.6-1.5 6.8-4 9m0-18c-2.5 2.2-4 5.4-4 9 0 3.6 1.5 6.8 4 9M3 12h18",
     chart: "M4 19V9m6 10V5m6 14v-7m4 7H2",
-    folder: "M3 6h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z",
     book: "M4 5a3 3 0 0 1 3-3h5v18H7a3 3 0 0 0-3 3V5Zm8-3h5a3 3 0 0 1 3 3v18a3 3 0 0 0-3-3h-5",
     settings:
       "M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.5v-.1A1.7 1.7 0 0 0 8.4 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 4 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H2V9.5h.3A1.7 1.7 0 0 0 4 8.4a1.7 1.7 0 0 0-.34-1.88l-.06-.06L6.46 3.6l.06.06A1.7 1.7 0 0 0 8.4 4a1.7 1.7 0 0 0 1-.6A1.7 1.7 0 0 0 9.8 2H14a1.7 1.7 0 0 0 1.6 2 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 20 8.4a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.3V14h-.3a1.7 1.7 0 0 0-2.3 1Z",
@@ -105,10 +85,11 @@ export default async function DashboardPage({
   searchParams: Promise<{ lang?: string | string[] }>;
 }) {
   const { lang: rawLang } = await searchParams;
-  const lang = parseLang(rawLang);
+  const store = await cookies();
+  // Honour an explicit ?lang= first, then a remembered cookie choice, else English.
+  const lang = parseLang(rawLang ?? store.get(LANG_COOKIE)?.value);
   const t = dict[lang];
 
-  const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
   let viewer = null;
   try {
@@ -116,19 +97,20 @@ export default async function DashboardPage({
   } catch {
     viewer = null;
   }
-  const plan: ViewerPlan = viewer?.plan === "pro" ? "pro" : viewer ? "free" : "anon";
+  const plan = getViewerPlan(viewer);
+  const fullAccess = hasFullDashboardAccess(plan);
 
   const showCn = lang === "zh";
-  const [simData, asiaData, dcaSeries, cnData] = await Promise.all([
+  const [simData, asiaData, dcaData, cnData] = await Promise.all([
     getSimulationData(),
     getAsiaMarketSnapshot(),
-    getDcaSeries(),
+    getDcaDataset(),
     showCn ? getCnMarketSnapshot() : Promise.resolve(null),
   ]);
 
   // Free / anonymous viewers only get the free stock slice in the simulator too.
   const allowedSymbols = new Set<string>(
-    plan === "pro" ? Object.keys(simData.series) : FREE_STOCK_SYMBOLS.us
+    fullAccess ? Object.keys(simData.series) : FREE_STOCK_SYMBOLS.us
   );
   const sim = {
     ...simData,
@@ -136,10 +118,9 @@ export default async function DashboardPage({
       Object.entries(simData.series).filter(([symbol]) => allowedSymbols.has(symbol))
     ),
   };
-  const simDefaults =
-    plan === "pro"
-      ? ["AAPL", "MSFT", "NVDA", "AMZN", "JPM"]
-      : ["AAPL", "MSFT", "NVDA", "GOOGL"];
+  const simDefaults = fullAccess
+    ? ["AAPL", "MSFT", "NVDA", "AMZN", "JPM"]
+    : ["AAPL", "MSFT", "NVDA", "GOOGL"];
 
   const navItems = (
     [
@@ -147,7 +128,6 @@ export default async function DashboardPage({
       { id: "investments", icon: "chart" },
       { id: "cn", icon: "globe" },
       { id: "asia", icon: "globe" },
-      { id: "projects", icon: "folder" },
       { id: "learning", icon: "book" },
     ] as const
   ).filter((item) => showCn || item.id !== "cn");
@@ -201,7 +181,7 @@ export default async function DashboardPage({
           </div>
           <div className="flex items-center gap-3">
             <LangToggle lang={lang} path="/dashboard" />
-            {plan !== "pro" && (
+            {!fullAccess && (
               <ProUpgradeButton
                 lang={lang}
                 variant="secondary"
@@ -228,11 +208,11 @@ export default async function DashboardPage({
 
         <section id="insights" className="mt-5 grid gap-5 xl:grid-cols-2">
           <AiSummaryCard lang={lang} plan={plan} />
-          <DcaBacktestCard lang={lang} plan={plan} series={dcaSeries} />
+          <DcaBacktestCard lang={lang} plan={plan} dataset={dcaData} />
         </section>
 
         <section id="investments" className="mt-5 grid gap-5 xl:grid-cols-[1.65fr_1fr]">
-          <PortfolioSimulator lang={lang} data={sim} defaults={simDefaults} />
+          <PortfolioSimulator lang={lang} plan={plan} data={sim} defaults={simDefaults} />
 
           <article className="data-card rounded-2xl p-5 sm:p-6">
             <div className="flex items-center justify-between">
@@ -271,6 +251,7 @@ export default async function DashboardPage({
               <MarketBoard
                 lang={lang}
                 plan={plan}
+                market="cn"
                 title={t.boards.cn.title}
                 titleEn={t.boards.cn.titleEn}
                 snapshot={cnData}
@@ -285,6 +266,7 @@ export default async function DashboardPage({
             <MarketBoard
               lang={lang}
               plan={plan}
+              market="asia"
               title={t.boards.asia.title}
               titleEn={t.boards.asia.titleEn}
               snapshot={asiaData}
@@ -292,56 +274,6 @@ export default async function DashboardPage({
               stockDetail={false}
             />
           </Suspense>
-        </section>
-
-        <section id="projects" className="data-card mt-5 rounded-2xl p-5 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold text-white">{t.projects.title}</h2>
-              <p className="mt-1 text-xs text-slate-500">{t.projects.subtitle}</p>
-            </div>
-            <button className="btn-primary rounded-lg px-4 py-2 text-xs font-medium">
-              {t.projects.newProject}
-            </button>
-          </div>
-          <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            {projects.map((project) => (
-              <article
-                key={project.name}
-                className="rounded-xl border border-white/5 bg-white/[0.025] p-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-200">{project.name}</h3>
-                    <p className="mt-1 text-xs text-slate-600">
-                      {lang === "zh" ? project.typeZh : project.typeEn}
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded-full px-2 py-1 text-[10px] ${
-                      project.progress === 100
-                        ? "bg-emerald-400/10 text-emerald-400"
-                        : "bg-purple-400/10 text-purple-400"
-                    }`}
-                  >
-                    {t.projects.statuses[project.status]}
-                  </span>
-                </div>
-                <div className="mt-5">
-                  <div className="mb-2 flex justify-between text-[11px] text-slate-600">
-                    <span>{lang === "zh" ? "进度" : "Progress"}</span>
-                    <span>{project.progress}%</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500"
-                      style={{ width: `${project.progress}%` }}
-                    />
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
         </section>
       </main>
       <AgentChat lang={lang} />

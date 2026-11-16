@@ -10,6 +10,7 @@ type ServerUser = {
   nickname: string;
   plan: "free" | "pro";
   createdAt?: string;
+  isAdmin?: boolean;
 };
 
 function adapt(user: ServerUser): SessionUser {
@@ -18,6 +19,7 @@ function adapt(user: ServerUser): SessionUser {
     name: user.nickname,
     plan: user.plan,
     createdAt: user.createdAt ? new Date(user.createdAt).getTime() : Date.now(),
+    isAdmin: user.isAdmin,
   };
 }
 

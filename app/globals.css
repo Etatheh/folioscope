@@ -333,6 +333,41 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
+/* DCA chart: endpoint pulse + flowing highlight                       */
+/* ------------------------------------------------------------------ */
+
+@keyframes dca-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.6;
+  }
+  70% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.dca-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dca-pulse 2s ease-out infinite;
+}
+
+@keyframes dca-flow {
+  to {
+    stroke-dashoffset: -720;
+  }
+}
+
+.dca-flow {
+  animation: dca-flow 3.6s linear infinite;
+}
+
+/* ------------------------------------------------------------------ */
 /* Reduced motion                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -343,6 +378,8 @@ body {
   }
 
   .pro-badge,
+  .dca-pulse,
+  .dca-flow,
   .animate-fade-in-up,
   .animate-fade-in,
   .animate-float,

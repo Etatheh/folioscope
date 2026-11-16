@@ -9,6 +9,7 @@ export type SessionUser = {
   name: string;
   plan: PlanId;
   createdAt: number;
+  isAdmin?: boolean;
 };
 
 const SESSION_KEY = "gui.session";

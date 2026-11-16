@@ -34,7 +34,7 @@ export async function POST() {
   if (!user) {
     return Response.json({ ok: false, error: "请先登录" }, { status: 401 });
   }
-  if (user.plan === "pro") {
+  if (user.plan === "pro" || user.isAdmin) {
     return Response.json({ ok: true, alreadyPro: true });
   }
   if (!isBillingConfigured()) {

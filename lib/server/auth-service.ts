@@ -24,6 +24,8 @@ export type AuthUser = {
   nickname: string;
   plan: "free" | "pro";
   createdAt: string;
+  /** true when the email is listed in ADMIN_EMAILS — full dashboard access */
+  isAdmin?: boolean;
 };
 
 export type AuthSuccess = { ok: true; user: AuthUser; token: string };
@@ -35,6 +37,40 @@ function msg(lang: Lang, zh: string, en: string): string {
   return lang === "zh" ? zh : en;
 }
 
+// ---------------------------------------------------------------------------
+// Admin (developer) superuser via ADMIN_EMAILS env var
+// ---------------------------------------------------------------------------
+
+/**
+ * Reads the comma-separated ADMIN_EMAILS env var.
+ * Any account whose email matches gets plan="pro" + isAdmin=true,
+ * unlocking the entire dashboard without payment.
+ *
+ * Example:  ADMIN_EMAILS=dev@example.com,owner@example.com
+ */
+function getAdminEmails(): Set<string> {
+  const raw = process.env.ADMIN_EMAILS?.trim();
+  if (!raw) return new Set();
+  return new Set(
+    raw
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+function isAdminEmail(email: string): boolean {
+  return getAdminEmails().has(email.toLowerCase());
+}
+
+/** Apply admin override: force plan="pro" and flag isAdmin. */
+function applyAdmin(user: AuthUser): AuthUser {
+  if (isAdminEmail(user.email)) {
+    return { ...user, plan: "pro", isAdmin: true };
+  }
+  return user;
+}
+
 type UserRow = {
   id: string;
   email: string;
@@ -44,13 +80,13 @@ type UserRow = {
 };
 
 function userFromRow(row: UserRow): AuthUser {
-  return {
+  return applyAdmin({
     id: row.id,
     email: row.email,
     nickname: row.nickname,
     plan: row.plan === "pro" ? "pro" : "free",
     createdAt: row.created_at,
-  };
+  });
 }
 
 function isMissingTable(error: unknown): boolean {
@@ -233,7 +269,7 @@ function localRegister(
   );
   return {
     ok: true,
-    user: { id, email, nickname, plan: "free", createdAt: now },
+    user: applyAdmin({ id, email, nickname, plan: "free", createdAt: now }),
     token,
   };
 }

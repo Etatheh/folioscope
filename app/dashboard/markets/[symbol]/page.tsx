@@ -19,7 +19,7 @@ import {
 } from "@/components/market-ui";
 import { buildChartSeries } from "@/lib/us-stocks";
 import { getInstrumentDetail } from "@/lib/instruments";
-import { isSymbolUnlocked, type ViewerPlan } from "@/lib/access";
+import { getViewerPlan, isSymbolUnlocked } from "@/lib/access";
 import { getSessionUser } from "@/lib/server/auth-service";
 import { COOKIE_NAME } from "@/lib/server/auth";
 import { dict, parseLang } from "@/lib/i18n";
@@ -63,7 +63,7 @@ export default async function MarketDetailPage({
   } catch {
     viewer = null;
   }
-  const plan: ViewerPlan = viewer?.plan === "pro" ? "pro" : viewer ? "free" : "anon";
+  const plan = getViewerPlan(viewer);
 
   const detail = await getInstrumentDetail(symbol.toUpperCase());
   if (!detail) notFound();
@@ -197,10 +197,12 @@ export default async function MarketDetailPage({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-white">
-                {quote.name}
-                <span className="ml-2 text-base font-normal text-slate-500">
-                  {quote.nameEn}
-                </span>
+                {lang === "zh" ? quote.name : quote.nameEn || quote.name}
+                {lang === "zh" && (
+                  <span className="ml-2 text-base font-normal text-slate-500">
+                    {quote.nameEn}
+                  </span>
+                )}
               </h1>
               <p className="mt-1 text-xs text-slate-600">
                 {quote.symbol} · {quote.code}

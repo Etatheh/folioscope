@@ -5,7 +5,7 @@ import { getCnMarketSnapshot, CN_KLINE_SECID } from "./cn-markets";
 import { getAsiaMarketSnapshot, ASIA_KLINE_SECID, ASIA_CURRENCY } from "./asia-markets";
 import {
   getUsMarketSnapshot,
-  US_KLINE_SECID,
+  fetchUsKlines,
   type Candle,
   type UsQuote,
 } from "./us-stocks";
@@ -47,15 +47,16 @@ export async function getInstrumentDetail(symbol: string): Promise<InstrumentDet
 
   if (!quote) return null;
 
-  const secid =
-    US_KLINE_SECID[symbol] ?? CN_KLINE_SECID[symbol] ?? ASIA_KLINE_SECID[symbol];
   let bars: Candle[] = [];
-  if (secid) {
-    try {
-      bars = await fetchKlinesSecid(symbol, secid);
-    } catch {
-      // leave empty; the chart area shows an empty state
+  try {
+    if (market === "us") {
+      bars = await fetchUsKlines(symbol);
+    } else {
+      const secid = CN_KLINE_SECID[symbol] ?? ASIA_KLINE_SECID[symbol];
+      if (secid) bars = await fetchKlinesSecid(symbol, secid);
     }
+  } catch {
+    // leave empty; the chart area shows an empty state
   }
 
   const currency =

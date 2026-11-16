@@ -1,6 +1,10 @@
 import { getUsMarketSnapshot } from "@/lib/us-stocks";
 import { dict, type Lang } from "@/lib/i18n";
-import { FREE_STOCK_COUNT, type ViewerPlan } from "@/lib/access";
+import {
+  hasFullDashboardAccess,
+  isSymbolUnlocked,
+  type ViewerPlan,
+} from "@/lib/access";
 import { IndexCard, StockCard, UnlockCta } from "./market-cards";
 import StaggerGrid from "./ui/StaggerGrid";
 
@@ -26,7 +30,9 @@ export default async function UsStockPanel({
   const snapshot = await getUsMarketSnapshot();
   const { indices, stocks, demo, fetchedAt } = snapshot;
   const hrefFor = (symbol: string) => `/dashboard/markets/${symbol}?lang=${lang}`;
-  const visibleStocks = plan === "pro" ? stocks : stocks.slice(0, FREE_STOCK_COUNT);
+  const visibleStocks = hasFullDashboardAccess(plan)
+    ? stocks
+    : stocks.filter((stock) => isSymbolUnlocked("us", stock.symbol, plan));
   const lockedCount = stocks.length - visibleStocks.length;
 
   return (

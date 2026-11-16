@@ -12,7 +12,6 @@ const zh = {
     cn: "A股行情",
     asia: "日韩股市",
     investments: "投资模拟",
-    projects: "项目",
     learning: "学习",
   },
   boards: {
@@ -37,16 +36,6 @@ const zh = {
     ],
     weeklyFocus: "每周重点",
     weeklyFocusText: "发布 Research Copilot 的第一个可用版本。",
-  },
-  projects: {
-    title: "进行中的项目",
-    subtitle: "你正在构建的项目一览",
-    newProject: "+ 新建项目",
-    statuses: {
-      live: "已上线",
-      building: "开发中",
-      planning: "进行中",
-    },
   },
   markets: {
     title: "美股行情",
@@ -208,13 +197,18 @@ const zh = {
       "请用不超过 120 字的中文总结当前美股主要指数的涨跌、领涨与领跌板块，不要给投资建议。",
   },
   dca: {
-    title: "5 年定投回测",
-    subtitle: "标普 500 · 每月定投，长期复利测算",
+    title: "定投回测",
+    subtitle: "标普 500 · 每月定投 · 长期复利测算",
     monthly: "每月定投",
     invested: "累计投入",
     finalValue: "期末市值",
     totalReturn: "总收益",
     xirr: "资金加权年化（XIRR）",
+    xirrNote: "（不足1年年化参考）",
+    periods: { m6: "6个月", y1: "1年", y3: "3年", y5: "5年", y10: "10年" },
+    tip: { month: "月份", invested: "累计本金", value: "当期市值", profit: "复利净赚", benchmark: "标普500 一次性" },
+    legend: { dca: "定投市值", principal: "累计本金", benchmark: "标普500 一次性" },
+    target: "定投标的",
     months: "个月",
     asOf: "截至",
     stale: "缓存数据",
@@ -228,7 +222,7 @@ const zh = {
 };
 
 type Dict = {
-  nav: Record<"overview" | "markets" | "cn" | "asia" | "investments" | "projects" | "learning", string>;
+  nav: Record<"overview" | "markets" | "cn" | "asia" | "investments" | "learning", string>;
   boards: {
     cn: { title: string; titleEn: string };
     asia: { title: string; titleEn: string };
@@ -244,12 +238,6 @@ type Dict = {
     items: { title: string; time: string }[];
     weeklyFocus: string;
     weeklyFocusText: string;
-  };
-  projects: {
-    title: string;
-    subtitle: string;
-    newProject: string;
-    statuses: Record<"live" | "building" | "planning", string>;
   };
   markets: {
     title: string;
@@ -410,6 +398,11 @@ type Dict = {
     finalValue: string;
     totalReturn: string;
     xirr: string;
+    xirrNote: string;
+    periods: { m6: string; y1: string; y3: string; y5: string; y10: string };
+    tip: { month: string; invested: string; value: string; profit: string; benchmark: string };
+    legend: { dca: string; principal: string; benchmark: string };
+    target: string;
     months: string;
     asOf: string;
     stale: string;
@@ -429,7 +422,6 @@ const en: Dict = {
     cn: "A-Shares",
     asia: "Japan & Korea",
     investments: "Simulator",
-    projects: "Projects",
     learning: "Learning",
   },
   boards: {
@@ -455,16 +447,6 @@ const en: Dict = {
     ],
     weeklyFocus: "Weekly focus",
     weeklyFocusText: "Ship the first working version of Research Copilot.",
-  },
-  projects: {
-    title: "Active projects",
-    subtitle: "A quick look at what you are building",
-    newProject: "+ New project",
-    statuses: {
-      live: "Live",
-      building: "Building",
-      planning: "In progress",
-    },
   },
   markets: {
     title: "U.S. Markets",
@@ -627,13 +609,18 @@ const en: Dict = {
       "Summarize today's U.S. index moves and the leading/lagging sectors in under 100 words. No investment advice.",
   },
   dca: {
-    title: "5-Year DCA Backtest",
-    subtitle: "S&P 500 · monthly contributions, long-horizon compounding",
+    title: "DCA Backtest",
+    subtitle: "S&P 500 · monthly contributions · long-horizon compounding",
     monthly: "Monthly contribution",
     invested: "Total invested",
     finalValue: "Final value",
     totalReturn: "Total return",
     xirr: "Money-weighted annual return (XIRR)",
+    xirrNote: "(<1y annualized reference)",
+    periods: { m6: "6M", y1: "1Y", y3: "3Y", y5: "5Y", y10: "10Y" },
+    tip: { month: "Month", invested: "Invested", value: "Value", profit: "Compound gain", benchmark: "Lump-sum S&P 500" },
+    legend: { dca: "DCA value", principal: "Invested", benchmark: "Lump-sum S&P 500" },
+    target: "DCA into",
     months: "months",
     asOf: "As of",
     stale: "Cached data",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { dict, type Lang } from "@/lib/i18n";
-import type { ViewerPlan } from "@/lib/access";
+import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
 import ProBadge from "./ui/ProBadge";
 import ProUpgradeButton from "./ui/ProUpgradeButton";
 
@@ -30,7 +30,7 @@ export default function AiSummaryCard({
   plan: ViewerPlan;
 }) {
   const t = dict[lang].aiSummary;
-  const isPro = plan === "pro";
+  const hasFullAccess = hasFullDashboardAccess(plan);
   const [summary, setSummary] = useState<string | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [busy, setBusy] = useState(false);
@@ -84,7 +84,7 @@ export default function AiSummaryCard({
         <ProBadge title={dict[lang].pro.badgeTip} />
       </header>
 
-      {!isPro && (
+      {!hasFullAccess && (
         <div className="relative mt-4 flex-1 overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
           <p
             aria-hidden
@@ -108,7 +108,7 @@ export default function AiSummaryCard({
         </div>
       )}
 
-      {isPro && (
+      {hasFullAccess && (
         <div className="mt-4 flex flex-1 flex-col">
           {busy && (
             <div className="space-y-2.5" aria-live="polite" aria-busy="true">

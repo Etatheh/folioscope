@@ -18,7 +18,32 @@ export default function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 animate-fade-in opacity-0-start">
       <nav className="glass mx-4 mt-4 rounded-2xl px-6 py-4 md:mx-auto md:max-w-5xl">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
+
+          <Link
+            href="/"
+            aria-label="InDepth home"
+            className="flex shrink-0 items-center gap-2.5"
+          >
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-500/25">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path d="M3 17l5-5 4 4 8-8" />
+                <path d="M14 8h6v6" />
+              </svg>
+            </span>
+            <span className="text-sm font-semibold tracking-tight text-white">
+              InDepth
+            </span>
+          </Link>
 
           <ul className="hidden items-center gap-8 md:flex">
             {navLinks.map((link) => (

@@ -1,7 +1,24 @@
 // Viewer access control: anonymous visitors and Free users see a small slice
 // of each market; Pro unlocks everything. Indices stay visible for everyone.
 
-export type ViewerPlan = "anon" | "free" | "pro";
+export type ViewerPlan = "anon" | "free" | "pro" | "admin";
+
+export type Viewer = {
+  plan: "free" | "pro";
+  isAdmin?: boolean;
+} | null;
+
+/** Resolve the effective dashboard role. Developer access never depends on billing. */
+export function getViewerPlan(viewer: Viewer): ViewerPlan {
+  if (viewer?.isAdmin) return "admin";
+  if (viewer?.plan === "pro") return "pro";
+  return viewer ? "free" : "anon";
+}
+
+/** Developers and paid Pro users both unlock every dashboard feature. */
+export function hasFullDashboardAccess(plan: ViewerPlan): boolean {
+  return plan === "admin" || plan === "pro";
+}
 
 export const FREE_STOCK_COUNT = 4;
 
@@ -29,7 +46,7 @@ export function isSymbolUnlocked(
   symbol: string,
   plan: ViewerPlan
 ): boolean {
-  if (plan === "pro") return true;
+  if (hasFullDashboardAccess(plan)) return true;
   if (INDEX_SYMBOLS.has(symbol)) return true;
   return (FREE_STOCK_SYMBOLS[market] ?? []).includes(symbol);
 }

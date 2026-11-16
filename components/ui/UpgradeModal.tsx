@@ -122,7 +122,7 @@ export default function UpgradeModal({
       if (response.status === 401) {
         setStatus("idle");
         const next = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = `/login?next=${next}`;
+        window.location.href = `/login?redirect=${next}`;
         return;
       }
 
@@ -136,7 +136,13 @@ export default function UpgradeModal({
         return;
       }
 
-      // Billing is not connected yet: keep the flow usable in demo mode.
+      // Only the explicit "billing unavailable" response may enter demo mode.
+      // Payment/server failures must never silently grant a paid plan.
+      if (response.status !== 503 || data.demo !== true) {
+        setStatus("error");
+        return;
+      }
+
       const demo = await fetch("/api/auth/upgrade", { method: "POST" });
       if (demo.ok) {
         setUsedDemo(true);
@@ -215,9 +221,9 @@ export default function UpgradeModal({
       <div className="relative mt-5 flex items-end gap-2 border-y border-white/10 py-4">
         <span className="text-3xl font-semibold tracking-tight text-white">{t.price}</span>
         <span className="pb-1 text-xs text-slate-500">{t.period}</span>
-        {user?.plan === "pro" && (
+        {(user?.isAdmin || user?.plan === "pro") && (
           <span className="ml-auto rounded-full bg-emerald-400/10 px-2.5 py-1 text-[10px] text-emerald-300">
-            {dict[lang].pro.active}
+            {user.isAdmin ? (lang === "zh" ? "开发者权限" : "Developer access") : dict[lang].pro.active}
           </span>
         )}
       </div>

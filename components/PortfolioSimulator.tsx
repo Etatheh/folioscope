@@ -3,7 +3,7 @@
 import { useMemo, useState, type MouseEvent } from "react";
 import { dict, type Lang } from "@/lib/i18n";
 import type { SimulationData } from "@/lib/us-stocks";
-import { useSession } from "@/lib/use-session";
+import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
 import { fmtSigned } from "./market-ui";
 import AnimatedNumber from "./ui/AnimatedNumber";
 import ProUpgradeButton from "./ui/ProUpgradeButton";
@@ -13,16 +13,17 @@ const FREE_RANGE_MAX = 1;
 
 export default function PortfolioSimulator({
   lang,
+  plan,
   data,
   defaults,
 }: {
   lang: Lang;
+  plan: ViewerPlan;
   data: SimulationData;
   defaults: string[];
 }) {
   const t = dict[lang].simulator;
-  const { user } = useSession();
-  const isPro = user?.plan === "pro";
+  const hasFullAccess = hasFullDashboardAccess(plan);
   const [limitHit, setLimitHit] = useState(false);
   const stocks = useMemo(
     () =>
@@ -41,7 +42,7 @@ export default function PortfolioSimulator({
   const [hover, setHover] = useState<number | null>(null);
 
   // Free plan is clamped to short ranges; Pro unlocks the rest.
-  const activeRange = isPro ? rangeIdx : Math.min(rangeIdx, FREE_RANGE_MAX);
+  const activeRange = hasFullAccess ? rangeIdx : Math.min(rangeIdx, FREE_RANGE_MAX);
   const count = RANGES[activeRange];
 
   const win = useMemo(() => {
@@ -207,7 +208,7 @@ export default function PortfolioSimulator({
                 key={label}
                 type="button"
                 onClick={() => {
-                  if (i > FREE_RANGE_MAX && !isPro) {
+                  if (i > FREE_RANGE_MAX && !hasFullAccess) {
                     setLimitHit(true);
                     return;
                   }
@@ -221,7 +222,7 @@ export default function PortfolioSimulator({
                 }`}
               >
                 {label}
-                {i > FREE_RANGE_MAX && !isPro ? " 🔒" : ""}
+                {i > FREE_RANGE_MAX && !hasFullAccess ? " 🔒" : ""}
               </button>
             ))}
           </div>

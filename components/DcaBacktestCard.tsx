@@ -1,140 +1,126 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { dict, type Lang } from "@/lib/i18n";
-import type { ViewerPlan } from "@/lib/access";
-import type { DcaSeries } from "@/lib/dca";
+import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
+import type { DcaDataset, DcaTarget } from "@/lib/dca";
 import ProBadge from "./ui/ProBadge";
 import ProUpgradeButton from "./ui/ProUpgradeButton";
+import DcaChart from "./dca/DcaChart";
+import MonthlyControl from "./dca/MonthlyControl";
+import PeriodTabs from "./dca/PeriodTabs";
+import {
+  DEFAULT_PERIOD,
+  buildSamples,
+  computeDca,
+  fmtMoney,
+  fmtPct,
+  periodMonths,
+  type PeriodKey,
+} from "./dca/engine";
+import { useAnimatedNumber, useMorphSeries } from "./dca/hooks";
 
 const MIN_MONTHLY = 100;
 const MAX_MONTHLY = 2000;
 const STEP = 50;
 
-const fmtMoney = (value: number) =>
-  value.toLocaleString("en-US", { maximumFractionDigits: 0 });
-
-const fmtPct = (value: number) =>
-  `${value >= 0 ? "+" : "-"}${Math.abs(value * 100).toFixed(1)}%`;
-
 /**
- * Money-weighted annual return for equally spaced monthly contributions.
- * Contributions happen at each month-end close; the final portfolio value is
- * valued at the last contribution date. This is the monthly equivalent of XIRR.
- */
-function computeXirr(points: DcaSeries["points"], monthly: number, finalValue: number) {
-  if (points.length < 2 || monthly <= 0 || finalValue <= 0) return null;
-
-  const years = (index: number) => index / 12;
-  const npv = (rate: number) => {
-    const base = 1 + rate;
-    let value = 0;
-    for (let index = 0; index < points.length; index += 1) {
-      value -= monthly / Math.pow(base, years(index));
-    }
-    return value + finalValue / Math.pow(base, years(points.length - 1));
-  };
-
-  let low = -0.9999;
-  let high = 1;
-  const lowValue = npv(low);
-  let highValue = npv(high);
-  while (highValue > 0 && high < 10_000) {
-    high *= 2;
-    highValue = npv(high);
-  }
-  if (!Number.isFinite(lowValue) || !Number.isFinite(highValue) || lowValue <= 0 || highValue >= 0) {
-    return null;
-  }
-
-  for (let iteration = 0; iteration < 80; iteration += 1) {
-    const mid = (low + high) / 2;
-    if (npv(mid) > 0) low = mid;
-    else high = mid;
-  }
-  return (low + high) / 2;
-}
-
-function computeDca(points: DcaSeries["points"], monthly: number) {
-  let units = 0;
-  let invested = 0;
-  const curve = points.map((point) => {
-    units += monthly / point.close;
-    invested += monthly;
-    return { month: point.month, value: units * point.close, invested };
-  });
-
-  const finalValue = curve.at(-1)?.value ?? 0;
-  const totalReturn = invested > 0 ? finalValue / invested - 1 : 0;
-  const xirr = computeXirr(points, monthly, finalValue);
-
-  return { curve, invested, finalValue, totalReturn, xirr, months: points.length };
-}
-
-/**
- * Pro-gated 5-year monthly DCA backtest on the S&P 500.
- * Free and anonymous visitors get the same card with a blurred curve and the
- * upgrade dialog one click away.
+ * Multi-period dollar-cost-averaging backtest with a target switch
+ * (S&P 500 vs Nasdaq 100) and the other index drawn as a live comparison.
+ *
+ * The server supplies up to 120 month-end closes per index; the client slices
+ * any period (6M–10Y), recomputes both compound trajectories and morphs the SVG
+ * curve with a liquid ease-out. Free / anonymous visitors get the same card
+ * with a blurred readout and the upgrade dialog one click away.
  */
 export default function DcaBacktestCard({
   lang,
   plan,
-  series,
+  dataset,
 }: {
   lang: Lang;
   plan: ViewerPlan;
-  series: DcaSeries;
+  dataset: DcaDataset;
 }) {
   const t = dict[lang].dca;
-  const isPro = plan === "pro";
+  const hasFullAccess = hasFullDashboardAccess(plan);
+  const [period, setPeriod] = useState<PeriodKey>(DEFAULT_PERIOD);
   const [monthly, setMonthly] = useState(500);
-  const gradientId = useId();
-  const hasData = series.dataState !== "unavailable" && series.points.length > 0;
+  const [target, setTarget] = useState<DcaTarget>(
+    dataset.sp500.points.length > 0 ? "sp500" : "nasdaq",
+  );
 
-  const stats = useMemo(() => computeDca(series.points, monthly), [series.points, monthly]);
+  const active = dataset[target];
+  const altKey: DcaTarget = target === "sp500" ? "nasdaq" : "sp500";
+  const alt = dataset[altKey];
+  const activeName = lang === "zh" ? active.name : active.nameEn;
+  const altName = lang === "zh" ? alt.name : alt.nameEn;
 
-  const chart = useMemo(() => {
-    const width = 640;
-    const height = 210;
-    const padLeft = 4;
-    const padRight = 58;
-    const padTop = 16;
-    const padBottom = 24;
-    const plotWidth = width - padLeft - padRight;
-    const plotHeight = height - padTop - padBottom;
-    const count = stats.curve.length;
-    const max = Math.max(stats.finalValue, stats.invested, 1);
-    const min = 0;
+  const hasData = active.dataState !== "unavailable" && active.points.length > 0;
+  const altHasData = alt.points.length > 0;
+  const maxMonths = Math.min(
+    active.points.length || periodMonths(DEFAULT_PERIOD),
+    altHasData ? alt.points.length : Infinity,
+  );
+  const months = Math.min(periodMonths(period), maxMonths);
 
-    const x = (index: number) =>
-      padLeft + (index / Math.max(1, count - 1)) * plotWidth;
-    const y = (value: number) =>
-      padTop + ((max - value) / Math.max(1, max - min)) * plotHeight;
+  const stats = useMemo(
+    () => computeDca(active.points, monthly, months),
+    [active.points, monthly, months],
+  );
+  const altStats = useMemo(
+    () => computeDca(altHasData ? alt.points : active.points, monthly, months),
+    [alt.points, altHasData, active.points, monthly, months],
+  );
+  // y-domain evaluated at the slider MAX so it never tracks the current
+  // contribution; dragging the slider then visibly lifts / drops the curves.
+  const domainMax = useMemo(() => {
+    const refA = computeDca(active.points, MAX_MONTHLY, months);
+    const refB = computeDca(altHasData ? alt.points : active.points, MAX_MONTHLY, months);
+    return Math.max(refA.finalValue, refB.finalValue, refA.invested, 1);
+  }, [active.points, alt.points, altHasData, months]);
+  const samplesTarget = useMemo(
+    () => buildSamples(stats.curve, altStats.curve, domainMax),
+    [stats, altStats, domainMax],
+  );
+  const anim = useMorphSeries(samplesTarget);
 
-    const line = stats.curve
-      .map((point, index) => `${index === 0 ? "M" : "L"}${x(index).toFixed(1)} ${y(point.value).toFixed(1)}`)
-      .join(" ");
-    const area = `${line} L${x(count - 1).toFixed(1)} ${(height - padBottom).toFixed(1)} L${padLeft} ${(height - padBottom).toFixed(1)} Z`;
-    const investedLine = `M${x(0).toFixed(1)} ${y(monthly).toFixed(1)} L${x(count - 1).toFixed(1)} ${y(stats.invested).toFixed(1)}`;
+  const invested = useAnimatedNumber(stats.invested);
+  const finalValue = useAnimatedNumber(stats.finalValue);
+  const totalReturn = useAnimatedNumber(stats.totalReturn);
+  const xirr = useAnimatedNumber(stats.xirr ?? 0);
 
-    const ticks = [0, 1, 2, 3].map((step) => min + ((max - min) * step) / 3);
-    const monthLabels = [0, Math.floor((count - 1) / 2), count - 1].map((index) => ({
-      index,
-      label: stats.curve[index]?.month.slice(2).replace("-", "/") ?? "",
-    }));
-
-    return { width, height, padLeft, padRight, padTop, padBottom, plotWidth, plotHeight, count, x, y, line, area, investedLine, ticks, monthLabels };
-  }, [stats, monthly]);
+  const periodLabel = t.periods[period];
+  const subtitle = hasData
+    ? `${activeName} · ${periodLabel} · ${t.asOf} ${active.asOf ?? ""}`
+    : activeName;
 
   const statsBlocks = [
-    { label: t.invested, value: `$${fmtMoney(stats.invested)}`, tone: "text-slate-200" },
-    { label: t.finalValue, value: `$${fmtMoney(stats.finalValue)}`, tone: "text-white" },
-    { label: t.totalReturn, value: fmtPct(stats.totalReturn), tone: stats.totalReturn >= 0 ? "text-emerald-400" : "text-rose-400" },
+    { label: t.invested, value: `$${fmtMoney(invested)}`, tone: "text-slate-200" },
+    { label: t.finalValue, value: `$${fmtMoney(finalValue)}`, tone: "text-white" },
     {
-      label: t.xirr,
-      value: stats.xirr === null ? "—" : fmtPct(stats.xirr),
+      label: t.totalReturn,
+      value: fmtPct(totalReturn),
+      tone: stats.totalReturn >= 0 ? "text-emerald-400" : "text-rose-400",
+    },
+    {
+      label: months < 12 ? `${t.xirr} ${t.xirrNote}` : t.xirr,
+      value: stats.xirr === null ? "—" : fmtPct(xirr),
       tone: stats.xirr === null || stats.xirr >= 0 ? "text-emerald-400" : "text-rose-400",
+    },
+  ];
+
+  const targets: { key: DcaTarget; label: string; disabled: boolean }[] = [
+    {
+      key: "sp500",
+      label: lang === "zh" ? "标普500" : "S&P 500",
+      disabled: dataset.sp500.points.length === 0,
+    },
+    {
+      key: "nasdaq",
+      label: lang === "zh" ? "纳斯达克100" : "Nasdaq 100",
+      disabled: dataset.nasdaq.points.length === 0,
     },
   ];
 
@@ -145,23 +131,14 @@ export default function DcaBacktestCard({
           <h2 className="font-semibold text-white">
             {t.title}
             <span className="ml-2 align-middle text-xs font-normal text-slate-500">
-              {t.subtitle}
+              {subtitle}
             </span>
           </h2>
           <p className="mt-1 flex items-center gap-2 text-[11px] text-slate-600">
-            <span>
-              {series.name}
-              {hasData ? ` · ${stats.months} ${t.months}` : ""}
-              {series.asOf ? ` · ${t.asOf} ${series.asOf}` : ""}
-            </span>
-            {series.dataState === "stale" && (
+            <span>{hasData ? `${stats.months} ${t.months}` : t.unavailable}</span>
+            {active.dataState === "stale" && (
               <span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] text-amber-300">
                 {t.stale}
-              </span>
-            )}
-            {series.dataState === "unavailable" && (
-              <span className="rounded-full bg-rose-400/10 px-2 py-0.5 text-[10px] text-rose-300">
-                {t.unavailable}
               </span>
             )}
           </p>
@@ -171,129 +148,96 @@ export default function DcaBacktestCard({
 
       {hasData ? (
         <>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <label className="flex w-full max-w-xs items-center gap-3 text-[11px] text-slate-500">
-          <span className="whitespace-nowrap">{t.monthly}</span>
-          <input
-            type="range"
-            min={MIN_MONTHLY}
-            max={MAX_MONTHLY}
-            step={STEP}
-            value={monthly}
-            disabled={!isPro}
-            onChange={(event) => setMonthly(Number(event.target.value))}
-            className="h-1 flex-1 cursor-pointer accent-purple-500 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label={t.monthly}
-          />
-          <span className="w-14 shrink-0 text-right text-xs font-medium tabular-nums text-slate-200">
-            ${monthly}
-          </span>
-        </label>
-      </div>
-
-      <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {statsBlocks.map((block) => (
-          <div
-            key={block.label}
-            className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"
-          >
-            <p className="text-[11px] text-slate-600">{block.label}</p>
-            <p
-              className={`mt-1 text-base font-semibold tabular-nums ${block.tone} ${
-                isPro ? "" : "blur-[5px] select-none"
-              }`}
-              aria-hidden={!isPro}
-            >
-              {block.value}
-            </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-[11px] text-slate-600">{t.target}</span>
+            <div className="inline-flex items-center gap-0.5 rounded-full border border-white/10 bg-white/[0.03] p-0.5">
+              {targets.map((opt) => {
+                const selected = opt.key === target;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    disabled={!hasFullAccess || opt.disabled}
+                    onClick={() => setTarget(opt.key)}
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+                      selected
+                        ? "bg-gradient-to-r from-blue-500/30 to-purple-500/30 text-white ring-1 ring-purple-400/30"
+                        : "text-slate-500 hover:text-slate-200"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        ))}
-      </div>
 
-      <div className="relative mt-3 flex-1">
-        <svg
-          viewBox={`0 0 ${chart.width} ${chart.height}`}
-          className={`w-full select-none transition-opacity duration-300 ${
-            isPro ? "" : "opacity-45"
-          }`}
-          role="img"
-          aria-label={`${t.title} · ${series.name}`}
-        >
-          <defs>
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.42" />
-              <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {chart.ticks.map((tick) => (
-            <g key={tick}>
-              <line
-                x1={chart.padLeft}
-                x2={chart.width - chart.padRight}
-                y1={chart.y(tick)}
-                y2={chart.y(tick)}
-                stroke="rgba(148,163,184,0.10)"
-              />
-              <text
-                x={chart.width - chart.padRight + 6}
-                y={chart.y(tick) + 3.5}
-                fontSize="10"
-                fill="#64748b"
-              >
-                {fmtMoney(tick)}
-              </text>
-            </g>
-          ))}
-
-          <path d={chart.area} fill={`url(#${gradientId})`} />
-          <path
-            d={chart.investedLine}
-            fill="none"
-            stroke="#94a3b8"
-            strokeWidth="1.3"
-            strokeDasharray="5 4"
-            opacity="0.65"
-          />
-          <path
-            d={chart.line}
-            fill="none"
-            stroke="#a78bfa"
-            strokeWidth="2.2"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-
-          {chart.monthLabels.map((tick) => (
-            <text
-              key={tick.index}
-              x={chart.x(tick.index)}
-              y={chart.height - 6}
-              fontSize="10"
-              fill="#64748b"
-              textAnchor={tick.index === 0 ? "start" : tick.index === chart.count - 1 ? "end" : "middle"}
-            >
-              {tick.label}
-            </text>
-          ))}
-        </svg>
-
-        {!isPro && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-gradient-to-t from-[#070b13]/85 via-[#070b13]/45 to-transparent p-4 text-center">
-            <span className="text-lg" aria-hidden>
-              🔒
-            </span>
-            <p className="max-w-xs text-xs leading-relaxed text-slate-300">{t.locked}</p>
-            <ProUpgradeButton
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <PeriodTabs
               lang={lang}
-              variant="secondary"
-              label={dict[lang].pro.upgrade}
-              source="dca-backtest"
-              className="mt-1"
+              value={period}
+              onChange={setPeriod}
+              maxMonths={Number.isFinite(maxMonths) ? maxMonths : active.points.length}
+              disabled={!hasFullAccess}
+            />
+            <MonthlyControl
+              label={t.monthly}
+              value={monthly}
+              onChange={setMonthly}
+              min={MIN_MONTHLY}
+              max={MAX_MONTHLY}
+              step={STEP}
+              disabled={!hasFullAccess}
             />
           </div>
-        )}
-      </div>
+
+          <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {statsBlocks.map((block) => (
+              <div
+                key={block.label}
+                className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"
+              >
+                <p className="text-[11px] text-slate-600">{block.label}</p>
+                <p
+                  className={`mt-1 text-base font-semibold tabular-nums ${block.tone} ${
+                    hasFullAccess ? "" : "blur-[5px] select-none"
+                  }`}
+                  aria-hidden={!hasFullAccess}
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {block.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="relative mt-3 flex-1">
+            <DcaChart
+              lang={lang}
+              anim={anim}
+              curve={stats.curve}
+              altCurve={altStats.curve}
+              legendDca={activeName}
+              benchmarkLabel={altName}
+              dimmed={!hasFullAccess}
+            />
+
+            {!hasFullAccess && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-gradient-to-t from-[#070b13]/85 via-[#070b13]/45 to-transparent p-4 text-center">
+                <span className="text-lg" aria-hidden>
+                  🔒
+                </span>
+                <p className="max-w-xs text-xs leading-relaxed text-slate-300">{t.locked}</p>
+                <ProUpgradeButton
+                  lang={lang}
+                  variant="secondary"
+                  label={dict[lang].pro.upgrade}
+                  source="dca-backtest"
+                  className="mt-1"
+                />
+              </div>
+            )}
+          </div>
         </>
       ) : (
         <div className="mt-4 flex min-h-52 flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-6 text-center">

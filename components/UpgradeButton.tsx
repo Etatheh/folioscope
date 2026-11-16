@@ -23,10 +23,10 @@ export default function UpgradeButton({ planId }: { planId: "free" | "pro" }) {
     return <div className="mt-8 h-11 animate-pulse rounded-full bg-white/5" />;
   }
 
-  if (user?.plan === "pro") {
+  if (user?.isAdmin || user?.plan === "pro") {
     return (
       <span className="mt-8 block rounded-full bg-emerald-400/10 py-3 text-center text-sm text-emerald-400">
-        Pro active ✓
+        {user.isAdmin ? "Developer access · all unlocked" : "Pro active ✓"}
       </span>
     );
   }

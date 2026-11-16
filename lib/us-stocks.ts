@@ -1,5 +1,5 @@
 // Server-side data access for the U.S. stocks panel.
-// - Live quotes: Tencent's public quote endpoint (GBK-encoded plain text).
+// - Live quotes: Sina Finance (hq.sinajs.cn, GBK text, needs a finance.sina Referer).
 // - Daily history for technical indicators: Eastmoney kline endpoint (lib/klines.ts).
 // When the quote endpoint is unreachable the panel falls back to a bundled
 // demo snapshot so the UI never breaks; technicals then show as unavailable.
@@ -74,7 +74,7 @@ export type UsMarketSnapshot = {
 
 type WatchItem = {
   symbol: string;
-  /** Eastmoney secid for daily klines (Tencent has no US stock history) */
+  /** Eastmoney secid for daily klines */
   em: string;
   name: string;
   nameEn: string;
@@ -106,108 +106,121 @@ export const US_KLINE_SECID: Record<string, string> = Object.fromEntries(
   [...INDICES, ...STOCKS].map((item) => [item.symbol, item.em])
 );
 
-const QUOTE_ENDPOINT = "https://qt.gtimg.cn/q=";
+// ---------------------------------------------------------------------------
+// Sina Finance live quotes
+// ---------------------------------------------------------------------------
+
+const SINA_ENDPOINT = "https://hq.sinajs.cn/list=";
 const REQUEST_TIMEOUT_MS = 8_000;
 const QUOTE_TTL_MS = 60_000;
 
-// Bundled snapshot (2026-11-03 close) used when the live endpoint fails.
-// Field layout matches the Tencent payload so both paths share one parser.
-const DEMO_RESPONSE = [
-  'v_usDJI="200~道琼斯~.DJI~51983.98~51770.31~52008.23~522048265~0~0~51846.69~0~0~0~0~0~0~0~0~0~52169.66~0~0~0~0~0~0~0~0~0~~2026-11-02 16:50:57~213.67~0.41~52424.91~51981.66~USD~522048265~27229058962081~~~~~~0.86~~~Dow Jones~~54744.33~45057.28~0~~~~8.16~-0.72~ZS~~~0.03~1.40~-3.80~~~1.09~~~52158.13~~~~~";',
-  'v_usIXIC="200~纳斯达克~.IXIC~25164.36~25437.00~25600.17~8002403957~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~~2026-11-02 18:18:15~-272.64~-1.07~25799.46~25145.95~USD~8002403957~201375398846825~~~~~~2.57~~~Nasdaq Composite~~27722.75~20690.25~0~~~~8.27~-3.84~ZS~~~-4.79~-8.42~-5.72~~~1.14~~~25164.36~~~~~";',
-  'v_usINX="200~标普500~.INX~7541.40~7580.07~7610.83~3558585949~0~0~7505.29~0~0~0~0~0~0~0~0~0~7593.01~0~0~0~0~0~0~0~0~0~~2026-11-02 16:50:59~-38.67~-0.51~7662.23~7539.38~USD~3558585949~26836720075789~~~~~~1.62~~~S&P 500 Index~~7844.52~6316.91~0~~~~10.17~-1.76~ZS~~~-1.94~-2.99~-2.79~~~1.10~~~7541.40~~~~~";',
-  'v_usNDX="200~纳斯达克100~.NDX~28180.26~27989.82~28085.50~1304372708~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~0~~2026-11-03 17:15:59~190.44~0.68~28307.90~28085.50~USD~1304372708~36757565831025~~~~~~0.79~~~Nasdaq 100~~31361.37~22841.42~0~~~~11.61~-4.96~ZS~~~-4.44~-9.75~-4.87~~~0.84~~~28180.26~~~~~";',
-  'v_usAAPL="200~苹果~AAPL.OQ~338.32~344.63~342.67~64757691~0~0~329.00~120~0~0~0~0~0~0~0~0~329.10~80~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~-6.31~-1.83~343.80~335.82~USD~64757691~21950929283~0.44~38.80~~45.35~~2.32~49344.34036~49375.02978~Apple Inc.~8.72~351.73~242.76~40~45.92~0.31~49375.02978~24.78~-1.63~GP~148.75~36.08~-1.35~1.63~8.07~14594180000~14585108878~1.41~36.88~1.06~338.97~~~~~";',
-  'v_usMSFT="200~微软~MSFT.OQ~507.12~521.91~524.02~34743321~0~0~508.15~240~0~0~0~0~0~0~0~0~508.88~80~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~-14.79~-2.83~529.63~504.96~USD~34743321~17947737859~0.47~26.48~~28.25~~4.73~37648.15740~37659.71781~Microsoft Corporation~19.15~551.15~348.54~160~8.00~0.73~37659.71781~5.53~-4.78~GP~34.22~20.15~-4.95~-3.44~1.62~7426194552~7423914932~1.22~25.77~3.71~516.58~~~~~";',
-  'v_usNVDA="200~英伟达~NVDA.OQ~202.06~204.64~207.53~119272174~0~0~203.79~3200~0~0~0~0~0~0~0~0~203.80~3700~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~-2.58~-1.26~209.98~201.66~USD~119272174~24456602984~0.49~25.54~~41.24~~4.06~46857.09324~48791.42820~Nvidia Corporation~7.91~243.37~163.89~-500~21.31~0.26~48791.42820~8.60~-6.45~GP~117.21~83.68~-6.92~-15.42~-9.68~24147000000~23189692783~1.16~20.83~0.52~205.05~~~~~";',
-  'v_usGOOGL="200~谷歌-A~GOOGL.OQ~278.99~279.84~282.46~48512348~0~0~280.40~80~0~0~0~0~0~0~0~0~280.50~80~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~-0.85~-0.30~287.00~278.80~USD~48512348~13707308329~0.39~14.57~~25.81~~2.93~16419.68587~34299.03060~Alphabet Inc.~19.15~408.12~270.00~0~5.20~0.31~34299.03060~-10.70~-11.93~GP~44.29~30.61~-18.94~-19.48~-21.21~12294000000~5885403014~0.76~12.81~0.87~282.55~~~~~";',
-  'v_usAMZN="200~亚马逊~AMZN.OQ~245.63~240.35~243.01~58347979~0~0~246.15~40~0~0~0~0~0~0~0~0~246.55~40~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~5.28~2.20~253.81~242.28~USD~58347979~14530847488~0.54~19.86~~34.26~~4.80~24217.33712~26560.31162~Amazon.Com, Inc.~12.37~287.20~196.00~0~4.33~~26560.31162~6.42~-1.39~GP~27.42~13.67~-6.41~-2.30~-10.51~10813138306~9859274976~1.00~17.68~~249.04~~~~~";',
-  'v_usMETA="200~Meta Platforms~META.OQ~606.73~614.99~614.44~19496498~0~0~608.80~40~0~0~0~0~0~0~0~0~609.20~40~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~-8.26~-1.34~621.69~606.41~USD~19496498~11925087046~0.75~20.70~~25.83~~2.48~13705.98435~15792.16887~Meta Platforms, Inc.~29.31~779.82~519.38~0~5.70~0.35~15792.16887~-7.84~-3.78~GP~32.26~19.23~-13.99~-18.22~2.55~2602833034~2258992360~0.56~22.26~2.10~611.65~~~~~";',
-  'v_usTSLA="200~特斯拉~TSLA.OQ~403.82~399.81~404.66~43141083~0~0~403.75~80~0~0~0~0~0~0~0~0~404.38~120~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~4.01~1.00~414.23~397.61~USD~43141083~17557835326~1.09~443.76~~373.91~~4.16~14280.22620~15961.91490~Tesla, Inc.~0.91~498.83~297.38~-40~17.88~~15961.91490~-10.21~3.12~GP~3.80~2.21~9.72~6.62~22.90~3952730153~3536285027~1.09~452.05~~406.99~~~~~";',
-  'v_usAVGO="200~博通~AVGO.OQ~322.23~326.08~328.37~20326866~0~0~323.00~240~0~0~0~0~0~0~0~0~324.00~280~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~-3.85~-1.18~333.56~321.87~USD~20326866~6625146018~0.43~41.10~~67.55~~3.59~15093.95973~15382.06751~Broadcom Inc.~7.84~493.32~288.98~-40~15.43~0.81~15382.06751~-6.38~-2.11~GP~44.25~21.63~-3.69~-11.11~-24.53~4773629865~4684219262~0.84~39.68~2.60~325.93~~~~~";',
-  'v_usNFLX="200~奈飞~NFLX.OQ~62.34~62.08~62.20~40917261~0~0~62.40~500~0~0~0~0~0~0~0~0~62.50~300~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~0.26~0.42~62.89~61.71~USD~40917261~2550681312~0.98~18.02~~24.64~~1.90~2580.25098~2595.79999~Netflix, Inc.~3.46~116.73~61.39~200~8.86~~2595.79999~-33.51~-2.44~GP~53.46~25.99~-10.75~-7.64~-15.92~4163939676~4138997409~0.84~16.12~~62.34~~~~~";',
-  'v_usAMD="200~超威半导体~AMD.OQ~466.84~504.80~510.71~32141002~0~0~471.73~40~0~0~0~0~0~0~0~0~472.50~200~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~-37.96~-7.52~512.82~466.07~USD~32141002~15518801360~1.97~119.70~~176.17~~9.26~7588.73991~7621.04649~Advanced Micro Devices, Inc.~3.90~658.52~188.22~-160~11.34~~7621.04649~117.99~-12.13~GP~10.20~8.12~-13.23~-26.10~-3.42~1632475042~1625554775~1.42~105.14~~482.84~~~~~";',
-  'v_usCOST="200~好市多~COST.OQ~1040.55~1012.28~1015.87~3114794~0~0~1041.01~40~0~0~0~0~0~0~0~0~1042.00~200~0~0~0~0~0~0~0~0~~2026-11-02 16:00:02~28.27~2.79~1042.57~1014.34~USD~3114794~3226024896~0.70~50.12~~50.12~~2.79~4606.19310~4610.98244~Costco Wholesale Corporation~20.76~1093.10~839.09~-160~12.88~0.55~4610.98244~21.38~3.68~GP~28.40~11.11~4.68~12.84~9.95~443129349~442669079~1.37~50.12~5.71~1035.71~~~~~";',
-  'v_usJPM="200~摩根大通~JPM.N~340.58~337.04~340.94~6014662~0~0~340.25~40~0~0~0~0~0~0~0~0~341.24~400~0~0~0~0~0~0~0~0~~2026-11-02 16:04:32~3.54~1.05~342.43~339.92~USD~6014662~2051072343~0.23~14.29~~17.01~~0.74~9015.24428~9044.44248~Jp Morgan Chase & Co.~23.84~364.67~275.05~-360~2.57~1.81~9044.44248~7.74~1.96~GP~17.93~1.36~2.11~2.98~-4.26~2655600000~2647026918~1.01~13.30~6.15~341.01~~~~~";',
-].join("");
+const SINA_HEADERS: Record<string, string> = {
+  Referer: "https://finance.sina.com.cn",
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+};
+
+/** Internal symbol → Sina quote code. Indices use `gb_$dji`-style codes. */
+const SINA_INDICES: Record<string, string> = {
+  DJI: "gb_$dji",
+  IXIC: "gb_$ixic",
+  INX: "gb_$inx",
+  NDX: "gb_$ndx",
+};
+
+function sinaCode(symbol: string): string {
+  return SINA_INDICES[symbol] ?? `gb_${symbol.toLowerCase()}`;
+}
 
 function toNum(value: string | undefined): number | null {
-  if (value === undefined || value === "") return null;
+  if (value === undefined || value === "" || value === "--") return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
 
-function parseRecord(fields: string[], item: WatchItem): UsQuote | null {
-  const price = toNum(fields[3]);
-  const prevClose = toNum(fields[4]);
-  if (price === null || prevClose === null || price <= 0 || prevClose <= 0) {
-    return null;
-  }
-  const change = price - prevClose;
-  const marketCapYi = toNum(fields[45]); // 亿 USD
+/**
+ * Sina US quote field layout (comma separated, GBK):
+ *   0 name · 1 price · 2 change% · 3 time · 4 change · 5 open · 6 high · 7 low
+ *   8 52w high · 9 52w low · 10 volume · 12 market cap · 14 PE
+ * Previous close is derived from price − change (reliable across stocks/indices).
+ */
+function parseSinaRecord(fields: string[], item: WatchItem): UsQuote | null {
+  const price = toNum(fields[1]);
+  const change = toNum(fields[4]) ?? 0;
+  if (price === null || price <= 0) return null;
+  const prevClose = price - change;
+  if (!(prevClose > 0)) return null;
+  const changePct = toNum(fields[2]) ?? (change / prevClose) * 100;
   return {
     symbol: item.symbol,
-    code: fields[2] || item.symbol,
-    name: fields[1] || item.name,
-    nameEn: fields[46] || item.nameEn,
+    code: item.symbol,
+    name: fields[0] || item.name,
+    nameEn: item.nameEn,
     price,
     prevClose,
     change,
-    changePct: (change / prevClose) * 100,
+    changePct,
     open: toNum(fields[5]) ?? price,
-    high: toNum(fields[33]) ?? price,
-    low: toNum(fields[34]) ?? price,
-    volume: toNum(fields[6]) ?? 0,
-    pe: toNum(fields[39]),
-    marketCapUsd: marketCapYi === null ? null : marketCapYi * 1e8,
-    week52High: toNum(fields[48]),
-    week52Low: toNum(fields[49]),
-    quoteTime: fields[30] || null,
+    high: toNum(fields[6]) ?? price,
+    low: toNum(fields[7]) ?? price,
+    volume: toNum(fields[10]) ?? 0,
+    pe: toNum(fields[14]),
+    marketCapUsd: toNum(fields[12]) || null,
+    week52High: toNum(fields[8]),
+    week52Low: toNum(fields[9]),
+    quoteTime: fields[3] || null,
     tech: null,
     valuation: null,
   };
 }
 
-function buildSnapshot(text: string, demo: boolean): UsMarketSnapshot {
-  const records: Record<string, string[]> = {};
-  for (const match of text.matchAll(/v_us(\w+)="([^"]*)"/g)) {
-    records[match[1]] = match[2].split("~");
-  }
-  const resolve = (item: WatchItem) => {
-    const fields = records[item.symbol];
-    return fields ? parseRecord(fields, item) : null;
-  };
-  return {
-    demo,
-    fetchedAt: Date.now(),
-    indices: INDICES.map(resolve).filter((q): q is UsQuote => q !== null),
-    stocks: STOCKS.map(resolve).filter((q): q is UsQuote => q !== null),
-  };
-}
-
 async function fetchLiveSnapshot(): Promise<UsMarketSnapshot> {
-  const codes = [...INDICES, ...STOCKS].map((item) => `us${item.symbol}`).join(",");
-  const response = await fetch(`${QUOTE_ENDPOINT}${codes}`, {
+  const all = [...INDICES, ...STOCKS];
+  const list = all.map((item) => sinaCode(item.symbol)).join(",");
+  const response = await fetch(`${SINA_ENDPOINT}${list}`, {
+    headers: SINA_HEADERS,
     cache: "no-store",
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) {
-    throw new Error(`quote endpoint responded with ${response.status}`);
+    throw new Error(`sina quote endpoint responded with ${response.status}`);
   }
   const text = new TextDecoder("gbk").decode(await response.arrayBuffer());
-  const snapshot = buildSnapshot(text, false);
+  const records = new Map<string, string[]>();
+  for (const match of text.matchAll(/var hq_str_([\w$]+)="([^"]*)"/g)) {
+    if (match[2]) records.set(match[1], match[2].split(","));
+  }
+  const resolve = (item: WatchItem) => {
+    const fields = records.get(sinaCode(item.symbol));
+    return fields ? parseSinaRecord(fields, item) : null;
+  };
+  const snapshot: UsMarketSnapshot = {
+    demo: false,
+    fetchedAt: Date.now(),
+    indices: INDICES.map(resolve).filter((q): q is UsQuote => q !== null),
+    stocks: STOCKS.map(resolve).filter((q): q is UsQuote => q !== null),
+  };
   if (snapshot.stocks.length === 0) {
-    throw new Error("quote payload contained no usable records");
+    throw new Error("sina quote payload contained no usable records");
   }
   return snapshot;
 }
 
 // ---------------------------------------------------------------------------
-// Daily klines + technical indicators
+// Daily klines + technical indicators (Eastmoney)
 // ---------------------------------------------------------------------------
 
-async function fetchKlines(symbol: string): Promise<Candle[]> {
-  return fetchKlinesSecid(symbol, US_KLINE_SECID[symbol]);
+/**
+ * Fetch daily bars for a US symbol from Eastmoney (shared loader).
+ * `limit` is the number of most recent bars requested.
+ */
+export async function fetchUsKlines(
+  symbol: string,
+  limit = 320
+): Promise<Candle[]> {
+  const secid = US_KLINE_SECID[symbol];
+  if (!secid) throw new Error(`no kline secid for ${symbol}`);
+  return fetchKlinesSecid(symbol, secid, limit);
 }
 
 function emaSeries(values: number[], period: number): (number | null)[] {
@@ -302,12 +315,15 @@ async function mapWithConcurrency<T, R>(
 ): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let next = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) {
-      const index = next++;
-      results[index] = await fn(items[index], index);
+  const workers = Array.from(
+    { length: Math.min(limit, items.length) },
+    async () => {
+      while (next < items.length) {
+        const index = next++;
+        results[index] = await fn(items[index], index);
+      }
     }
-  });
+  );
   await Promise.all(workers);
   return results;
 }
@@ -316,7 +332,7 @@ async function attachTechnicals(snapshot: UsMarketSnapshot): Promise<void> {
   const quotes = [...snapshot.indices, ...snapshot.stocks];
   const barsList = await mapWithConcurrency(quotes, 6, async (quote) => {
     try {
-      return await fetchKlines(quote.symbol);
+      return await fetchUsKlines(quote.symbol);
     } catch {
       return null;
     }
@@ -348,7 +364,8 @@ type DanjuanItem = {
   date: string;
 };
 
-let valuationCache: { at: number; map: Record<string, Valuation> } | null = null;
+let valuationCache: { at: number; map: Record<string, Valuation> } | null =
+  null;
 
 async function fetchValuations(): Promise<Record<string, Valuation>> {
   if (valuationCache && Date.now() - valuationCache.at < VALUATION_TTL_MS) {
@@ -361,7 +378,9 @@ async function fetchValuations(): Promise<Record<string, Valuation>> {
   if (!response.ok) {
     throw new Error(`valuation endpoint responded with ${response.status}`);
   }
-  const json = (await response.json()) as { data?: { items?: DanjuanItem[] } };
+  const json = (await response.json()) as {
+    data?: { items?: DanjuanItem[] };
+  };
   const map: Record<string, Valuation> = {};
   for (const item of json.data?.items ?? []) {
     const symbol = VALUATION_SYMBOLS[item.index_code];
@@ -405,8 +424,75 @@ export async function getUsMarketSnapshot(): Promise<UsMarketSnapshot> {
     return data;
   } catch {
     // Network or parse failure: fall back to the bundled demo snapshot.
-    return buildSnapshot(DEMO_RESPONSE, true);
+    return buildDemo();
   }
+}
+
+// ---------------------------------------------------------------------------
+// Bundled demo snapshot (2026-11-14) used when the live feed fails
+// ---------------------------------------------------------------------------
+
+function buildDemo(): UsMarketSnapshot {
+  const q = (
+    symbol: string,
+    name: string,
+    nameEn: string,
+    price: number,
+    prevClose: number,
+    open: number,
+    high: number,
+    low: number,
+    volume: number,
+    pe: number | null,
+    marketCapUsd: number | null,
+    w52h: number | null,
+    w52l: number | null
+  ): UsQuote => ({
+    symbol,
+    code: symbol,
+    name,
+    nameEn,
+    price,
+    prevClose,
+    change: price - prevClose,
+    changePct: ((price - prevClose) / prevClose) * 100,
+    open,
+    high,
+    low,
+    volume,
+    pe,
+    marketCapUsd,
+    week52High: w52h,
+    week52Low: w52l,
+    quoteTime: "2026-11-14 05:43:43",
+    tech: null,
+    valuation: null,
+  });
+
+  return {
+    demo: true,
+    fetchedAt: Date.now(),
+    indices: [
+      q("DJI", "道琼斯", "Dow Jones", 52347.55, 52297.09, 52490.68, 52521.48, 52017.86, 645244111, null, null, 54744.33, 45057.28),
+      q("IXIC", "纳斯达克", "Nasdaq Composite", 25136.27, 25366.09, 25408.0, 25423.09, 24872.41, 7740442365, null, null, 27722.75, 20690.25),
+      q("INX", "标普500", "S&P 500", 7561.67, 7592.4, 7616.85, 7621.78, 7499.4, 2727332784, null, null, 7844.52, 6316.91),
+      q("NDX", "纳斯达克100", "Nasdaq 100", 27943.74, 28289.19, 28265.54, 28295.8, 27609.71, 1517679827, null, null, 31361.37, 22841.42),
+    ],
+    stocks: [
+      q("AAPL", "苹果", "Apple", 356.27, 354.88, 357.96, 360.83, 355.75, 40027467, 42.92, 5177407913930, 360.83, 242.89),
+      q("MSFT", "微软", "Microsoft", 507.12, 521.91, 524.02, 529.63, 504.96, 34743321, 26.48, 3765971781000, 551.15, 348.54),
+      q("NVDA", "英伟达", "NVIDIA", 202.06, 204.64, 207.53, 209.98, 201.66, 119272174, 25.54, 4879142820000, 243.37, 163.89),
+      q("GOOGL", "谷歌-A", "Alphabet", 278.99, 279.84, 282.46, 287.0, 278.8, 48512348, 14.57, 3429903060000, 408.12, 270.0),
+      q("AMZN", "亚马逊", "Amazon", 245.63, 240.35, 243.01, 253.81, 242.28, 58347979, 19.86, 2656031162000, 287.2, 196.0),
+      q("META", "Meta", "Meta Platforms", 606.73, 614.99, 614.44, 621.69, 606.41, 19496498, 20.7, 1579216887000, 779.82, 519.38),
+      q("TSLA", "特斯拉", "Tesla", 403.82, 399.81, 404.66, 414.23, 397.61, 43141083, 443.76, 1596191490000, 498.83, 297.38),
+      q("AVGO", "博通", "Broadcom", 322.23, 326.08, 328.37, 333.56, 321.87, 20326866, 41.1, 1538206751000, 493.32, 288.98),
+      q("NFLX", "奈飞", "Netflix", 62.34, 62.08, 62.2, 62.89, 61.71, 40917261, 18.02, 259579999000, 116.73, 61.39),
+      q("AMD", "超威半导体", "AMD", 466.84, 504.8, 510.71, 512.82, 466.07, 32141002, 119.7, 762104649000, 658.52, 188.22),
+      q("COST", "好市多", "Costco", 1040.55, 1012.28, 1015.87, 1042.57, 1014.34, 3114794, 50.12, 461098244000, 1093.1, 839.09),
+      q("JPM", "摩根大通", "JPMorgan Chase", 340.58, 337.04, 340.94, 342.43, 339.92, 6014662, 14.29, 904444248000, 364.67, 275.05),
+    ],
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -446,7 +532,9 @@ export type SymbolDetail = {
   demo: boolean;
 };
 
-export async function getSymbolDetail(symbol: string): Promise<SymbolDetail | null> {
+export async function getSymbolDetail(
+  symbol: string
+): Promise<SymbolDetail | null> {
   const snapshot = await getUsMarketSnapshot();
   const quote = [...snapshot.indices, ...snapshot.stocks].find(
     (item) => item.symbol === symbol
@@ -454,7 +542,7 @@ export async function getSymbolDetail(symbol: string): Promise<SymbolDetail | nu
   if (!quote) return null;
   let bars: Candle[] = [];
   try {
-    bars = await fetchKlines(quote.symbol);
+    bars = await fetchUsKlines(quote.symbol);
   } catch {
     // keep the quote; the chart area will show an empty state
   }
@@ -471,14 +559,16 @@ export type SimulationData = {
   benchmark: { symbol: string; name: string; closes: number[] };
 };
 
-export async function getSimulationData(window = 250): Promise<SimulationData> {
+export async function getSimulationData(
+  window = 250
+): Promise<SimulationData> {
   const symbols = STOCKS.map((item) => item.symbol);
   const benchSymbol = "INX";
   const all = [...symbols, benchSymbol];
 
   const barsList = await mapWithConcurrency(all, 6, async (symbol) => {
     try {
-      return await fetchKlines(symbol);
+      return await fetchUsKlines(symbol);
     } catch {
       return null;
     }
@@ -506,7 +596,9 @@ export async function getSimulationData(window = 250): Promise<SimulationData> {
   });
 
   const benchmarkBars = barsList[all.length - 1];
-  const benchMap = new Map((benchmarkBars ?? []).map((bar) => [bar.date, bar.close]));
+  const benchMap = new Map(
+    (benchmarkBars ?? []).map((bar) => [bar.date, bar.close])
+  );
   let benchLast = NaN;
   const benchmarkCloses = dates.map((date) => {
     const close = benchMap.get(date);
@@ -517,6 +609,10 @@ export async function getSimulationData(window = 250): Promise<SimulationData> {
   return {
     dates,
     series,
-    benchmark: { symbol: benchSymbol, name: "S&P 500", closes: benchmarkCloses },
+    benchmark: {
+      symbol: benchSymbol,
+      name: "S&P 500",
+      closes: benchmarkCloses,
+    },
   };
 }

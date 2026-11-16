@@ -155,8 +155,9 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: t.empty }, { status: 400 });
   }
 
-  const usage = await getUsage(user.id, user.plan);
-  if (usage.remaining <= 0) {
+  // Developers bypass metering entirely; Pro and Free retain their plan quotas.
+  const usage = user.isAdmin ? null : await getUsage(user.id, user.plan);
+  if (usage && usage.remaining <= 0) {
     return Response.json(
       { ok: false, error: t.quota(usage.limit), code: "QUOTA_EXCEEDED", usage },
       { status: 429 }
@@ -170,12 +171,16 @@ export async function POST(request: Request) {
   };
 
   const { mode, reply } = await generateReply(bundle, messages, lang);
-  const used = await incrementUsage(user.id);
+  const used = user.isAdmin ? null : await incrementUsage(user.id);
 
   return Response.json({
     ok: true,
     mode,
     reply,
-    usage: { used, limit: usage.limit, remaining: Math.max(0, usage.limit - used) },
+    unlimited: user.isAdmin === true,
+    usage:
+      usage && used !== null
+        ? { used, limit: usage.limit, remaining: Math.max(0, usage.limit - used) }
+        : null,
   });
 }

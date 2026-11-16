@@ -27,6 +27,16 @@ export function UnlockCta({
   return <UnlockCtaButton lang={lang} plan={plan} count={count} />;
 }
 
+/**
+ * Pick the display names for a quote. In Chinese the CJK name leads with the
+ * English name as a subtitle; in English the English name leads and the CJK
+ * name is hidden so the English board stays fully English.
+ */
+function names(quote: UsQuote, lang: Lang) {
+  if (lang === "zh") return { primary: quote.name, secondary: quote.nameEn };
+  return { primary: quote.nameEn || quote.name, secondary: null as string | null };
+}
+
 function CardShell({
   href,
   title,
@@ -84,12 +94,15 @@ export function IndexCard({
   const t = dict[lang].markets;
   const tech = quote.tech;
   const valuation = quote.valuation;
+  const { primary, secondary } = names(quote, lang);
   return (
-    <CardShell href={href} title={href ? `${t.viewDetail} · ${quote.name}` : undefined}>
+    <CardShell href={href} title={href ? `${t.viewDetail} · ${primary}` : undefined}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-200">{quote.name}</p>
-          <p className="mt-0.5 truncate text-[11px] text-slate-600">{quote.nameEn}</p>
+          <p className="truncate text-sm font-medium text-slate-200">{primary}</p>
+          {secondary && (
+            <p className="mt-0.5 truncate text-[11px] text-slate-600">{secondary}</p>
+          )}
         </div>
         <ChangeChip quote={quote} />
       </div>
@@ -158,15 +171,18 @@ export function StockCard({
 }) {
   const t = dict[lang].markets;
   const tech = quote.tech;
+  const { primary, secondary } = names(quote, lang);
   return (
-    <CardShell href={href} title={href ? `${t.viewDetail} · ${quote.name}` : undefined}>
+    <CardShell href={href} title={href ? `${t.viewDetail} · ${primary}` : undefined}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-slate-200">
-            {quote.name}
+            {primary}
             <span className="ml-1 text-slate-600">· {quote.symbol}</span>
           </p>
-          <p className="mt-0.5 truncate text-[11px] text-slate-600">{quote.nameEn}</p>
+          {secondary && (
+            <p className="mt-0.5 truncate text-[11px] text-slate-600">{secondary}</p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-3">
           {tech && <Sparkline points={tech.sparkline} />}
