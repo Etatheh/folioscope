@@ -146,6 +146,60 @@ const zh = {
     logout: "退出登录",
     pro: "PRO 会员",
     free: "免费版",
+    planFree: "FREE",
+    planPro: "PRO",
+    accountPlan: "账户与订阅",
+    signOut: "退出登录",
+    menuLabel: "账户菜单",
+  },
+  auth: {
+    loginTitle: "欢迎回来",
+    loginSubtitle: "登录后解锁完整行情、回测与 AI 分析。",
+    signupTitle: "创建免费账号",
+    signupSubtitle: "免费开始，无需信用卡。",
+    google: "使用 Google 账号继续",
+    microsoft: "使用 Microsoft 账号继续",
+    comingSoon: "即将支持",
+    microsoftSoon: "Microsoft 登录即将上线，请先使用 Google 或邮箱登录。",
+    orEmail: "或使用邮箱登录",
+    orEmailSignup: "或使用邮箱注册",
+    email: "邮箱",
+    emailPlaceholder: "you@example.com",
+    password: "密码",
+    passwordPlaceholder: "至少 6 位字符",
+    loginCta: "登录",
+    signupCta: "免费注册",
+    loginBusy: "登录中…",
+    signupBusy: "创建中…",
+    noAccount: "还没有账号？",
+    haveAccount: "已有账号？",
+    toSignup: "免费注册",
+    toLogin: "直接登录",
+    confirmEmail: "注册成功，请查收验证邮件完成验证后再登录。",
+    legalBack: "返回登录",
+    legalUpdated: "最后更新",
+    close: "关闭",
+    legal: {
+      pre: "继续即表示您同意我们的",
+      terms: "《服务条款》",
+      between1: "",
+      privacy: "《隐私政策》",
+      between2: "及",
+      disclaimer: "《金融免责声明》",
+      post: "。",
+    },
+    errors: {
+      invalidEmail: "请输入有效的邮箱地址。",
+      invalidCredentials: "邮箱或密码不正确。",
+      emailTaken: "该邮箱已注册，请直接登录。",
+      weakPassword: "密码至少需要 6 位字符。",
+      emailNotConfirmed: "请先完成邮箱验证再登录。",
+      rateLimited: "尝试次数过多，请稍后再试。",
+      notConfigured: "登录服务尚未配置，请稍后再试。",
+      oauth: "第三方登录启动失败，请改用邮箱登录。",
+      network: "网络异常，请稍后重试。",
+      generic: "操作失败，请稍后再试。",
+    },
   },
   pro: {
     feature: "PRO FEATURE",
@@ -348,6 +402,60 @@ type Dict = {
     logout: string;
     pro: string;
     free: string;
+    planFree: string;
+    planPro: string;
+    accountPlan: string;
+    signOut: string;
+    menuLabel: string;
+  };
+  auth: {
+    loginTitle: string;
+    loginSubtitle: string;
+    signupTitle: string;
+    signupSubtitle: string;
+    google: string;
+    microsoft: string;
+    comingSoon: string;
+    microsoftSoon: string;
+    orEmail: string;
+    orEmailSignup: string;
+    email: string;
+    emailPlaceholder: string;
+    password: string;
+    passwordPlaceholder: string;
+    loginCta: string;
+    signupCta: string;
+    loginBusy: string;
+    signupBusy: string;
+    noAccount: string;
+    haveAccount: string;
+    toSignup: string;
+    toLogin: string;
+    confirmEmail: string;
+    legalBack: string;
+    legalUpdated: string;
+    close: string;
+    legal: {
+      pre: string;
+      terms: string;
+      between1: string;
+      privacy: string;
+      between2: string;
+      disclaimer: string;
+      post: string;
+    };
+    errors: {
+      invalidEmail: string;
+      invalidCredentials: string;
+      emailTaken: string;
+      weakPassword: string;
+      emailNotConfirmed: string;
+      rateLimited: string;
+      notConfigured: string;
+      oauth: string;
+      network: string;
+      generic: string;
+    };
   };
   pro: {
     feature: string;
@@ -557,6 +665,60 @@ const en: Dict = {
     logout: "Log out",
     pro: "PRO",
     free: "FREE",
+    planFree: "FREE",
+    planPro: "PRO",
+    accountPlan: "Account & Plan",
+    signOut: "Sign out",
+    menuLabel: "Account menu",
+  },
+  auth: {
+    loginTitle: "Welcome back",
+    loginSubtitle: "Sign in to unlock full market data, backtests and AI analysis.",
+    signupTitle: "Create a free account",
+    signupSubtitle: "Start free. No credit card required.",
+    google: "Continue with Google",
+    microsoft: "Continue with Microsoft",
+    comingSoon: "Coming soon",
+    microsoftSoon: "Microsoft sign-in is coming soon. Please use Google or email for now.",
+    orEmail: "or continue with email",
+    orEmailSignup: "or sign up with email",
+    email: "Email",
+    emailPlaceholder: "you@example.com",
+    password: "Password",
+    passwordPlaceholder: "At least 6 characters",
+    loginCta: "Log in",
+    signupCta: "Create free account",
+    loginBusy: "Signing in…",
+    signupBusy: "Creating account…",
+    noAccount: "New to Markets?",
+    haveAccount: "Already have an account?",
+    toSignup: "Create an account",
+    toLogin: "Log in",
+    confirmEmail: "Account created. Check your inbox to confirm your email, then log in.",
+    legalBack: "Back to sign in",
+    legalUpdated: "Last updated",
+    close: "Close",
+    legal: {
+      pre: "By continuing, you agree to our ",
+      terms: "Terms of Service",
+      between1: ", ",
+      privacy: "Privacy Policy",
+      between2: ", and ",
+      disclaimer: "Financial Disclaimer",
+      post: ".",
+    },
+    errors: {
+      invalidEmail: "Please enter a valid email address.",
+      invalidCredentials: "Incorrect email or password.",
+      emailTaken: "This email is already registered. Please log in instead.",
+      weakPassword: "Password must be at least 6 characters.",
+      emailNotConfirmed: "Please confirm your email before logging in.",
+      rateLimited: "Too many attempts. Please try again later.",
+      notConfigured: "Sign-in is not configured yet. Please try again later.",
+      oauth: "Could not start social sign-in. Please use email instead.",
+      network: "Network error. Please try again.",
+      generic: "Something went wrong. Please try again.",
+    },
   },
   pro: {
     feature: "PRO FEATURE",

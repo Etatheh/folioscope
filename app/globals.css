@@ -368,6 +368,33 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
+/* Auth modal legal scroll                                             */
+/* ------------------------------------------------------------------ */
+
+.auth-legal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.35) transparent;
+  overscroll-behavior: contain;
+}
+
+.auth-legal-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-legal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auth-legal-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.3);
+}
+
+.auth-legal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.5);
+}
+
+/* ------------------------------------------------------------------ */
 /* Reduced motion                                                      */
 /* ------------------------------------------------------------------ */
 

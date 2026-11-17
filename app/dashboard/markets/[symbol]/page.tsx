@@ -30,7 +30,7 @@ export async function generateMetadata({
   params: Promise<{ symbol: string }>;
 }): Promise<Metadata> {
   const { symbol } = await params;
-  return { title: `${symbol.toUpperCase()} · 美股行情 — GUI` };
+  return { title: `${symbol.toUpperCase()} · Markets` };
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

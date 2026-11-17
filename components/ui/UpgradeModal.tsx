@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { dict, type Lang } from "@/lib/i18n";
 import { useSession } from "@/lib/use-session";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import ProBadge from "./ProBadge";
 
 type UpgradeStatus = "idle" | "busy" | "done" | "error";
@@ -44,6 +44,7 @@ export default function UpgradeModal({
 }) {
   const t = dict[lang].pro.modal;
   const { user, ready } = useSession();
+  const { openAuthModal } = useAuthModal();
   const mounted = useIsClient();
   const [status, setStatus] = useState<UpgradeStatus>("idle");
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -262,12 +263,16 @@ export default function UpgradeModal({
 
       <div className="relative mt-5">
         {ready && !user ? (
-          <Link
-            href="/register"
-            className="btn-primary block rounded-full py-3 text-center text-sm font-semibold text-white"
+          <button
+            type="button"
+            onClick={() => {
+              handleClose();
+              openAuthModal({ mode: "signup", lang });
+            }}
+            className="btn-primary block w-full whitespace-nowrap rounded-full py-3 text-center text-sm font-semibold text-white"
           >
             {t.login}
-          </Link>
+          </button>
         ) : status === "done" ? (
           <span className="block rounded-full bg-emerald-400/10 py-3 text-center text-sm text-emerald-300">
             {t.done}

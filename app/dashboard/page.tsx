@@ -170,16 +170,16 @@ export default async function DashboardPage({
       </aside>
 
       <main className="relative z-10 px-5 pb-12 pt-6 sm:px-8 lg:ml-64 lg:px-10">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-6">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-purple-400">
+        <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-4 border-b border-white/5 pb-6">
+          <div className="min-w-0">
+            <p className="whitespace-nowrap text-xs font-medium uppercase tracking-[0.2em] text-purple-400">
               {t.eyebrow}
             </p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h1 className="mt-2 whitespace-nowrap text-2xl font-semibold tracking-tight text-white sm:text-3xl">
               {t.greeting}
             </h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-nowrap items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-2.5">
             <LangToggle lang={lang} path="/dashboard" />
             {!fullAccess && (
               <ProUpgradeButton
@@ -187,12 +187,13 @@ export default async function DashboardPage({
                 variant="secondary"
                 label={t.pro.upgrade}
                 source="dashboard-header"
-                className="bg-gradient-to-r from-blue-500/20 to-purple-500/20"
+                className="whitespace-nowrap bg-gradient-to-r from-blue-500/20 to-purple-500/20"
               />
             )}
             <button
-              aria-label="Notifications"
-              className="glass flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:text-white"
+              type="button"
+              aria-label={lang === "zh" ? "通知" : "Notifications"}
+              className="glass flex h-9 w-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full text-slate-400 transition hover:border-purple-400/40 hover:text-white"
             >
               ♡
             </button>

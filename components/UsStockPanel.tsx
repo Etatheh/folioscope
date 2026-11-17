@@ -41,9 +41,11 @@ export default async function UsStockPanel({
         <div>
           <h2 className="font-semibold text-white">
             {t.title}
-            <span className="ml-2 align-middle text-xs font-normal text-slate-500">
-              {lang === "zh" ? "U.S. Markets" : "美股行情"}
-            </span>
+            {lang === "zh" && (
+              <span className="ml-2 align-middle text-xs font-normal text-slate-500">
+                U.S. Markets
+              </span>
+            )}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             {demo

@@ -10,6 +10,10 @@ export type SessionUser = {
   plan: PlanId;
   createdAt: number;
   isAdmin?: boolean;
+  /** Google/Microsoft OAuth avatar (from `user_metadata.avatar_url`). */
+  avatarUrl?: string;
+  /** OAuth provider id, e.g. "google". */
+  provider?: string;
 };
 
 const SESSION_KEY = "gui.session";

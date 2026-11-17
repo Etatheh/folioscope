@@ -116,7 +116,7 @@ export default function PriceChart({
         onMouseMove={onMove}
         onMouseLeave={() => setHover(null)}
         role="img"
-        aria-label="日K线图"
+        aria-label={lang === "zh" ? "日K线图" : "Daily candlestick chart"}
       >
         {gridLevels.map((p) => (
           <g key={p}>

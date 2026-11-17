@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import UserMenu from "./UserMenu";
+import { useAuthModal } from "./auth/AuthModalProvider";
 import { useSession } from "@/lib/use-session";
 
 const navLinks = [
@@ -14,6 +15,7 @@ const navLinks = [
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { user, ready } = useSession();
+  const { openAuthModal } = useAuthModal();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 animate-fade-in opacity-0-start">
@@ -61,18 +63,20 @@ export default function Navbar() {
           <div className="hidden items-center gap-3 md:flex">
             {ready && !user && (
               <>
-                <Link
-                  href="/login"
-                  className="text-sm text-slate-400 transition hover:text-white"
+                <button
+                  type="button"
+                  onClick={() => openAuthModal({ mode: "login" })}
+                  className="whitespace-nowrap text-sm text-slate-400 transition hover:text-white"
                 >
                   Log in
-                </Link>
-                <Link
-                  href="/register"
-                  className="btn-primary rounded-full px-5 py-2 text-sm font-medium text-white"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openAuthModal({ mode: "signup" })}
+                  className="btn-primary whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium text-white"
                 >
                   Get started
-                </Link>
+                </button>
               </>
             )}
             {ready && user && <UserMenu lang="en" />}
@@ -103,7 +107,7 @@ export default function Navbar() {
 
         <div
           className={`overflow-hidden transition-all duration-300 md:hidden ${
-            open ? "mt-4 max-h-72 opacity-100" : "max-h-0 opacity-0"
+            open ? "mt-4 max-h-96 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
           <ul className="flex flex-col gap-1 border-t border-purple-500/10 pt-4">
@@ -119,14 +123,27 @@ export default function Navbar() {
               </li>
             ))}
             {ready && !user && (
-              <li className="pt-2">
-                <Link
-                  href="/register"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-full btn-primary px-5 py-2.5 text-center text-sm font-medium text-white"
+              <li className="mt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    openAuthModal({ mode: "login" });
+                  }}
+                  className="block w-full whitespace-nowrap rounded-full border border-white/10 px-5 py-2.5 text-center text-sm font-medium text-slate-300 transition hover:border-purple-400/30 hover:text-white"
+                >
+                  Log in
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    openAuthModal({ mode: "signup" });
+                  }}
+                  className="block w-full btn-primary whitespace-nowrap rounded-full px-5 py-2.5 text-center text-sm font-medium text-white"
                 >
                   Get started
-                </Link>
+                </button>
               </li>
             )}
           </ul>

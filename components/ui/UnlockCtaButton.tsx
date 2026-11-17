@@ -5,11 +5,13 @@ import Link from "next/link";
 
 import { dict, type Lang } from "@/lib/i18n";
 import type { ViewerPlan } from "@/lib/access";
+import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import UpgradeModal from "./UpgradeModal";
 
 /**
- * "Unlock all stocks" tile. Free accounts open the Pro comparison dialog;
- * anonymous visitors are routed to registration.
+ * "Unlock all stocks" tile. Anonymous visitors open the auth modal (sign up),
+ * free accounts open the Pro comparison dialog, and paid users see the plan
+ * link as a fallback.
  */
 export default function UnlockCtaButton({
   lang,
@@ -21,6 +23,7 @@ export default function UnlockCtaButton({
   count: number;
 }) {
   const t = dict[lang].markets;
+  const { openAuthModal } = useAuthModal();
   const [open, setOpen] = useState(false);
 
   const body = (
@@ -32,14 +35,26 @@ export default function UnlockCtaButton({
         {t.unlockAll} <span className="text-slate-500">(+{count})</span>
       </p>
       <p className="text-[11px] text-slate-500">{t.unlockHint}</p>
-      <span className="mt-1 text-xs text-purple-400 group-hover:text-purple-300">
-        {plan === "free" ? t.upgradeCta : t.registerCta}
+      <span className="mt-1 whitespace-nowrap text-xs text-purple-400 group-hover:text-purple-300">
+        {plan === "anon" ? t.registerCta : t.upgradeCta}
       </span>
     </>
   );
 
   const surface =
     "group flex h-full min-h-[132px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-purple-400/30 bg-purple-500/[0.06] p-6 text-center transition hover:border-purple-400/60 hover:bg-purple-500/10";
+
+  if (plan === "anon") {
+    return (
+      <button
+        type="button"
+        onClick={() => openAuthModal({ mode: "signup", lang })}
+        className={surface}
+      >
+        {body}
+      </button>
+    );
+  }
 
   if (plan === "free") {
     return (
@@ -58,7 +73,7 @@ export default function UnlockCtaButton({
   }
 
   return (
-    <Link href="/register" className={surface}>
+    <Link href="/pricing" className={surface}>
       {body}
     </Link>
   );

@@ -57,9 +57,11 @@ export default function MarketBoard({
         <div>
           <h2 className="font-semibold text-white">
             {title}
-            <span className="ml-2 align-middle text-xs font-normal text-slate-500">
-              {titleEn}
-            </span>
+            {lang === "zh" && titleEn && (
+              <span className="ml-2 align-middle text-xs font-normal text-slate-500">
+                {titleEn}
+              </span>
+            )}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             {demo
