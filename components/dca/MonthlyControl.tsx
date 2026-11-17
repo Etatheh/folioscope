@@ -29,10 +29,6 @@ export default function MonthlyControl({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!editing) setDraft(String(value));
-  }, [value, editing]);
-
-  useEffect(() => {
     if (editing) inputRef.current?.select();
   }, [editing]);
 
@@ -86,7 +82,10 @@ export default function MonthlyControl({
         <button
           type="button"
           disabled={disabled}
-          onClick={() => setEditing(true)}
+          onClick={() => {
+            setDraft(String(value));
+            setEditing(true);
+          }}
           title={label}
           className="w-16 shrink-0 cursor-text rounded-md border border-transparent px-1.5 py-0.5 text-right text-xs font-medium tabular-nums text-slate-200 transition hover:border-purple-400/30 hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-40"
         >
