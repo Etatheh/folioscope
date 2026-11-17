@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -9,53 +8,13 @@ import { useSession } from "@/lib/use-session";
 import { dict, type Lang } from "@/lib/i18n";
 import { signOutOfSupabase } from "@/lib/supabase/client";
 import { useAuthModal } from "./auth/AuthModalProvider";
-
-const CJK = /[㐀-鿿]/;
-
-/** First character for the fallback avatar; in English avoid a CJK glyph. */
-function avatarInitial(name: string, email: string, lang: Lang): string {
-  const first = name.slice(0, 1);
-  if (lang === "en" && CJK.test(first)) {
-    return (email.slice(0, 1) || first || "U").toUpperCase();
-  }
-  return (first || "U").toUpperCase();
-}
+import AccountModal from "./account/AccountModal";
+import UserAvatar from "./ui/UserAvatar";
 
 function displayName(user: SessionUser): string {
   const name = user.name?.trim();
   if (name) return name;
   return user.email.split("@")[0] || user.email || "User";
-}
-
-function Avatar({
-  user,
-  lang,
-  className = "h-8 w-8",
-}: {
-  user: SessionUser;
-  lang: Lang;
-  className?: string;
-}) {
-  if (user.avatarUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={user.avatarUrl}
-        alt=""
-        referrerPolicy="no-referrer"
-        className={`${className} shrink-0 rounded-full object-cover ring-1 ring-white/20`}
-      />
-    );
-  }
-
-  return (
-    <span
-      aria-hidden
-      className={`${className} grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-bold text-white shadow-lg shadow-purple-500/20`}
-    >
-      {avatarInitial(user.name, user.email, lang)}
-    </span>
-  );
 }
 
 function planBadge(user: SessionUser, lang: Lang) {
@@ -86,6 +45,8 @@ export default function UserMenu({ lang }: { lang: Lang }) {
   const { openAuthModal } = useAuthModal();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [accountNonce, setAccountNonce] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -157,7 +118,12 @@ export default function UserMenu({ lang }: { lang: Lang }) {
           open ? "border-purple-400/40 text-white" : "hover:border-purple-400/30"
         }`}
       >
-        <Avatar user={user} lang={lang} />
+        <UserAvatar
+          name={user.name}
+          email={user.email}
+          avatarUrl={user.avatarUrl}
+          lang={lang}
+        />
         <span className="hidden max-w-[92px] truncate text-xs font-medium text-slate-200 sm:block">
           {name}
         </span>
@@ -186,7 +152,14 @@ export default function UserMenu({ lang }: { lang: Lang }) {
           className="glass-panel absolute right-0 z-[60] mt-2 w-64 overflow-hidden rounded-2xl p-1.5 text-slate-200 shadow-2xl shadow-black/60"
         >
           <div className="flex items-center gap-2.5 rounded-xl px-2 py-2">
-            <Avatar user={user} lang={lang} className="h-10 w-10" />
+            <UserAvatar
+              name={user.name}
+              email={user.email}
+              avatarUrl={user.avatarUrl}
+              lang={lang}
+              className="h-10 w-10"
+              textClassName="text-sm"
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-white">{name}</p>
               <p className="truncate text-[11px] text-slate-500">{user.email}</p>
@@ -212,17 +185,37 @@ export default function UserMenu({ lang }: { lang: Lang }) {
 
           <div className="mx-1 my-1 h-px bg-white/10" />
 
-          <Link
-            href="/pricing"
+          <button
+            type="button"
             role="menuitem"
-            onClick={() => setOpen(false)}
-            className="flex items-center justify-between gap-3 whitespace-nowrap rounded-lg px-2.5 py-2.5 text-xs text-slate-300 transition hover:bg-white/5 hover:text-white"
+            onClick={() => {
+              setOpen(false);
+              setAccountNonce((value) => value + 1);
+              setAccountOpen(true);
+            }}
+            className="flex w-full items-center justify-between gap-3 whitespace-nowrap rounded-lg px-2.5 py-2.5 text-left text-xs text-slate-300 transition hover:bg-white/5 hover:text-white"
           >
-            <span>{t.accountPlan}</span>
+            <span className="flex items-center gap-2">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+              >
+                <path
+                  d="M20 21a8 8 0 0 0-16 0M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {t.accountPlan}
+            </span>
             <span aria-hidden className="text-slate-600">
               →
             </span>
-          </Link>
+          </button>
 
           <button
             type="button"
@@ -248,6 +241,14 @@ export default function UserMenu({ lang }: { lang: Lang }) {
           </button>
         </div>
       )}
+      <AccountModal
+        key={accountNonce}
+        open={accountOpen}
+        onClose={() => setAccountOpen(false)}
+        lang={lang}
+        user={user}
+        ready={ready}
+      />
     </div>
   );
 }

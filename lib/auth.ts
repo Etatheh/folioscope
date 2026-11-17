@@ -5,6 +5,8 @@
 export type PlanId = "free" | "pro";
 
 export type SessionUser = {
+  /** Supabase auth user id / app user id, used for profile updates. */
+  id?: string;
   email: string;
   name: string;
   plan: PlanId;

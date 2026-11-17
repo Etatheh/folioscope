@@ -9,6 +9,7 @@ import { getSupabaseClient } from "./supabase/client";
 export type SessionMode = "local" | "server" | "supabase";
 
 type ServerUser = {
+  id?: string;
   email: string;
   nickname: string;
   plan: "free" | "pro";
@@ -18,6 +19,7 @@ type ServerUser = {
 
 function adaptServer(user: ServerUser): SessionUser {
   return {
+    id: user.id,
     email: user.email,
     name: user.nickname,
     plan: user.plan,
@@ -46,6 +48,7 @@ function adaptSupabase(user: User): SessionUser {
   const provider = firstString(appMeta.provider);
 
   return {
+    id: user.id,
     email,
     name,
     plan: meta.plan === "pro" ? "pro" : "free",
