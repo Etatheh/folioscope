@@ -1,7 +1,7 @@
 import { isProTier } from "@/lib/access";
 import { resolveRequestUser } from "@/lib/server/request-user";
 import { fetchUsKlines } from "@/lib/us-stocks";
-import { normalizeSymbol } from "@/lib/watchlist";
+import { isFeaturedSymbol, normalizeSymbol } from "@/lib/watchlist";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,10 +9,10 @@ export const dynamic = "force-dynamic";
 const NO_STORE = { "Cache-Control": "no-store" };
 
 /**
- * Daily closes for Pro's "sync to backtest" action.
+ * Daily closes for the backtest simulator.
  *
- * Returns raw bars so the simulator can forward-fill them onto its own trading
- * calendar; the route stays Pro-gated for the same reason as quote search.
+ * The 14 curated names are public to every visitor (including FREE accounts).
+ * Any other U.S. ticker stays Pro/Admin-only, matching the market search wall.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -24,8 +24,9 @@ export async function GET(request: Request) {
     );
   }
 
+  const featured = isFeaturedSymbol(symbol);
   const session = await resolveRequestUser(request);
-  if (!isProTier(session?.user.tier)) {
+  if (!featured && !isProTier(session?.user.tier)) {
     return Response.json(
       {
         ok: false,

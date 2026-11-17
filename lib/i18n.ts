@@ -110,6 +110,7 @@ const zh = {
     capital: "初始资金",
     range: ["1个月", "3个月", "6个月", "1年"],
     pickStocks: "选择股票",
+    freePoolHint: "免费版可选全部 14 只精选标的；Pro 可搜索并加入全美股",
     equalWeight: "等权分配",
     maxDrawdown: "最大回撤",
     finalValue: "期末估值",
@@ -121,6 +122,7 @@ const zh = {
     legendBenchmark: "标普500",
     empty: "请至少选择一只股票",
     weight: "权重",
+    totalWeight: "总权重",
     disclaimer: "模拟结果仅用于学习参考，不构成投资建议。",
     days: "个交易日",
     proRange: "6个月 / 1年长周期回测为 Pro 功能",
@@ -514,6 +516,7 @@ type Dict = {
     capital: string;
     range: string[];
     pickStocks: string;
+    freePoolHint: string;
     equalWeight: string;
     maxDrawdown: string;
     finalValue: string;
@@ -525,6 +528,7 @@ type Dict = {
     legendBenchmark: string;
     empty: string;
     weight: string;
+    totalWeight: string;
     disclaimer: string;
     days: string;
     proRange: string;
@@ -923,6 +927,7 @@ const en: Dict = {
     capital: "Starting capital",
     range: ["1M", "3M", "6M", "1Y"],
     pickStocks: "Pick stocks",
+    freePoolHint: "Free includes all 14 curated names · Pro unlocks full-market backtests",
     equalWeight: "Equal weight",
     maxDrawdown: "Max drawdown",
     finalValue: "Final value",
@@ -934,6 +939,7 @@ const en: Dict = {
     legendBenchmark: "S&P 500",
     empty: "Pick at least one stock",
     weight: "Weight",
+    totalWeight: "Total",
     disclaimer: "Simulation is for learning purposes only — not investment advice.",
     days: "trading days",
     proRange: "6M / 1Y backtests are a Pro feature",

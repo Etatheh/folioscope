@@ -75,6 +75,27 @@ export default function PortfolioSimulator({
 
   const totalWeight = selected.reduce((sum, s) => sum + Math.max(0, weights[s] ?? 0), 0);
 
+  // Integer percentages that always add up to 100 (largest-remainder rounding).
+  const displayPcts = useMemo(() => {
+    if (selected.length === 0) return [];
+    const basis =
+      totalWeight > 0
+        ? selected.map((s) => Math.max(0, weights[s] ?? 0))
+        : selected.map(() => 1);
+    const basisSum = basis.reduce((sum, value) => sum + value, 0) || 1;
+    const raw = basis.map((value) => (value / basisSum) * 100);
+    const floors = raw.map((value) => Math.floor(value));
+    const remaining = 100 - floors.reduce((sum, value) => sum + value, 0);
+    const order = raw
+      .map((value, index) => ({ index, frac: value - Math.floor(value) }))
+      .sort((a, b) => b.frac - a.frac);
+    const out = [...floors];
+    for (let i = 0; i < remaining; i += 1) {
+      out[order[i % order.length].index] += 1;
+    }
+    return out;
+  }, [selected, totalWeight, weights]);
+
   const calc = useMemo(() => {
     const len = win.dates.length;
     const active = selected.filter((s) => win.series[s] && Number.isFinite(win.series[s][0]));
@@ -335,6 +356,11 @@ export default function PortfolioSimulator({
             </span>
           )}
         </div>
+        {!hasFullAccess && (
+          <p className="mt-1 text-[10px] leading-relaxed text-slate-600">
+            {t.freePoolHint}
+          </p>
+        )}
         <div className="mt-2 flex flex-wrap gap-1.5">
           {stocks.map(({ symbol }) => {
             const on = selected.includes(symbol);
@@ -360,18 +386,24 @@ export default function PortfolioSimulator({
         <div className="mt-3">
           <div className="flex items-center justify-between">
             <p className="text-[11px] uppercase tracking-wider text-slate-600">{t.weight}</p>
-            <button
-              type="button"
-              onClick={equalize}
-              className="text-[11px] text-purple-400 transition hover:text-purple-300"
-            >
-              {t.equalWeight}
-            </button>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] tabular-nums text-slate-600">
+                {t.totalWeight}{" "}
+                <span className="text-slate-400">{selected.length > 0 ? "100%" : "0%"}</span>
+              </span>
+              <button
+                type="button"
+                onClick={equalize}
+                className="text-[11px] text-purple-400 transition hover:text-purple-300"
+              >
+                {t.equalWeight}
+              </button>
+            </div>
           </div>
           <div className="mt-2 grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
-            {selected.map((symbol) => {
+            {selected.map((symbol, index) => {
               const w = weights[symbol] ?? 10;
-              const pct = totalWeight > 0 ? (Math.max(0, w) / totalWeight) * 100 : 0;
+              const pct = displayPcts[index] ?? 0;
               return (
                 <label key={symbol} className="flex items-center gap-2 text-xs text-slate-400">
                   <span className="w-12 shrink-0 tabular-nums">{symbol}</span>
@@ -387,7 +419,7 @@ export default function PortfolioSimulator({
                     className="h-1 flex-1 cursor-pointer accent-purple-500"
                   />
                   <span className="w-10 shrink-0 text-right tabular-nums text-slate-500">
-                    {pct.toFixed(0)}%
+                    {pct}%
                   </span>
                 </label>
               );

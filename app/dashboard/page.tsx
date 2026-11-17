@@ -17,7 +17,6 @@ import type { ChatMarketContext } from "@/lib/chat";
 import { getUsMarketSnapshot, getWatchlistQuotes } from "@/lib/us-stocks";
 import { FEATURED_SYMBOLS } from "@/lib/watchlist";
 import {
-  FREE_STOCK_SYMBOLS,
   getViewerPlan,
   hasFullDashboardAccess,
 } from "@/lib/access";
@@ -116,9 +115,10 @@ export default async function DashboardPage({
     getWatchlistQuotes(FEATURED_SYMBOLS),
   ]);
 
-  // Free / anonymous viewers only get the free stock slice in the simulator too.
+  // Free / anonymous viewers get the complete 14-name curated pool in the
+  // simulator; Pro keeps the full dataset plus on-demand search additions.
   const allowedSymbols = new Set<string>(
-    fullAccess ? Object.keys(simData.series) : FREE_STOCK_SYMBOLS.us
+    fullAccess ? Object.keys(simData.series) : FEATURED_SYMBOLS
   );
   const sim = {
     ...simData,

@@ -826,7 +826,12 @@ export type SimulationData = {
 export async function getSimulationData(
   window = 250
 ): Promise<SimulationData> {
-  const symbols = STOCKS.map((item) => item.symbol);
+  // Include the complete featured pool so FREE users can backtest all 14 names.
+  // Pro users additionally keep COST/JPM and can add any U.S. ticker on demand.
+  const symbols = [
+    ...STOCKS.map((item) => item.symbol),
+    ...FEATURED_ITEMS.map((item) => item.symbol),
+  ];
   const benchSymbol = "INX";
   const all = [...symbols, benchSymbol];
 
