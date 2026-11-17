@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
 import ToastHost from "@/components/ui/ToastHost";
+import { WatchlistProvider } from "@/components/watchlist/WatchlistProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full scroll-smooth antialiased" data-scroll-behavior="smooth">
       <body className="min-h-full overflow-x-hidden text-slate-100">
-        <AuthModalProvider>{children}</AuthModalProvider>
+        <AuthModalProvider>
+          <WatchlistProvider>{children}</WatchlistProvider>
+        </AuthModalProvider>
         <ToastHost />
       </body>
     </html>

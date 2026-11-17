@@ -35,3 +35,21 @@ create table if not exists public.usage_daily (
 alter table public.users enable row level security;
 alter table public.sessions enable row level security;
 alter table public.usage_daily enable row level security;
+
+-- AI 个股财报深度分析 · 24 小时缓存
+-- 每位股票一行；symbol 为主键，重新生成时由 PostgREST upsert 覆盖。
+-- 独立迁移脚本：supabase/ai_stock_reports.sql
+create table if not exists public.ai_stock_reports (
+  symbol text primary key,
+  report jsonb not null,
+  financials jsonb not null,
+  model text not null default 'deepseek-chat',
+  generated_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists ai_stock_reports_expires_at_idx
+  on public.ai_stock_reports (expires_at);
+
+alter table public.ai_stock_reports enable row level security;

@@ -1,6 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
-
 import {
   COMPLIANCE_NOTE,
   buildSystemPrompt,
@@ -11,6 +8,7 @@ import {
   type ChatMessage,
   type ChatMarketContext,
 } from "@/lib/chat";
+import { completionsUrl, readAiConfig } from "@/lib/server/ai-config";
 import { resolveRequestUser } from "@/lib/server/request-user";
 import {
   DAILY_LIMITS,
@@ -49,55 +47,6 @@ const MSG = {
     emptyReply: "The AI returned an empty answer. Please rephrase your question.",
   },
 } as const;
-
-type AiConfig = { key: string; baseUrl: string; model: string };
-
-function readAgentKeyFile(): string | null {
-  try {
-    const key = fs
-      .readFileSync(path.join(process.cwd(), ".agent-key"), "utf8")
-      .trim();
-    return key || null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * OpenAI-compatible provider config.
- *
- * Primary env names: AI_API_KEY / AI_BASE_URL / AI_MODEL_NAME.
- * Legacy names remain as fallbacks so existing DeepSeek setups keep working.
- */
-function readAiConfig(): AiConfig | null {
-  const key =
-    process.env.AI_API_KEY?.trim() ||
-    process.env.DASHSCOPE_API_KEY?.trim() ||
-    process.env.DEEPSEEK_API_KEY?.trim() ||
-    process.env.AGENT_API_KEY?.trim() ||
-    readAgentKeyFile();
-
-  if (!key) return null;
-
-  const baseUrl = (
-    process.env.AI_BASE_URL?.trim() ||
-    process.env.AGENT_BASE_URL?.trim() ||
-    "https://api.deepseek.com"
-  ).replace(/\/+$/, "");
-
-  const model =
-    process.env.AI_MODEL_NAME?.trim() ||
-    process.env.AGENT_MODEL?.trim() ||
-    "deepseek-chat";
-
-  return { key, baseUrl, model };
-}
-
-function completionsUrl(baseUrl: string): string {
-  return /\/chat\/completions$/.test(baseUrl)
-    ? baseUrl
-    : `${baseUrl}/chat/completions`;
-}
 
 function jsonError(message: string, status: number, code?: string) {
   return Response.json(

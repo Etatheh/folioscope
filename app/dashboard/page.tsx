@@ -11,8 +11,11 @@ import PortfolioSimulator from "@/components/PortfolioSimulator";
 import UsStockPanel from "@/components/UsStockPanel";
 import UserMenu from "@/components/UserMenu";
 import ProUpgradeButton from "@/components/ui/ProUpgradeButton";
+import WatchlistHub from "@/components/watchlist/WatchlistHub";
+import WatchlistNavButton from "@/components/watchlist/WatchlistNavButton";
 import type { ChatMarketContext } from "@/lib/chat";
-import { getUsMarketSnapshot } from "@/lib/us-stocks";
+import { getUsMarketSnapshot, getWatchlistQuotes } from "@/lib/us-stocks";
+import { FEATURED_SYMBOLS } from "@/lib/watchlist";
 import {
   FREE_STOCK_SYMBOLS,
   getViewerPlan,
@@ -84,13 +87,14 @@ function MarketsSkeleton() {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string | string[] }>;
+  searchParams: Promise<{ lang?: string | string[]; tab?: string | string[] }>;
 }) {
-  const { lang: rawLang } = await searchParams;
+  const { lang: rawLang, tab: rawTab } = await searchParams;
   const store = await cookies();
   // Honour an explicit ?lang= first, then a remembered cookie choice, else English.
   const lang = parseLang(rawLang ?? store.get(LANG_COOKIE)?.value);
   const t = dict[lang];
+  const watchlistTab = (Array.isArray(rawTab) ? rawTab[0] : rawTab) === "mine" ? "mine" : "featured";
 
   const token = store.get(COOKIE_NAME)?.value;
   let viewer = null;
@@ -103,12 +107,13 @@ export default async function DashboardPage({
   const fullAccess = hasFullDashboardAccess(plan);
 
   const showCn = lang === "zh";
-  const [usData, simData, asiaData, dcaData, cnData] = await Promise.all([
+  const [usData, simData, asiaData, dcaData, cnData, watchlistQuotes] = await Promise.all([
     getUsMarketSnapshot(),
     getSimulationData(),
     getAsiaMarketSnapshot(),
     getDcaDataset(),
     showCn ? getCnMarketSnapshot() : Promise.resolve(null),
+    getWatchlistQuotes(FEATURED_SYMBOLS),
   ]);
 
   // Free / anonymous viewers only get the free stock slice in the simulator too.
@@ -236,18 +241,20 @@ export default async function DashboardPage({
                 className="whitespace-nowrap bg-gradient-to-r from-blue-500/20 to-purple-500/20"
               />
             )}
-            <button
-              type="button"
-              aria-label={lang === "zh" ? "通知" : "Notifications"}
-              className="glass flex h-9 w-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full text-slate-400 transition hover:border-purple-400/40 hover:text-white"
-            >
-              ♡
-            </button>
+            <WatchlistNavButton lang={lang} />
             <UserMenu lang={lang} />
           </div>
         </header>
 
-        <section id="markets" className="mt-8">
+        <section id="watchlist" className="mt-8 scroll-mt-6">
+          <WatchlistHub
+            lang={lang}
+            quotes={watchlistQuotes}
+            initialTab={watchlistTab}
+          />
+        </section>
+
+        <section id="markets" className="mt-5">
           <Suspense fallback={<MarketsSkeleton />}>
             <UsStockPanel lang={lang} plan={plan} snapshot={usData} />
           </Suspense>

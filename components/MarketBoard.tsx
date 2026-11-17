@@ -105,6 +105,7 @@ export default function MarketBoard({
               key={quote.symbol}
               quote={quote}
               lang={lang}
+              plan={plan}
               currency={stockCurrencies?.[quote.symbol] ?? stockCurrency}
               href={stockDetail ? hrefFor(quote.symbol) : undefined}
             />

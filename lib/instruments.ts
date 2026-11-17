@@ -5,6 +5,7 @@ import { getCnMarketSnapshot, CN_KLINE_SECID } from "./cn-markets";
 import { getAsiaMarketSnapshot, ASIA_KLINE_SECID, ASIA_CURRENCY } from "./asia-markets";
 import {
   getUsMarketSnapshot,
+  fetchQuoteBySymbol,
   fetchUsKlines,
   type Candle,
   type UsQuote,
@@ -26,6 +27,15 @@ export async function getInstrumentDetail(symbol: string): Promise<InstrumentDet
   let quote = [...us.indices, ...us.stocks].find((item) => item.symbol === symbol);
   let market: InstrumentMarket = "us";
   let demo = us.demo;
+
+  // Pro search can land on any U.S. ticker, not just dashboard snapshot names.
+  if (!quote) {
+    const generic = await fetchQuoteBySymbol(symbol);
+    if (generic) {
+      quote = generic;
+      demo = false;
+    }
+  }
 
   if (!quote) {
     const cn = await getCnMarketSnapshot();

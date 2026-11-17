@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { dict, type Lang } from "@/lib/i18n";
 import type { SimulationData } from "@/lib/us-stocks";
 import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
+import { apiFetch } from "@/lib/client-api";
+import { BACKTEST_ADD_EVENT, normalizeSymbol } from "@/lib/watchlist";
+import { showToast } from "./ui/ToastHost";
 import { fmtSigned } from "./market-ui";
 import AnimatedNumber from "./ui/AnimatedNumber";
 import ProUpgradeButton from "./ui/ProUpgradeButton";
@@ -25,12 +28,23 @@ export default function PortfolioSimulator({
   const t = dict[lang].simulator;
   const hasFullAccess = hasFullDashboardAccess(plan);
   const [limitHit, setLimitHit] = useState(false);
+  const [extraSeries, setExtraSeries] = useState<Record<string, number[]>>({});
+  const [syncingSymbol, setSyncingSymbol] = useState<string | null>(null);
+
+  const mergedData = useMemo<SimulationData>(
+    () => ({
+      ...data,
+      series: { ...data.series, ...extraSeries },
+    }),
+    [data, extraSeries]
+  );
+
   const stocks = useMemo(
     () =>
-      Object.keys(data.series)
-        .filter((s) => data.series[s] && data.series[s].length > 1)
+      Object.keys(mergedData.series)
+        .filter((s) => mergedData.series[s] && mergedData.series[s].length > 1)
         .map((symbol) => ({ symbol })),
-    [data]
+    [mergedData]
   );
 
   const [capital, setCapital] = useState(10000);
@@ -46,16 +60,16 @@ export default function PortfolioSimulator({
   const count = RANGES[activeRange];
 
   const win = useMemo(() => {
-    const n = data.dates.length;
+    const n = mergedData.dates.length;
     const start = Math.max(0, n - count);
     return {
-      dates: data.dates.slice(start),
+      dates: mergedData.dates.slice(start),
       series: Object.fromEntries(
-        Object.entries(data.series).map(([s, arr]) => [s, arr.slice(start)])
+        Object.entries(mergedData.series).map(([s, arr]) => [s, arr.slice(start)])
       ) as Record<string, number[]>,
-      benchmark: data.benchmark.closes.slice(start),
+      benchmark: mergedData.benchmark.closes.slice(start),
     };
-  }, [data, count]);
+  }, [mergedData, count]);
 
   const totalWeight = selected.reduce((sum, s) => sum + Math.max(0, weights[s] ?? 0), 0);
 
@@ -101,6 +115,74 @@ export default function PortfolioSimulator({
 
   const equalize = () =>
     setWeights(() => Object.fromEntries(selected.map((s) => [s, 1])));
+
+  // Pro search can push any U.S. ticker into this backtest pool. We fetch its
+  // daily closes once and forward-fill them onto the simulator's calendar.
+  useEffect(() => {
+    const onAdd = async (event: Event) => {
+      const raw = (event as CustomEvent<{ symbol?: string }>).detail?.symbol;
+      const symbol = normalizeSymbol(raw ?? "");
+      if (!symbol) return;
+
+      const addToSelection = () => {
+        setSelected((prev) => (prev.includes(symbol) ? prev : [...prev, symbol]));
+        setWeights((prev) =>
+          prev[symbol] !== undefined ? prev : { ...prev, [symbol]: 10 }
+        );
+      };
+
+      if (mergedData.series[symbol]) {
+        addToSelection();
+        showToast(dict[lang].watchlist.syncedToast(symbol));
+        document
+          .getElementById("investments")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+
+      setSyncingSymbol(symbol);
+      try {
+        const response = await apiFetch(
+          `/api/markets/series?symbol=${encodeURIComponent(symbol)}`
+        );
+        if (!response.ok) throw new Error("series unavailable");
+        const payload = (await response.json()) as {
+          bars?: { date: string; close: number }[];
+        };
+        if (!payload.bars || payload.bars.length === 0) {
+          throw new Error("empty series");
+        }
+
+        const closeByDate = new Map(
+          payload.bars.map((bar) => [bar.date, bar.close])
+        );
+        let last = NaN;
+        const closes = data.dates.map((date) => {
+          const close = closeByDate.get(date);
+          if (close !== undefined) last = close;
+          return Number.isFinite(last) ? last : NaN;
+        });
+
+        if (closes.filter((value) => Number.isFinite(value)).length < 2) {
+          throw new Error("series could not be aligned");
+        }
+
+        setExtraSeries((current) => ({ ...current, [symbol]: closes }));
+        addToSelection();
+        showToast(dict[lang].watchlist.syncedToast(symbol));
+        document
+          .getElementById("investments")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch {
+        showToast(dict[lang].watchlist.syncFailed);
+      } finally {
+        setSyncingSymbol(null);
+      }
+    };
+
+    window.addEventListener(BACKTEST_ADD_EVENT, onAdd);
+    return () => window.removeEventListener(BACKTEST_ADD_EVENT, onAdd);
+  }, [data.dates, lang, mergedData.series]);
 
   const chart = useMemo(() => {
     if (!calc) return null;
@@ -243,7 +325,14 @@ export default function PortfolioSimulator({
       )}
 
       <div className="mt-4">
-        <p className="text-[11px] uppercase tracking-wider text-slate-600">{t.pickStocks}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] uppercase tracking-wider text-slate-600">{t.pickStocks}</p>
+          {syncingSymbol && (
+            <span className="text-[10px] text-purple-300">
+              {syncingSymbol} · {dict[lang].watchlist.syncing}
+            </span>
+          )}
+        </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {stocks.map(({ symbol }) => {
             const on = selected.includes(symbol);

@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import UserMenu from "./UserMenu";
+import WatchlistNavButton from "./watchlist/WatchlistNavButton";
 import { useAuthModal } from "./auth/AuthModalProvider";
 import { useSession } from "@/lib/use-session";
+import type { Lang } from "@/lib/i18n";
 
 const navLinks = [
   { label: "Features", href: "/#features" },
@@ -12,7 +14,7 @@ const navLinks = [
   { label: "Dashboard", href: "/dashboard" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ lang = "en" }: { lang?: Lang }) {
   const [open, setOpen] = useState(false);
   const { user, ready } = useSession();
   const { openAuthModal } = useAuthModal();
@@ -61,6 +63,7 @@ export default function Navbar() {
           </ul>
 
           <div className="hidden items-center gap-3 md:flex">
+            <WatchlistNavButton lang={lang} />
             {ready && !user && (
               <>
                 <button
@@ -79,30 +82,33 @@ export default function Navbar() {
                 </button>
               </>
             )}
-            {ready && user && <UserMenu lang="en" />}
+            {ready && user && <UserMenu lang={lang} />}
           </div>
 
-          <button
-            type="button"
-            aria-label="Toggle menu"
-            aria-expanded={open}
-            onClick={() => setOpen(!open)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-purple-500/20 text-slate-300 transition-colors hover:border-purple-500/40 hover:text-white md:hidden"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
+          <div className="flex items-center gap-2 md:hidden">
+            <WatchlistNavButton lang={lang} />
+            <button
+              type="button"
+              aria-label="Toggle menu"
+              aria-expanded={open}
+              onClick={() => setOpen(!open)}
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-purple-500/20 text-slate-300 transition-colors hover:border-purple-500/40 hover:text-white"
             >
-              {open ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                {open ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div

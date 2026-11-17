@@ -92,6 +92,7 @@ export default async function UsStockPanel({
               key={quote.symbol}
               quote={quote}
               lang={lang}
+              plan={plan}
               currency="$"
               href={hrefFor(quote.symbol)}
             />

@@ -6,6 +6,7 @@ import AiAssistantDrawer from "@/components/ai/AiAssistantDrawer";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import LangToggle from "@/components/LangToggle";
 import PriceChart from "@/components/PriceChart";
+import StockReportButton from "@/components/stock/StockReportButton";
 import {
   ChangeChip,
   MaValue,
@@ -21,6 +22,7 @@ import { buildChartSeries } from "@/lib/us-stocks";
 import type { ChatMarketContext } from "@/lib/chat";
 import { getInstrumentDetail } from "@/lib/instruments";
 import { getViewerPlan, isSymbolUnlocked } from "@/lib/access";
+import { isFeaturedSymbol } from "@/lib/watchlist";
 import { getSessionUser } from "@/lib/server/auth-service";
 import { COOKIE_NAME } from "@/lib/server/auth";
 import { dict, parseLang } from "@/lib/i18n";
@@ -117,7 +119,9 @@ export default async function MarketDetailPage({
     );
   }
 
-  if (!isSymbolUnlocked(market, quote.symbol, plan)) {
+  const featuredFree = market === "us" && isFeaturedSymbol(quote.symbol);
+
+  if (!featuredFree && !isSymbolUnlocked(market, quote.symbol, plan)) {
     return (
       <div className="relative min-h-screen">
         <BackgroundEffects />
@@ -237,6 +241,14 @@ export default async function MarketDetailPage({
                 {quote.symbol} · {quote.code}
                 {quote.quoteTime ? ` · ${tx.exchangeTime} ${quote.quoteTime}` : ""}
               </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <StockReportButton
+                  symbol={quote.symbol}
+                  lang={lang}
+                  plan={plan}
+                  variant="detail"
+                />
+              </div>
             </div>
             <div className="text-right">
               <p className="text-3xl font-semibold tabular-nums text-white">

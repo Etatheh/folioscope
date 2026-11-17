@@ -58,6 +58,24 @@ export function pgInsert<T>(env: SupabaseEnv, table: string, row: object): Promi
   return request<T[]>(env, table, { method: "POST", body: JSON.stringify(row) });
 }
 
+/** Insert or replace a row using a unique column (PostgREST upsert). */
+export function pgUpsert<T>(
+  env: SupabaseEnv,
+  table: string,
+  row: object,
+  onConflict: string
+): Promise<T[]> {
+  return request<T[]>(
+    env,
+    `${table}?on_conflict=${encodeURIComponent(onConflict)}`,
+    {
+      method: "POST",
+      body: JSON.stringify(row),
+      headers: { Prefer: "return=representation,resolution=merge-duplicates" },
+    }
+  );
+}
+
 export function pgUpdate<T>(env: SupabaseEnv, table: string, query: string, patch: object): Promise<T[]> {
   return request<T[]>(env, `${table}?${query}`, {
     method: "PATCH",

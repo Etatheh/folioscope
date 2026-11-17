@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import Navbar from "@/components/Navbar";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { parseLang } from "@/lib/i18n";
+import { LANG_COOKIE } from "@/lib/lang-pref";
 import { PLANS } from "@/lib/plans";
 
 export const metadata = {
@@ -38,11 +41,19 @@ const features: { icon: IconName; title: string; desc: string }[] = [
   },
 ];
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string | string[] }>;
+}) {
+  const { lang: rawLang } = await searchParams;
+  const store = await cookies();
+  const lang = parseLang(rawLang ?? store.get(LANG_COOKIE)?.value);
+
   return (
     <>
       <BackgroundEffects />
-      <Navbar />
+      <Navbar lang={lang} />
       <main>
         <section className="relative z-10 mx-auto max-w-5xl px-6 pb-14 pt-40 text-center">
           <h1 className="text-4xl font-bold leading-tight text-white sm:text-6xl">

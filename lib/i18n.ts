@@ -257,6 +257,52 @@ const zh = {
       generic: "操作失败，请稍后再试。",
     },
   },
+  watchlist: {
+    title: "自选与精选",
+    subtitle: "14 只核心标的免费收藏 · Pro 解锁全美股搜索",
+    tabFeatured: "热门精选",
+    tabMine: "我的自选",
+    featuredNote: "免费精选 · 14 只核心标的",
+    mineNote: "已云端同步",
+    count: (n: number) => `${n} 只`,
+    emptyTitle: "自选股还是空的",
+    emptyBody: "点击任意股票卡片右上角的 ♡，登录后即可跨设备云端同步。",
+    loginTitle: "登录后同步自选股",
+    loginBody: "收藏会保存到 Supabase，并在所有设备保持同步。",
+    loginCta: "登录 / 注册",
+    add: "加入自选",
+    added: "已收藏",
+    remove: "取消收藏",
+    savedToast: (symbol: string) => `${symbol} 已加入自选`,
+    removedToast: (symbol: string) => `${symbol} 已移出自选`,
+    errorToast: "自选同步失败，请稍后重试",
+    searchPlaceholder: "搜索美股 / ETF 代码…",
+    searchHint: "试试 NVDA、SPY、BRK.B",
+    searchAria: "搜索美股代码",
+    searching: "正在获取报价…",
+    noResult: "未找到该标的，请检查代码后重试。",
+    searchError: "行情接口暂不可用，请稍后再试。",
+    proLocked: "Pro 专属",
+    proLockedTitle: "该标的仅对 Pro 开放",
+    proLockedBody: "免费版可查看 14 只精选标的；升级 Pro 解锁全美股与 ETF 搜索。",
+    upgrade: "升级 Pro",
+    searchResult: "搜索结果",
+    addWatchlist: "加入自选",
+    syncBacktest: "同步到回测池",
+    syncing: "正在同步…",
+    syncedToast: (symbol: string) => `${symbol} 已同步到回测标的池`,
+    syncFailed: "该标的暂时无法加入回测池",
+    viewDetail: "查看详情",
+    priceLocked: "价格已锁定",
+    proSearchBadge: "PRO SEARCH",
+    navTitle: "我的自选",
+    navEmpty: "还没有收藏的股票",
+    navLogin: "登录后开启云端自选",
+    navViewAll: "查看全部自选",
+    navCount: (n: number) => `${n} 只`,
+    guests: "登录后可收藏",
+    localOnly: "本地缓存",
+  },
   pro: {
     feature: "PRO FEATURE",
     badgeTip: "Pro 专属功能",
@@ -277,7 +323,7 @@ const zh = {
         { label: "定投回测周期", free: "1 个月", pro: "5 年" },
         { label: "AI 市场摘要", free: "—", pro: "每日生成" },
         { label: "AI 助手额度", free: "5 次/天", pro: "200 次/天" },
-        { label: "自选股与组合", free: "—", pro: "即将上线" },
+        { label: "云端自选股", free: "14 只精选", pro: "全市场" },
       ],
       cta: "使用 Lemon Squeezy 升级",
       ctaBusy: "正在前往结算…",
@@ -305,6 +351,48 @@ const zh = {
     quota: (remaining: number, limit: number) => `今日剩余 ${remaining}/${limit} 次`,
     prompt:
       "请用不超过 120 字的中文总结当前美股主要指数的涨跌、领涨与领跌板块，不要给投资建议。",
+  },
+  stockReport: {
+    button: "AI 财报分析",
+    badge: "PRO",
+    title: "AI 个股财报深度分析",
+    subtitle: "Yahoo Finance 财报数据 · DeepSeek 中英双语研报",
+    loading: "正在抓取最新财报并生成研报…",
+    cached: "24 小时缓存",
+    generated: "生成于",
+    dataAsOf: "数据时间",
+    error: "研报生成失败，请稍后重试。",
+    unauthorized: "请先登录后再查看 AI 财报分析。",
+    upgradeTitle: "AI 财报分析为 Pro 专属",
+    upgradeBody: "升级 Pro 解锁每只股票的财报亮点、估值水位与风险提示。",
+    upgradeCta: "升级 Pro",
+    retry: "重试",
+    close: "关闭",
+    sections: {
+      summary: "核心结论",
+      highlights: "核心财务亮点",
+      valuation: "估值水位",
+      risks: "潜在风险",
+      verdict: "综合评述",
+    },
+    metrics: {
+      revenueGrowth: "营收增速",
+      grossMargin: "毛利率",
+      freeCashflow: "自由现金流",
+      pe: "市盈率 PE",
+      pb: "市净率 PB",
+      week52: "52 周区间",
+      price: "最新价",
+      marketCap: "总市值",
+    },
+    epsTitle: "近 4 季 EPS：实际 vs 预期",
+    actual: "实际",
+    estimate: "预期",
+    surprise: "超预期",
+    noEps: "暂无 EPS 对比数据",
+    disclaimer: "AI 生成内容基于 Yahoo Finance 公开财报数据，仅供参考，不构成投资建议。",
+    langZh: "中文",
+    langEn: "EN",
   },
   dca: {
     title: "定投回测",
@@ -567,6 +655,52 @@ type Dict = {
       generic: string;
     };
   };
+  watchlist: {
+    title: string;
+    subtitle: string;
+    tabFeatured: string;
+    tabMine: string;
+    featuredNote: string;
+    mineNote: string;
+    count: (n: number) => string;
+    emptyTitle: string;
+    emptyBody: string;
+    loginTitle: string;
+    loginBody: string;
+    loginCta: string;
+    add: string;
+    added: string;
+    remove: string;
+    savedToast: (symbol: string) => string;
+    removedToast: (symbol: string) => string;
+    errorToast: string;
+    searchPlaceholder: string;
+    searchHint: string;
+    searchAria: string;
+    searching: string;
+    noResult: string;
+    searchError: string;
+    proLocked: string;
+    proLockedTitle: string;
+    proLockedBody: string;
+    upgrade: string;
+    searchResult: string;
+    addWatchlist: string;
+    syncBacktest: string;
+    syncing: string;
+    syncedToast: (symbol: string) => string;
+    syncFailed: string;
+    viewDetail: string;
+    priceLocked: string;
+    proSearchBadge: string;
+    navTitle: string;
+    navEmpty: string;
+    navLogin: string;
+    navViewAll: string;
+    navCount: (n: number) => string;
+    guests: string;
+    localOnly: string;
+  };
   pro: {
     feature: string;
     badgeTip: string;
@@ -607,6 +741,48 @@ type Dict = {
     error: string;
     quota: (remaining: number, limit: number) => string;
     prompt: string;
+  };
+  stockReport: {
+    button: string;
+    badge: string;
+    title: string;
+    subtitle: string;
+    loading: string;
+    cached: string;
+    generated: string;
+    dataAsOf: string;
+    error: string;
+    unauthorized: string;
+    upgradeTitle: string;
+    upgradeBody: string;
+    upgradeCta: string;
+    retry: string;
+    close: string;
+    sections: {
+      summary: string;
+      highlights: string;
+      valuation: string;
+      risks: string;
+      verdict: string;
+    };
+    metrics: {
+      revenueGrowth: string;
+      grossMargin: string;
+      freeCashflow: string;
+      pe: string;
+      pb: string;
+      week52: string;
+      price: string;
+      marketCap: string;
+    };
+    epsTitle: string;
+    actual: string;
+    estimate: string;
+    surprise: string;
+    noEps: string;
+    disclaimer: string;
+    langZh: string;
+    langEn: string;
   };
   dca: {
     title: string;
@@ -893,6 +1069,52 @@ const en: Dict = {
       generic: "Something went wrong. Please try again.",
     },
   },
+  watchlist: {
+    title: "Watchlist & Featured",
+    subtitle: "14 core names free to save · Pro unlocks the whole U.S. market",
+    tabFeatured: "Featured",
+    tabMine: "My Watchlist",
+    featuredNote: "Free curated pool · 14 core names",
+    mineNote: "Synced to the cloud",
+    count: (n: number) => `${n} saved`,
+    emptyTitle: "Your watchlist is empty",
+    emptyBody: "Tap the ♡ on any stock card to save it. Log in to sync across devices.",
+    loginTitle: "Log in to sync your watchlist",
+    loginBody: "Favorites are stored in Supabase and stay in sync everywhere.",
+    loginCta: "Log in / Sign up",
+    add: "Add to watchlist",
+    added: "Saved",
+    remove: "Remove from watchlist",
+    savedToast: (symbol: string) => `${symbol} added to your watchlist`,
+    removedToast: (symbol: string) => `${symbol} removed from your watchlist`,
+    errorToast: "Could not sync your watchlist. Please try again.",
+    searchPlaceholder: "Search U.S. Market…",
+    searchHint: "Try NVDA, SPY or BRK.B",
+    searchAria: "Search U.S. ticker",
+    searching: "Fetching quote…",
+    noResult: "No match for that ticker. Check the symbol and retry.",
+    searchError: "Quote feed unavailable. Please try again shortly.",
+    proLocked: "Pro only",
+    proLockedTitle: "This symbol is Pro-only",
+    proLockedBody: "Free includes 14 curated names. Upgrade to Pro to search every U.S. stock and ETF.",
+    upgrade: "Upgrade to Pro",
+    searchResult: "Search result",
+    addWatchlist: "Add to watchlist",
+    syncBacktest: "Sync to backtest",
+    syncing: "Syncing…",
+    syncedToast: (symbol: string) => `${symbol} synced to the backtest pool`,
+    syncFailed: "This symbol could not be added to the backtest pool",
+    viewDetail: "View details",
+    priceLocked: "Price locked",
+    proSearchBadge: "PRO SEARCH",
+    navTitle: "My Watchlist",
+    navEmpty: "No saved stocks yet",
+    navLogin: "Log in to start a cloud watchlist",
+    navViewAll: "View all favorites",
+    navCount: (n: number) => `${n} saved`,
+    guests: "Log in to save",
+    localOnly: "Local cache",
+  },
   pro: {
     feature: "PRO FEATURE",
     badgeTip: "Pro feature",
@@ -914,7 +1136,7 @@ const en: Dict = {
         { label: "DCA backtest range", free: "1 month", pro: "5 years" },
         { label: "AI market summary", free: "—", pro: "Daily" },
         { label: "AI assistant quota", free: "5 / day", pro: "200 / day" },
-        { label: "Watchlists & portfolios", free: "—", pro: "Coming soon" },
+        { label: "Cloud watchlist", free: "14 names", pro: "Whole market" },
       ],
       cta: "Continue with Lemon Squeezy",
       ctaBusy: "Opening checkout…",
@@ -942,6 +1164,50 @@ const en: Dict = {
     quota: (remaining: number, limit: number) => `${remaining}/${limit} questions left today`,
     prompt:
       "Summarize today's U.S. index moves and the leading/lagging sectors in under 100 words. No investment advice.",
+  },
+  stockReport: {
+    button: "AI Earnings Analysis",
+    badge: "PRO",
+    title: "AI Fundamental Earnings Report",
+    subtitle: "Yahoo Finance fundamentals · bilingual DeepSeek research",
+    loading: "Fetching the latest fundamentals and drafting the report…",
+    cached: "24h cache",
+    generated: "Generated",
+    dataAsOf: "Data as of",
+    error: "Could not generate the report. Please try again.",
+    unauthorized: "Please log in to view the AI earnings report.",
+    upgradeTitle: "AI earnings analysis is a Pro feature",
+    upgradeBody:
+      "Upgrade to Pro to unlock financial highlights, valuation context and risk flags for every stock.",
+    upgradeCta: "Upgrade to Pro",
+    retry: "Retry",
+    close: "Close",
+    sections: {
+      summary: "Key takeaway",
+      highlights: "Financial highlights",
+      valuation: "Valuation",
+      risks: "Risks",
+      verdict: "Balanced view",
+    },
+    metrics: {
+      revenueGrowth: "Revenue growth",
+      grossMargin: "Gross margin",
+      freeCashflow: "Free cash flow",
+      pe: "P/E",
+      pb: "P/B",
+      week52: "52-week range",
+      price: "Last price",
+      marketCap: "Market cap",
+    },
+    epsTitle: "Last 4 quarters: EPS actual vs estimate",
+    actual: "Actual",
+    estimate: "Estimate",
+    surprise: "Surprise",
+    noEps: "No EPS comparison data",
+    disclaimer:
+      "AI-generated content based on public Yahoo Finance fundamentals. For reference only — not investment advice.",
+    langZh: "中文",
+    langEn: "EN",
   },
   dca: {
     title: "DCA Backtest",

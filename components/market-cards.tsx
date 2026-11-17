@@ -3,6 +3,7 @@ import type { UsQuote } from "@/lib/us-stocks";
 import type { ViewerPlan } from "@/lib/access";
 import { dict, type Lang } from "@/lib/i18n";
 import AnimatedNumber from "./ui/AnimatedNumber";
+import StockReportButton from "./stock/StockReportButton";
 import UnlockCtaButton from "./ui/UnlockCtaButton";
 import {
   ChangeChip,
@@ -40,23 +41,31 @@ function names(quote: UsQuote, lang: Lang) {
 function CardShell({
   href,
   title,
+  action,
   children,
 }: {
   href?: string;
   title?: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const body = (
     <article className="data-card h-full rounded-xl p-4">
-      {children}
+      {href ? (
+        <Link href={href} title={title} className="block">
+          {children}
+        </Link>
+      ) : (
+        children
+      )}
+      {action && (
+        <div className="mt-2.5 flex justify-end border-t border-white/5 pt-2">
+          {action}
+        </div>
+      )}
     </article>
   );
-  if (!href) return body;
-  return (
-    <Link href={href} title={title} className="block">
-      {body}
-    </Link>
-  );
+  return body;
 }
 
 function DayRangeBar({ quote }: { quote: UsQuote }) {
@@ -161,11 +170,13 @@ export function IndexCard({
 export function StockCard({
   quote,
   lang,
+  plan,
   currency = "",
   href,
 }: {
   quote: UsQuote;
   lang: Lang;
+  plan: ViewerPlan;
   currency?: string;
   href?: string;
 }) {
@@ -173,7 +184,18 @@ export function StockCard({
   const tech = quote.tech;
   const { primary, secondary } = names(quote, lang);
   return (
-    <CardShell href={href} title={href ? `${t.viewDetail} · ${primary}` : undefined}>
+    <CardShell
+      href={href}
+      title={href ? `${t.viewDetail} · ${primary}` : undefined}
+      action={
+        <StockReportButton
+          symbol={quote.symbol}
+          lang={lang}
+          plan={plan}
+          variant="chip"
+        />
+      }
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-slate-200">
