@@ -63,10 +63,15 @@ export function hasFullDashboardAccess(plan: ViewerPlan): boolean {
 
 export const FREE_STOCK_COUNT = 4;
 
-export const FREE_STOCK_SYMBOLS: Record<"us" | "cn" | "asia", string[]> = {
+export const FREE_STOCK_SYMBOLS: Record<
+  "us" | "cn" | "asia" | "europe",
+  string[]
+> = {
   us: ["AAPL", "MSFT", "NVDA", "GOOGL"],
   cn: ["600519", "300750", "002594", "688981"],
   asia: ["7203", "6758", "9984", "7974"],
+  // Europe is an index-only board, so there are no individual free stocks.
+  europe: [],
 };
 
 export const INDEX_SYMBOLS = new Set([
@@ -80,10 +85,15 @@ export const INDEX_SYMBOLS = new Set([
   "SH000300",
   "N225",
   "KS11",
+  "^HSI",
+  "000001.SS",
+  "^FTSE",
+  "^GDAXI",
+  "^FCHI",
 ]);
 
 export function isSymbolUnlocked(
-  market: "us" | "cn" | "asia",
+  market: "us" | "cn" | "asia" | "europe",
   symbol: string,
   plan: ViewerPlan
 ): boolean {

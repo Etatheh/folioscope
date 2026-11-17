@@ -52,7 +52,13 @@ export default async function MarketDetailPage({
   params: Promise<{ symbol: string }>;
   searchParams: Promise<{ lang?: string | string[] }>;
 }) {
-  const { symbol } = await params;
+  const { symbol: rawSymbol } = await params;
+  let symbol = rawSymbol;
+  try {
+    symbol = decodeURIComponent(rawSymbol);
+  } catch {
+    // keep the raw segment when it is not valid percent-encoding
+  }
   const { lang: rawLang } = await searchParams;
   const lang = parseLang(rawLang);
   const tx = dict[lang].detail;
@@ -72,7 +78,7 @@ export default async function MarketDetailPage({
   if (!detail) notFound();
 
   const { quote, bars, demo, currency, market } = detail;
-  const basePath = `/dashboard/markets/${quote.symbol}`;
+  const basePath = `/dashboard/markets/${encodeURIComponent(quote.symbol)}`;
   const px = (n: number) => `${currency}${fmtPrice(n)}`;
 
   // A-shares are only presented in the Chinese version of the site.

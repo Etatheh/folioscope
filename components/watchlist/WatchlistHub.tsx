@@ -155,9 +155,9 @@ export default function WatchlistHub({
   );
 
   return (
-    <article id="watchlist-panel" className="glass rounded-2xl p-5 sm:p-6">
+    <article id="watchlist-panel" className="glass min-w-0 overflow-x-clip rounded-2xl p-5 sm:p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h2 className="flex flex-wrap items-center gap-2 font-semibold text-white">
             {t.title}
             {isPro && (
@@ -168,9 +168,15 @@ export default function WatchlistHub({
           </h2>
           <p className="mt-1 text-xs text-slate-500">{t.subtitle}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-amber-300/20 bg-amber-300/[0.06] px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-amber-200/80">
             {t.featuredNote}
+          </span>
+          <span
+            className="rounded-full border border-purple-400/20 bg-purple-500/[0.08] px-2.5 py-1 text-[10px] tabular-nums text-purple-200"
+            title={lang === "zh" ? "免费版自选额度" : "Free watchlist quota"}
+          >
+            {count} / {isPro ? "∞" : FEATURED_SYMBOLS.length}
           </span>
           <ProBadge label={t.proSearchBadge} title={t.proLockedBody} />
         </div>
@@ -234,7 +240,7 @@ export default function WatchlistHub({
       </div>
 
       {tab === "featured" ? (
-        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-3 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {quotes.map((quote) => (
             <QuoteCard
               key={quote.symbol}
@@ -246,7 +252,7 @@ export default function WatchlistHub({
           ))}
         </div>
       ) : (
-        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-3 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {!ready || loading ? (
             <EmptyCard
               loading

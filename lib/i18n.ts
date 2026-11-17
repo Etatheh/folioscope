@@ -1,3 +1,5 @@
+import type { DashboardView } from "./dashboard-views";
+
 export type Lang = "zh" | "en";
 
 export function parseLang(value?: string | string[]): Lang {
@@ -14,9 +16,47 @@ const zh = {
     investments: "投资模拟",
     learning: "学习",
   },
+  sidebar: {
+    markets: "Markets",
+    allMarkets: "全球总览",
+    usMarkets: "美股市场",
+    europe: "欧洲市场",
+    asiaPacific: "亚太市场",
+    watchlist: "自选股",
+    simulator: "模拟回测",
+    aiAnalysis: "AI 分析",
+    accountSettings: "账号设置",
+    upgrade: "升级 Pro",
+    free: "FREE",
+    pro: "PRO",
+    admin: "ADMIN",
+    collapse: "收起侧边栏",
+    expand: "展开侧边栏",
+    openMenu: "打开菜单",
+    closeMenu: "关闭菜单",
+    menuLabel: "主导航",
+    backToSite: "返回网站",
+    quota: "额度",
+  },
+  views: {
+    all: { title: "全球市场总览", subtitle: "美股、欧洲与亚太核心指数一屏掌握" },
+    us: { title: "美股市场", subtitle: "美股大盘指数与 14 只精选标的" },
+    europe: { title: "欧洲市场", subtitle: "英国、德国与法国核心大盘指数" },
+    asia: { title: "亚太市场", subtitle: "日韩、香港与中国内地核心指数及日韩股票" },
+    watchlist: { title: "自选股", subtitle: "云端同步收藏，Pro 可搜索全美股" },
+    simulator: { title: "模拟回测工作台", subtitle: "一次性买入与定期定额，共用选股与权重" },
+    ai: { title: "AI 分析", subtitle: "市场摘要与个股财报基本面诊断" },
+  },
+  aiAnalysis: {
+    title: "AI 财报与基本面诊断",
+    subtitle: "选择任一精选标的，生成中英双语财报研报",
+    hint: "AI 研报基于公开财报数据，仅供参考，不构成投资建议。",
+    pick: "选择标的",
+  },
   boards: {
     cn: { title: "A股行情", titleEn: "A-Shares" },
-    asia: { title: "日韩股市", titleEn: "Japan & Korea" },
+    europe: { title: "欧洲市场", titleEn: "Europe" },
+    asia: { title: "亚太市场", titleEn: "Asia-Pacific" },
   },  settings: "设置",
   backToSite: "返回网站",
   eyebrow: "个人指挥中心",
@@ -25,17 +65,6 @@ const zh = {
     portfolio: "投资组合估值",
     ai: "AI 项目",
     learning: "学习时长",
-  },
-  activity: {
-    title: "最近动态",
-    viewAll: "查看全部",
-    items: [
-      { title: "发布了个人网站", time: "2 小时前" },
-      { title: "完成 AI Agents 课程", time: "昨天" },
-      { title: "投资组合创新高", time: "3 天前" },
-    ],
-    weeklyFocus: "每周重点",
-    weeklyFocusText: "发布 Research Copilot 的第一个可用版本。",
   },
   markets: {
     title: "美股行情",
@@ -127,6 +156,26 @@ const zh = {
     days: "个交易日",
     proRange: "6个月 / 1年长周期回测为 Pro 功能",
     upgrade: "升级 Pro",
+    modeLump: "一次性买入",
+    modeDca: "定期定额",
+    modeHint: "两种模式共用同一组选股与权重",
+    startingCapital: "初始本金",
+    contribution: "每期定投金额",
+    frequency: "定投频率",
+    frequencies: { weekly: "每周", biweekly: "每两周", monthly: "每月" },
+    period: "回测区间",
+    invested: "累计投入",
+    finalValueLabel: "期末市值",
+    returnLabel: "总收益",
+    drawdownLabel: "最大回撤",
+    cagr: "年化收益（CAGR）",
+    legendInvested: "累计投入",
+    legendValue: "组合市值",
+    chartTitleSim: "回测净值曲线",
+    proSearchHint: "Pro 可在下方搜索并加入任意美股",
+    assets: "资产池",
+    selectedCount: (n: number) => `已选 ${n} 只`,
+    statsNote: "按历史日线收盘价测算，不含股息、税费与滑点。",
   },
   agent: {
     title: "AI 行情助手",
@@ -427,8 +476,38 @@ const zh = {
 
 type Dict = {
   nav: Record<"overview" | "markets" | "cn" | "asia" | "investments" | "learning", string>;
+  sidebar: {
+    markets: string;
+    allMarkets: string;
+    usMarkets: string;
+    europe: string;
+    asiaPacific: string;
+    watchlist: string;
+    simulator: string;
+    aiAnalysis: string;
+    accountSettings: string;
+    upgrade: string;
+    free: string;
+    pro: string;
+    admin: string;
+    collapse: string;
+    expand: string;
+    openMenu: string;
+    closeMenu: string;
+    menuLabel: string;
+    backToSite: string;
+    quota: string;
+  };
+  views: Record<DashboardView, { title: string; subtitle: string }>;
+  aiAnalysis: {
+    title: string;
+    subtitle: string;
+    hint: string;
+    pick: string;
+  };
   boards: {
     cn: { title: string; titleEn: string };
+    europe: { title: string; titleEn: string };
     asia: { title: string; titleEn: string };
   };
   settings: string;
@@ -436,13 +515,6 @@ type Dict = {
   eyebrow: string;
   greeting: string;
   stats: Record<"portfolio" | "ai" | "learning", string>;
-  activity: {
-    title: string;
-    viewAll: string;
-    items: { title: string; time: string }[];
-    weeklyFocus: string;
-    weeklyFocusText: string;
-  };
   markets: {
     title: string;
     live: string;
@@ -533,6 +605,26 @@ type Dict = {
     days: string;
     proRange: string;
     upgrade: string;
+    modeLump: string;
+    modeDca: string;
+    modeHint: string;
+    startingCapital: string;
+    contribution: string;
+    frequency: string;
+    frequencies: { weekly: string; biweekly: string; monthly: string };
+    period: string;
+    invested: string;
+    finalValueLabel: string;
+    returnLabel: string;
+    drawdownLabel: string;
+    cagr: string;
+    legendInvested: string;
+    legendValue: string;
+    chartTitleSim: string;
+    proSearchHint: string;
+    assets: string;
+    selectedCount: (n: number) => string;
+    statsNote: string;
   };
   agent: {
     title: string;
@@ -826,13 +918,51 @@ const en: Dict = {
     overview: "Overview",
     markets: "Markets",
     cn: "A-Shares",
-    asia: "Japan & Korea",
+    asia: "Asia-Pacific",
     investments: "Simulator",
     learning: "Learning",
   },
+  sidebar: {
+    markets: "Markets",
+    allMarkets: "All Markets",
+    usMarkets: "U.S. Markets",
+    europe: "Europe",
+    asiaPacific: "Asia-Pacific",
+    watchlist: "Watchlist",
+    simulator: "Simulator",
+    aiAnalysis: "AI Analysis",
+    accountSettings: "Account Settings",
+    upgrade: "Upgrade to Pro",
+    free: "FREE",
+    pro: "PRO",
+    admin: "ADMIN",
+    collapse: "Collapse sidebar",
+    expand: "Expand sidebar",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
+    menuLabel: "Main navigation",
+    backToSite: "Back to website",
+    quota: "Quota",
+  },
+  views: {
+    all: { title: "Global Markets", subtitle: "U.S., Europe and Asia-Pacific indices at a glance" },
+    us: { title: "U.S. Markets", subtitle: "Major U.S. indices and the 14 curated names" },
+    europe: { title: "Europe", subtitle: "Core UK, German and French benchmark indices" },
+    asia: { title: "Asia-Pacific", subtitle: "Japan, Korea, Hong Kong and mainland China indices plus JP/KR stocks" },
+    watchlist: { title: "Watchlist", subtitle: "Cloud-synced favorites with full-market Pro search" },
+    simulator: { title: "Simulator Workbench", subtitle: "Lump sum and DCA share one asset pool and weight set" },
+    ai: { title: "AI Analysis", subtitle: "Market summary plus AI earnings and fundamental diagnostics" },
+  },
+  aiAnalysis: {
+    title: "AI Earnings & Fundamentals",
+    subtitle: "Pick any curated symbol to generate a bilingual earnings report",
+    hint: "AI research is based on public fundamentals and is for reference only — not investment advice.",
+    pick: "Pick a symbol",
+  },
   boards: {
     cn: { title: "A-Shares", titleEn: "A股行情" },
-    asia: { title: "Japan & Korea", titleEn: "日韩股市" },
+    europe: { title: "Europe", titleEn: "欧洲市场" },
+    asia: { title: "Asia-Pacific", titleEn: "亚太市场" },
   },
   settings: "Settings",
   backToSite: "Back to website",
@@ -842,17 +972,6 @@ const en: Dict = {
     portfolio: "Portfolio value",
     ai: "AI projects",
     learning: "Learning hours",
-  },
-  activity: {
-    title: "Recent activity",
-    viewAll: "View all",
-    items: [
-      { title: "Deployed Personal Website", time: "2 hours ago" },
-      { title: "Completed AI Agents course", time: "Yesterday" },
-      { title: "Portfolio reached a new high", time: "3 days ago" },
-    ],
-    weeklyFocus: "Weekly focus",
-    weeklyFocusText: "Ship the first working version of Research Copilot.",
   },
   markets: {
     title: "U.S. Markets",
@@ -944,6 +1063,26 @@ const en: Dict = {
     days: "trading days",
     proRange: "6M / 1Y backtests are a Pro feature",
     upgrade: "Upgrade to Pro",
+    modeLump: "Lump Sum",
+    modeDca: "DCA",
+    modeHint: "Both modes share the same picks and weights",
+    startingCapital: "Starting Capital",
+    contribution: "Contribution Amount",
+    frequency: "Contribution frequency",
+    frequencies: { weekly: "Weekly", biweekly: "Bi-weekly", monthly: "Monthly" },
+    period: "Backtest period",
+    invested: "Total Invested",
+    finalValueLabel: "Final Value",
+    returnLabel: "Total Return",
+    drawdownLabel: "Max Drawdown",
+    cagr: "CAGR",
+    legendInvested: "Total Invested",
+    legendValue: "Portfolio Value",
+    chartTitleSim: "Backtest equity curve",
+    proSearchHint: "Pro can search and add any U.S. stock below",
+    assets: "Asset pool",
+    selectedCount: (n: number) => `${n} selected`,
+    statsNote: "Based on historical daily closes; excludes dividends, taxes and slippage.",
   },
   agent: {
     title: "AI Market Assistant",

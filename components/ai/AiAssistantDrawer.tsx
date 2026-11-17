@@ -262,7 +262,7 @@ export default function AiAssistantDrawer({
         onClick={() => setOpen((value) => !value)}
         aria-label={t.open}
         aria-expanded={open}
-        className="fixed bottom-5 right-4 z-[70] flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-purple-500/30 transition hover:-translate-y-0.5 hover:shadow-purple-500/50 sm:bottom-6 sm:right-6"
+        className="fixed bottom-5 right-4 z-30 flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-purple-500/30 transition hover:-translate-y-0.5 hover:shadow-purple-500/50 sm:bottom-6 sm:right-6"
       >
         <Sparkles className="h-5 w-5" />
         <span>{t.open}</span>

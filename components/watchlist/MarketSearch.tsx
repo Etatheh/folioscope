@@ -7,7 +7,7 @@ import type { ViewerPlan } from "@/lib/access";
 import { dict, type Lang } from "@/lib/i18n";
 import type { MarketSearchHit, MarketSearchResponse } from "@/lib/market-search";
 import { useProfile } from "@/lib/use-profile";
-import { BACKTEST_ADD_EVENT } from "@/lib/watchlist";
+import { BACKTEST_ADD_EVENT, queueBacktestSymbol } from "@/lib/watchlist";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import ProBadge from "@/components/ui/ProBadge";
 import UpgradeModal from "@/components/ui/UpgradeModal";
@@ -158,6 +158,14 @@ export default function MarketSearch({
     window.dispatchEvent(
       new CustomEvent(BACKTEST_ADD_EVENT, { detail: { symbol } })
     );
+
+    // The simulator listens for the event, but search also lives in the
+    // watchlist view now. When its workbench is not mounted, hand the symbol
+    // over and navigate there so the click is never a silent no-op.
+    if (!document.getElementById("simulator-workbench")) {
+      queueBacktestSymbol(symbol);
+      window.location.href = `/dashboard?lang=${lang}&view=simulator`;
+    }
   };
 
   const dropdownVisible =

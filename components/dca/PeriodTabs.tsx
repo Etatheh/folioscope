@@ -28,7 +28,7 @@ export default function PeriodTabs({
     <div
       role="tablist"
       aria-label={dict[lang].dca.title}
-      className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1"
+      className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/10 bg-white/[0.03] p-1"
     >
       {PERIODS.map((period) => {
         const selected = period.key === value;
@@ -42,7 +42,7 @@ export default function PeriodTabs({
             aria-selected={selected}
             disabled={disabled || unavailable}
             onClick={() => onChange(period.key)}
-            className={`relative flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+            className={`relative flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
               selected ? "text-white" : "text-slate-500 hover:text-slate-200"
             }`}
           >

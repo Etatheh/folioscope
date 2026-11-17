@@ -3,6 +3,8 @@
 // The "featured" pool is free for every visitor: 14 liquid US large caps and
 // ETFs. Everything outside this list is a Pro-only search result.
 
+import { isPublicIndexSymbol } from "./index-symbols";
+
 export const FEATURED_SYMBOLS = [
   "SPY",
   "QQQ",
@@ -45,9 +47,14 @@ export const SYMBOL_NAMES: Record<
   "BRK.B": { zh: "伯克希尔-B", en: "Berkshire Hathaway B" },
 };
 
-/** Accept "brk.b", " BRK.B " and "BRK-B" but never arbitrary injection. */
+/**
+ * Accept "brk.b", " BRK.B " and "BRK-B" but never arbitrary injection.
+ * Public region indices use Yahoo-style symbols (`^FTSE`, `000001.SS`), so the
+ * allow-list is checked before the stricter US-ticker pattern.
+ */
 export function normalizeSymbol(input: string): string | null {
   const cleaned = input.trim().toUpperCase().replace(/\s+/g, "");
+  if (isPublicIndexSymbol(cleaned)) return cleaned;
   if (!/^[A-Z][A-Z0-9.-]{0,9}$/.test(cleaned)) return null;
   return cleaned;
 }
@@ -62,6 +69,29 @@ export function symbolLabel(symbol: string, lang: "zh" | "en"): string {
 
 /** Fired after a Pro search result is synced to the backtest simulator pool. */
 export const BACKTEST_ADD_EVENT = "indepth:backtest-add-symbol";
+
+/** Hand-off when "sync to backtest" is clicked from another dashboard view. */
+export const BACKTEST_PENDING_KEY = "indepth.backtest.pending-symbol";
+
+export function queueBacktestSymbol(symbol: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(BACKTEST_PENDING_KEY, symbol);
+  } catch {
+    // private mode: the simulator simply opens without the extra symbol
+  }
+}
+
+export function takeQueuedBacktestSymbol(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = window.sessionStorage.getItem(BACKTEST_PENDING_KEY);
+    window.sessionStorage.removeItem(BACKTEST_PENDING_KEY);
+    return normalizeSymbol(value ?? "");
+  } catch {
+    return null;
+  }
+}
 
 /** Fired by the navbar heart when it wants the dashboard to focus its list. */
 export const WATCHLIST_FOCUS_EVENT = "indepth:watchlist-focus";

@@ -1,4 +1,6 @@
 import { isProTier } from "@/lib/access";
+import { isPublicIndexSymbol } from "@/lib/index-symbols";
+import { getIndexQuote } from "@/lib/index-quotes";
 import { resolveRequestUser } from "@/lib/server/request-user";
 import { getQuoteForSymbol } from "@/lib/us-stocks";
 import { isFeaturedSymbol, normalizeSymbol } from "@/lib/watchlist";
@@ -9,10 +11,12 @@ export const dynamic = "force-dynamic";
 const NO_STORE = { "Cache-Control": "no-store" };
 
 /**
- * On-demand quote lookup for the search bar.
+ * On-demand quote lookup for the search bar and the public regional index
+ * boards.
  *
- * The 14 featured names are public. Any other U.S. ticker is gated here as well
- * as in the UI, so the Pro lock cannot be bypassed by calling the route.
+ * The 14 featured names and the Europe / Asia-Pacific indices are public. Any
+ * other U.S. ticker is gated here as well as in the UI, so the Pro lock cannot
+ * be bypassed by calling the route.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -28,8 +32,9 @@ export async function GET(request: Request) {
   // Paid access is defined by the tier only: pro/admin unlock the full market.
   const isPro = isProTier(session?.user.tier);
   const featured = isFeaturedSymbol(symbol);
+  const publicIndex = isPublicIndexSymbol(symbol);
 
-  if (!isPro && !featured) {
+  if (!isPro && !featured && !publicIndex) {
     if (!session) {
       return Response.json(
         {
@@ -55,7 +60,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const quote = await getQuoteForSymbol(symbol);
+    const quote = publicIndex
+      ? await getIndexQuote(symbol)
+      : await getQuoteForSymbol(symbol);
     if (!quote) {
       return Response.json(
         { ok: false, error: "Symbol not found", code: "NOT_FOUND" },
@@ -63,7 +70,7 @@ export async function GET(request: Request) {
       );
     }
     return Response.json(
-      { ok: true, quote, featured, pro: isPro },
+      { ok: true, quote, featured, publicIndex, pro: isPro },
       { headers: NO_STORE }
     );
   } catch (error) {

@@ -32,16 +32,17 @@ export default async function UsStockPanel({
   const t = dict[lang].markets;
   const snapshot = providedSnapshot ?? (await getUsMarketSnapshot());
   const { indices, stocks, demo, fetchedAt } = snapshot;
-  const hrefFor = (symbol: string) => `/dashboard/markets/${symbol}?lang=${lang}`;
+  const hrefFor = (symbol: string) =>
+    `/dashboard/markets/${encodeURIComponent(symbol)}?lang=${lang}`;
   const visibleStocks = hasFullDashboardAccess(plan)
     ? stocks
     : stocks.filter((stock) => isSymbolUnlocked("us", stock.symbol, plan));
   const lockedCount = stocks.length - visibleStocks.length;
 
   return (
-    <article className="glass rounded-2xl p-5 sm:p-6">
+    <article className="glass min-w-0 overflow-x-clip rounded-2xl p-5 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h2 className="font-semibold text-white">
             {t.title}
             {lang === "zh" && (
@@ -83,7 +84,7 @@ export default async function UsStockPanel({
 
       {visibleStocks.length > 0 ? (
         <StaggerGrid
-          className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+          className="mt-3 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3"
           stagger={0.05}
           delay={0.12}
         >

@@ -1,8 +1,12 @@
-// Unified instrument lookup for the detail page (US / A-share / Japan-Korea).
+// Unified instrument lookup for the detail page (US / A-share / Japan-Korea /
+// Europe / Asia-Pacific indices).
 
 import { fetchKlinesSecid } from "./klines";
 import { getCnMarketSnapshot, CN_KLINE_SECID } from "./cn-markets";
 import { getAsiaMarketSnapshot, ASIA_KLINE_SECID, ASIA_CURRENCY } from "./asia-markets";
+import { getEuropeMarketSnapshot, EUROPE_KLINE_SECID } from "./europe-markets";
+import { EUROPE_INDICES, INDEX_KLINE_SECID } from "./index-symbols";
+import { getIndexQuote } from "./index-quotes";
 import {
   getUsMarketSnapshot,
   fetchQuoteBySymbol,
@@ -11,7 +15,7 @@ import {
   type UsQuote,
 } from "./us-stocks";
 
-export type InstrumentMarket = "us" | "cn" | "asia";
+export type InstrumentMarket = "us" | "cn" | "asia" | "europe";
 
 export type InstrumentDetail = {
   quote: UsQuote;
@@ -23,14 +27,15 @@ export type InstrumentDetail = {
 };
 
 export async function getInstrumentDetail(symbol: string): Promise<InstrumentDetail | null> {
+  const normalized = symbol.toUpperCase();
   const us = await getUsMarketSnapshot();
-  let quote = [...us.indices, ...us.stocks].find((item) => item.symbol === symbol);
+  let quote = [...us.indices, ...us.stocks].find((item) => item.symbol === normalized);
   let market: InstrumentMarket = "us";
   let demo = us.demo;
 
   // Pro search can land on any U.S. ticker, not just dashboard snapshot names.
   if (!quote) {
-    const generic = await fetchQuoteBySymbol(symbol);
+    const generic = await fetchQuoteBySymbol(normalized);
     if (generic) {
       quote = generic;
       demo = false;
@@ -39,7 +44,7 @@ export async function getInstrumentDetail(symbol: string): Promise<InstrumentDet
 
   if (!quote) {
     const cn = await getCnMarketSnapshot();
-    quote = [...cn.indices, ...cn.stocks].find((item) => item.symbol === symbol);
+    quote = [...cn.indices, ...cn.stocks].find((item) => item.symbol === normalized);
     if (quote) {
       market = "cn";
       demo = cn.demo;
@@ -48,10 +53,35 @@ export async function getInstrumentDetail(symbol: string): Promise<InstrumentDet
 
   if (!quote) {
     const asia = await getAsiaMarketSnapshot();
-    quote = [...asia.indices, ...asia.stocks].find((item) => item.symbol === symbol);
+    quote = [...asia.indices, ...asia.stocks].find((item) => item.symbol === normalized);
     if (quote) {
       market = "asia";
       demo = asia.demo;
+    }
+  }
+
+  if (!quote) {
+    const europe = await getEuropeMarketSnapshot();
+    quote = europe.indices.find((item) => item.symbol === normalized);
+    if (quote) {
+      market = "europe";
+      demo = europe.demo;
+    }
+  }
+
+  // A transient snapshot failure must not turn a public index into a 404.
+  if (!quote) {
+    try {
+      const indexQuote = await getIndexQuote(normalized);
+      if (indexQuote) {
+        quote = indexQuote;
+        market = EUROPE_INDICES.some((item) => item.symbol === normalized)
+          ? "europe"
+          : "asia";
+        demo = false;
+      }
+    } catch {
+      // fall through to 404 when the direct index quote also fails
     }
   }
 
@@ -60,17 +90,27 @@ export async function getInstrumentDetail(symbol: string): Promise<InstrumentDet
   let bars: Candle[] = [];
   try {
     if (market === "us") {
-      bars = await fetchUsKlines(symbol);
+      bars = await fetchUsKlines(normalized);
     } else {
-      const secid = CN_KLINE_SECID[symbol] ?? ASIA_KLINE_SECID[symbol];
-      if (secid) bars = await fetchKlinesSecid(symbol, secid);
+      const secid =
+        CN_KLINE_SECID[normalized] ??
+        INDEX_KLINE_SECID[normalized] ??
+        ASIA_KLINE_SECID[normalized] ??
+        EUROPE_KLINE_SECID[normalized];
+      if (secid) bars = await fetchKlinesSecid(normalized, secid);
     }
   } catch {
     // leave empty; the chart area shows an empty state
   }
 
   const currency =
-    market === "us" ? "$" : market === "cn" ? "¥" : (ASIA_CURRENCY[symbol] ?? "");
+    market === "us"
+      ? "$"
+      : market === "cn"
+        ? "¥"
+        : market === "asia"
+          ? (ASIA_CURRENCY[normalized] ?? "")
+          : "";
 
   return { quote, bars, demo, market, currency };
 }

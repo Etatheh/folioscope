@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { dict, type Lang } from "@/lib/i18n";
 import { useSession } from "@/lib/use-session";
@@ -21,6 +21,7 @@ export default function WatchlistNavButton({
 }) {
   const t = dict[lang].watchlist;
   const pathname = usePathname();
+  const router = useRouter();
   const { user, ready } = useSession();
   const { openAuthModal } = useAuthModal();
   const { count, loading } = useWatchlist();
@@ -32,13 +33,15 @@ export default function WatchlistNavButton({
       return;
     }
 
-    const href = `/dashboard?lang=${lang}&tab=mine#watchlist`;
+    const href = `/dashboard?lang=${lang}&view=watchlist&tab=mine`;
     if (pathname.startsWith("/dashboard")) {
       window.dispatchEvent(new Event(WATCHLIST_FOCUS_EVENT));
-      window.history.replaceState(null, "", href);
-      document
-        .getElementById("watchlist")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      router.push(href);
+      window.setTimeout(() => {
+        document
+          .getElementById("watchlist")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 120);
       return;
     }
 

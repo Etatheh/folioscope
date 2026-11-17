@@ -824,7 +824,7 @@ export type SimulationData = {
 };
 
 export async function getSimulationData(
-  window = 250
+  window = 1300
 ): Promise<SimulationData> {
   // Include the complete featured pool so FREE users can backtest all 14 names.
   // Pro users additionally keep COST/JPM and can add any U.S. ticker on demand.
@@ -837,7 +837,7 @@ export async function getSimulationData(
 
   const barsList = await mapWithConcurrency(all, 6, async (symbol) => {
     try {
-      return await fetchUsKlines(symbol);
+      return await fetchUsKlines(symbol, Math.max(window, 320));
     } catch {
       return null;
     }

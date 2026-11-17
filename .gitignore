@@ -44,6 +44,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# temporary visual review artifacts (not shipped)
+/public/_preview/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

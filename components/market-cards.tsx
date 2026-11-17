@@ -50,7 +50,7 @@ function CardShell({
   children: React.ReactNode;
 }) {
   const body = (
-    <article className="data-card h-full rounded-xl p-4">
+    <article className="data-card h-full min-w-0 overflow-x-clip rounded-xl p-4">
       {href ? (
         <Link href={href} title={title} className="block">
           {children}
@@ -113,10 +113,12 @@ export function IndexCard({
             <p className="mt-0.5 truncate text-[11px] text-slate-600">{secondary}</p>
           )}
         </div>
-        <ChangeChip quote={quote} />
+        <div className="shrink-0">
+          <ChangeChip quote={quote} />
+        </div>
       </div>
-      <div className="mt-3 flex items-end justify-between gap-3">
-        <p className="text-xl font-semibold tabular-nums text-white">
+      <div className="mt-3 flex min-w-0 items-end justify-between gap-3">
+        <p className="min-w-0 truncate text-xl font-semibold tabular-nums text-white">
           <AnimatedNumber value={quote.price} digits={2} group />
         </p>
         {tech && <Sparkline points={tech.sparkline} />}

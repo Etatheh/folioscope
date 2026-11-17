@@ -63,7 +63,7 @@ export default function QuoteCard({
   const href = `/dashboard/markets/${encodeURIComponent(quote.symbol)}?lang=${lang}`;
 
   return (
-    <article className="data-card group relative h-full rounded-xl p-4">
+    <article className="data-card group relative h-full min-w-0 overflow-x-clip rounded-xl p-4">
       <div className="absolute right-3 top-3 z-10">
         <FavoriteButton symbol={quote.symbol} lang={lang} />
       </div>

@@ -30,10 +30,11 @@ export default function MarketBoard({
   stockCurrencies,
   stockDetail = true,
   detailBase = "/dashboard/markets",
+  indexGridClass = "md:grid-cols-2 xl:grid-cols-4",
 }: {
   lang: Lang;
   plan: ViewerPlan;
-  market: "cn" | "asia";
+  market: "cn" | "asia" | "europe";
   title: string;
   titleEn: string;
   snapshot: UsMarketSnapshot;
@@ -41,10 +42,12 @@ export default function MarketBoard({
   stockCurrencies?: Record<string, string>;
   stockDetail?: boolean;
   detailBase?: string;
+  indexGridClass?: string;
 }) {
   const t = dict[lang].markets;
   const { indices, stocks, demo, fetchedAt } = snapshot;
-  const hrefFor = (symbol: string) => `${detailBase}/${symbol}?lang=${lang}`;
+  const hrefFor = (symbol: string) =>
+    `${detailBase}/${encodeURIComponent(symbol)}?lang=${lang}`;
   const empty = indices.length === 0 && stocks.length === 0;
   const visibleStocks = hasFullDashboardAccess(plan)
     ? stocks
@@ -52,9 +55,9 @@ export default function MarketBoard({
   const lockedCount = stocks.length - visibleStocks.length;
 
   return (
-    <article className="glass rounded-2xl p-5 sm:p-6">
+    <article className="glass min-w-0 overflow-x-clip rounded-2xl p-5 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h2 className="font-semibold text-white">
             {title}
             {lang === "zh" && titleEn && (
@@ -82,7 +85,7 @@ export default function MarketBoard({
       </header>
 
       {indices.length > 0 && (
-        <StaggerGrid className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <StaggerGrid className={`mt-5 grid gap-3 ${indexGridClass}`}>
           {indices.map((quote) => (
             <IndexCard
               key={quote.symbol}
@@ -96,7 +99,7 @@ export default function MarketBoard({
 
       {visibleStocks.length > 0 && (
         <StaggerGrid
-          className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+          className="mt-3 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3"
           stagger={0.05}
           delay={0.12}
         >

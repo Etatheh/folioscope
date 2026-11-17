@@ -1,6 +1,7 @@
 import { isProTier } from "@/lib/access";
+import { isPublicIndexSymbol } from "@/lib/index-symbols";
+import { fetchMarketSeries } from "@/lib/market-series";
 import { resolveRequestUser } from "@/lib/server/request-user";
-import { fetchUsKlines } from "@/lib/us-stocks";
 import { isFeaturedSymbol, normalizeSymbol } from "@/lib/watchlist";
 
 export const runtime = "nodejs";
@@ -9,10 +10,11 @@ export const dynamic = "force-dynamic";
 const NO_STORE = { "Cache-Control": "no-store" };
 
 /**
- * Daily closes for the backtest simulator.
+ * Daily closes for the backtest simulator and the public index detail pages.
  *
- * The 14 curated names are public to every visitor (including FREE accounts).
- * Any other U.S. ticker stays Pro/Admin-only, matching the market search wall.
+ * The 14 curated names and the Europe / Asia-Pacific indices are public to
+ * every visitor (including anonymous and FREE accounts). Any other U.S. ticker
+ * stays Pro/Admin-only, matching the market search wall.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -25,8 +27,9 @@ export async function GET(request: Request) {
   }
 
   const featured = isFeaturedSymbol(symbol);
+  const publicIndex = isPublicIndexSymbol(symbol);
   const session = await resolveRequestUser(request);
-  if (!featured && !isProTier(session?.user.tier)) {
+  if (!featured && !publicIndex && !isProTier(session?.user.tier)) {
     return Response.json(
       {
         ok: false,
@@ -39,7 +42,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const bars = await fetchUsKlines(symbol, 420);
+    const bars = await fetchMarketSeries(symbol, 1300);
     return Response.json(
       { ok: true, symbol, bars },
       { headers: NO_STORE }
