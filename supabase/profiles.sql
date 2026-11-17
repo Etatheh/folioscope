@@ -22,18 +22,13 @@ create policy "profiles_select_own"
   on public.profiles for select
   using (auth.uid() = id);
 
+-- Tier and profile writes are service-role only (POST /api/account/profile).
+-- The browser must never be able to change `tier`, otherwise a free account
+-- could self-promote to pro/admin.
 drop policy if exists "profiles_insert_own" on public.profiles;
-create policy "profiles_insert_own"
-  on public.profiles for insert
-  with check (auth.uid() = id);
-
 drop policy if exists "profiles_update_own" on public.profiles;
-create policy "profiles_update_own"
-  on public.profiles for update
-  using (auth.uid() = id)
-  with check (auth.uid() = id);
 
-grant select, insert, update on public.profiles to authenticated;
+grant select on public.profiles to authenticated;
 
 -- Deletes the calling auth user; profiles/sessions rows cascade.
 create or replace function public.delete_user_account()

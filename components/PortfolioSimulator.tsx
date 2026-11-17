@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { dict, type Lang } from "@/lib/i18n";
 import type { SimulationData } from "@/lib/us-stocks";
 import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
+import { useViewerPlan } from "@/lib/use-profile";
 import { apiFetch } from "@/lib/client-api";
 import { BACKTEST_ADD_EVENT, normalizeSymbol } from "@/lib/watchlist";
 import { showToast } from "./ui/ToastHost";
@@ -26,7 +27,8 @@ export default function PortfolioSimulator({
   defaults: string[];
 }) {
   const t = dict[lang].simulator;
-  const hasFullAccess = hasFullDashboardAccess(plan);
+  const effectivePlan = useViewerPlan(plan);
+  const hasFullAccess = hasFullDashboardAccess(effectivePlan);
   const [limitHit, setLimitHit] = useState(false);
   const [extraSeries, setExtraSeries] = useState<Record<string, number[]>>({});
   const [syncingSymbol, setSyncingSymbol] = useState<string | null>(null);

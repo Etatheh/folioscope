@@ -1,3 +1,4 @@
+import { isProTier } from "@/lib/access";
 import { readSupabaseEnv } from "@/lib/server/env";
 import { pgInsert, pgUpdate } from "@/lib/server/rest";
 import { resolveRequestUser } from "@/lib/server/request-user";
@@ -76,8 +77,8 @@ export async function POST(request: Request) {
       await pgInsert(env, "profiles", {
         id: session.user.id,
         ...patch,
-        tier: session.user.plan,
-        ai_credits: session.user.plan === "pro" ? 200 : 5,
+        tier: session.user.tier,
+        ai_credits: isProTier(session.user.tier) ? 200 : 5,
       });
     }
 

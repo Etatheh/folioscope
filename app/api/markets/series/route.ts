@@ -1,4 +1,4 @@
-import { getViewerPlan } from "@/lib/access";
+import { isProTier } from "@/lib/access";
 import { resolveRequestUser } from "@/lib/server/request-user";
 import { fetchUsKlines } from "@/lib/us-stocks";
 import { normalizeSymbol } from "@/lib/watchlist";
@@ -25,12 +25,7 @@ export async function GET(request: Request) {
   }
 
   const session = await resolveRequestUser(request);
-  const plan = getViewerPlan(
-    session
-      ? { plan: session.user.plan, isAdmin: session.user.isAdmin }
-      : null
-  );
-  if (plan !== "pro" && plan !== "admin") {
+  if (!isProTier(session?.user.tier)) {
     return Response.json(
       {
         ok: false,

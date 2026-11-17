@@ -1,6 +1,7 @@
 import YahooFinance from "yahoo-finance2";
 import type { QuoteSummaryResult } from "yahoo-finance2/modules/quoteSummary";
 
+import { isProTier } from "@/lib/access";
 import { completionsUrl, readAiConfig, type AiConfig } from "@/lib/server/ai-config";
 import { resolveRequestUser } from "@/lib/server/request-user";
 import {
@@ -345,7 +346,7 @@ async function handleStockReport(
   if (!user) {
     return jsonError(t.unauthorized, 401, "UNAUTHORIZED");
   }
-  if (!user.isAdmin && user.plan !== "pro") {
+  if (!isProTier(user.tier)) {
     return jsonError(t.forbidden, 403, "UPGRADE_REQUIRED");
   }
 

@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
+import { isAdminTier, isProTier } from "@/lib/access";
 import { dict, type Lang } from "@/lib/i18n";
-import { useSession } from "@/lib/use-session";
+import { useProfile } from "@/lib/use-profile";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import ProBadge from "./ProBadge";
 
@@ -43,7 +44,7 @@ export default function UpgradeModal({
   source?: string;
 }) {
   const t = dict[lang].pro.modal;
-  const { user, ready } = useSession();
+  const { user, ready, profile } = useProfile();
   const { openAuthModal } = useAuthModal();
   const mounted = useIsClient();
   const [status, setStatus] = useState<UpgradeStatus>("idle");
@@ -222,9 +223,13 @@ export default function UpgradeModal({
       <div className="relative mt-5 flex items-end gap-2 border-y border-white/10 py-4">
         <span className="text-3xl font-semibold tracking-tight text-white">{t.price}</span>
         <span className="pb-1 text-xs text-slate-500">{t.period}</span>
-        {(user?.isAdmin || user?.plan === "pro") && (
+        {isProTier(profile?.tier) && (
           <span className="ml-auto rounded-full bg-emerald-400/10 px-2.5 py-1 text-[10px] text-emerald-300">
-            {user.isAdmin ? (lang === "zh" ? "开发者权限" : "Developer access") : dict[lang].pro.active}
+            {isAdminTier(profile?.tier)
+              ? lang === "zh"
+                ? "开发者权限"
+                : "Developer access"
+              : dict[lang].pro.active}
           </span>
         )}
       </div>

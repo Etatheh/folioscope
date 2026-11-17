@@ -11,6 +11,12 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
+import {
+  highestTier,
+  isAdminTier,
+  isProTier,
+  type AccessTier,
+} from "@/lib/access";
 import { dict, type Lang } from "@/lib/i18n";
 import { logout, type SessionUser } from "@/lib/auth";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -113,7 +119,9 @@ export default function AccountModal({
   const [nickname, setNickname] = useState(user.name ?? "");
   const [profileEmail, setProfileEmail] = useState(user.email ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl);
-  const [tier, setTier] = useState<"free" | "pro">(user?.plan ?? "free");
+  const [tier, setTier] = useState<AccessTier>(
+    user?.tier ?? (user?.isAdmin ? "admin" : (user?.plan ?? "free"))
+  );
   const [credits, setCredits] = useState<Credits | null>(null);
   const [profileCredits, setProfileCredits] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -144,7 +152,13 @@ export default function AccountModal({
           if (typeof data.full_name === "string") setNickname(data.full_name);
           if (typeof data.email === "string") setProfileEmail(data.email);
           if (typeof data.avatar_url === "string") setAvatarUrl(data.avatar_url);
-          if (data.tier === "pro" || data.tier === "free") setTier(data.tier);
+          if (
+            data.tier === "pro" ||
+            data.tier === "free" ||
+            data.tier === "admin"
+          ) {
+            setTier((prev) => highestTier(prev, data.tier));
+          }
           if (typeof data.ai_credits === "number") setProfileCredits(data.ai_credits);
         }
       } catch {
@@ -167,7 +181,13 @@ export default function AccountModal({
           tier?: string;
         };
         if (cancelled || !usage.ok) return;
-        if (usage.tier === "pro" || usage.tier === "free") setTier(usage.tier);
+        if (
+          usage.tier === "pro" ||
+          usage.tier === "free" ||
+          usage.tier === "admin"
+        ) {
+          setTier((prev) => highestTier(prev, usage.tier));
+        }
         if (
           typeof usage.remaining === "number" &&
           typeof usage.limit === "number"
@@ -329,17 +349,26 @@ export default function AccountModal({
 
   if (!mounted) return null;
 
-  const isPro = tier === "pro" || user?.isAdmin === true;
+  // Single source of truth: `tier === "pro" || tier === "admin"` unlocks Pro.
+  // Merge the session tier with the loaded profile/usage tier; the strongest
+  // wins, so ADMIN_EMAILS admins are never downgraded by a stale profile row.
+  const sessionTier: AccessTier =
+    user?.tier ??
+    (user?.isAdmin ? "admin" : user?.plan === "pro" ? "pro" : "free");
+  const effectiveTier = highestTier(sessionTier, tier);
+  const isAdmin = isAdminTier(effectiveTier);
+  const isPro = isProTier(effectiveTier);
   const limit = credits?.limit ?? (isPro ? 200 : 5);
   const remaining = credits?.remaining ?? profileCredits ?? limit;
-  const unlimited = credits?.unlimited === true || user?.isAdmin === true;
+  const unlimited = credits?.unlimited === true || isAdmin;
   const percent = unlimited
     ? 100
     : limit > 0
       ? Math.max(0, Math.min(100, (remaining / limit) * 100))
       : 0;
-  const barTone =
-    remaining <= 0
+  const barTone = unlimited
+    ? "from-emerald-400 to-teal-300"
+    : remaining <= 0
       ? "from-rose-500 to-orange-400"
       : percent < 25
         ? "from-amber-400 to-orange-400"
@@ -508,12 +537,14 @@ export default function AccountModal({
             </h3>
             <span
               className={`rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide ${
-                isPro
-                  ? "bg-gradient-to-r from-amber-400/25 to-purple-400/25 text-amber-300 ring-1 ring-amber-300/30"
-                  : "bg-white/10 text-slate-300 ring-1 ring-white/10"
+                isAdmin
+                  ? "bg-gradient-to-r from-rose-500/30 to-orange-400/30 text-rose-300 ring-1 ring-rose-400/30"
+                  : isPro
+                    ? "bg-gradient-to-r from-amber-400/25 to-purple-400/25 text-amber-300 ring-1 ring-amber-300/30"
+                    : "bg-white/10 text-slate-300 ring-1 ring-white/10"
               }`}
             >
-              {isPro ? "PRO" : "FREE"}
+              {isAdmin ? "ADMIN" : isPro ? "PRO" : "FREE"}
             </span>
           </div>
 

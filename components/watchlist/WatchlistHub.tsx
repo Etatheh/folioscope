@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/client-api";
 import { dict, type Lang } from "@/lib/i18n";
 import { useProfile } from "@/lib/use-profile";
+import type { ViewerPlan } from "@/lib/access";
 import type { UsQuote } from "@/lib/us-stocks";
 import {
   FEATURED_SYMBOLS,
@@ -73,18 +74,28 @@ function PendingCard({ symbol, lang }: { symbol: string; lang: Lang }) {
 export default function WatchlistHub({
   lang,
   quotes,
+  plan,
   initialTab = "featured",
 }: {
   lang: Lang;
   quotes: UsQuote[];
+  plan?: ViewerPlan;
   initialTab?: Tab;
 }) {
   const t = dict[lang].watchlist;
-  const { user, ready, isPro } = useProfile();
+  const { user, ready, isPro, profile } = useProfile();
   const { openAuthModal } = useAuthModal();
   const { symbols, count, loading, source } = useWatchlist();
   const [tab, setTab] = useState<Tab>(initialTab);
   const [extraQuotes, setExtraQuotes] = useState<Record<string, UsQuote>>({});
+
+  const viewerPlan: ViewerPlan = !user
+    ? (plan ?? "anon")
+    : isPro
+      ? profile?.tier === "admin"
+        ? "admin"
+        : "pro"
+      : "free";
 
   const featuredMap = useMemo(
     () => new Map(quotes.map((quote) => [quote.symbol, quote])),
@@ -151,7 +162,7 @@ export default function WatchlistHub({
             {t.title}
             {isPro && (
               <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
-                PRO
+                {profile?.tier === "admin" ? "ADMIN" : "PRO"}
               </span>
             )}
           </h2>
@@ -165,7 +176,7 @@ export default function WatchlistHub({
         </div>
       </header>
 
-      <MarketSearch lang={lang} featuredQuotes={quotes} />
+      <MarketSearch lang={lang} plan={viewerPlan} />
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div
@@ -229,6 +240,7 @@ export default function WatchlistHub({
               key={quote.symbol}
               quote={quote}
               lang={lang}
+              plan={viewerPlan}
               featured
             />
           ))}
@@ -253,7 +265,12 @@ export default function WatchlistHub({
           ) : (
             <>
               {mineQuotes.map((quote) => (
-                <QuoteCard key={quote.symbol} quote={quote} lang={lang} />
+                <QuoteCard
+                  key={quote.symbol}
+                  quote={quote}
+                  lang={lang}
+                  plan={viewerPlan}
+                />
               ))}
               {pendingSymbols.slice(0, 3).map((symbol) => (
                 <PendingCard key={symbol} symbol={symbol} lang={lang} />

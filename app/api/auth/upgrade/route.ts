@@ -36,7 +36,7 @@ export async function POST() {
   }
 
   // Only admin (developer) accounts may use the self-service upgrade.
-  if (!viewer.isAdmin) {
+  if (viewer.tier !== "admin") {
     return Response.json(
       { ok: false, error: "无权限：此接口仅限开发者使用", code: "ADMIN_ONLY" },
       { status: 403 }

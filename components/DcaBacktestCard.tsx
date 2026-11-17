@@ -6,6 +6,7 @@ import { dict, type Lang } from "@/lib/i18n";
 import type { ChatDcaContext } from "@/lib/chat";
 import { setAiDca } from "@/lib/ai-context-store";
 import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
+import { useViewerPlan } from "@/lib/use-profile";
 import type { DcaDataset, DcaTarget } from "@/lib/dca";
 import ProBadge from "./ui/ProBadge";
 import ProUpgradeButton from "./ui/ProUpgradeButton";
@@ -46,7 +47,8 @@ export default function DcaBacktestCard({
   dataset: DcaDataset;
 }) {
   const t = dict[lang].dca;
-  const hasFullAccess = hasFullDashboardAccess(plan);
+  const effectivePlan = useViewerPlan(plan);
+  const hasFullAccess = hasFullDashboardAccess(effectivePlan);
   const [period, setPeriod] = useState<PeriodKey>(DEFAULT_PERIOD);
   const [monthly, setMonthly] = useState(500);
   const [target, setTarget] = useState<DcaTarget>(

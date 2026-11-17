@@ -1,24 +1,29 @@
 import { cookies } from "next/headers";
 
-import { getSessionUser } from "@/lib/server/auth-service";
+import { resolveRequestUser } from "@/lib/server/request-user";
 import { COOKIE_NAME } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+/**
+ * Current viewer, resolved from either a Supabase Bearer token or the legacy
+ * httpOnly cookie. Always returns an explicit `tier` so every client shares the
+ * same paid-access rule: `tier === "pro" || tier === "admin"`.
+ */
+export async function GET(request: Request) {
   const store = await cookies();
-  const token = store.get(COOKIE_NAME)?.value;
-  if (!token) {
-    return Response.json({ ok: false, error: "未登录" }, { status: 401 });
-  }
 
   try {
-    const user = await getSessionUser(token);
+    const session = await resolveRequestUser(request);
+    const user = session?.user ?? null;
     if (!user) {
       store.delete(COOKIE_NAME);
-      return Response.json({ ok: false, error: "会话已过期" }, { status: 401 });
+      return Response.json({ ok: false, error: "未登录" }, { status: 401 });
     }
-    return Response.json({ ok: true, user });
+
+    const tier =
+      user.tier ?? (user.isAdmin ? "admin" : user.plan === "pro" ? "pro" : "free");
+    return Response.json({ ok: true, user: { ...user, tier } });
   } catch (error) {
     console.error("[auth/me]", error);
     return Response.json({ ok: false, error: "读取会话失败" }, { status: 500 });

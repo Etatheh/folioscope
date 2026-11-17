@@ -3,7 +3,14 @@ import Link from "next/link";
 import type { Lang } from "@/lib/i18n";
 import { dict } from "@/lib/i18n";
 import type { UsQuote } from "@/lib/us-stocks";
-import { Sparkline, fmtPrice } from "@/components/market-ui";
+import type { ViewerPlan } from "@/lib/access";
+import {
+  MaValue,
+  MacdValue,
+  RsiValue,
+  Sparkline,
+  fmtPrice,
+} from "@/components/market-ui";
 import StockReportButton from "@/components/stock/StockReportButton";
 import FavoriteButton from "./FavoriteButton";
 
@@ -40,10 +47,12 @@ function RangeBar({ quote }: { quote: UsQuote }) {
 export default function QuoteCard({
   quote,
   lang,
+  plan,
   featured = false,
 }: {
   quote: UsQuote;
   lang: Lang;
+  plan?: ViewerPlan;
   featured?: boolean;
 }) {
   const t = dict[lang].markets;
@@ -105,7 +114,26 @@ export default function QuoteCard({
 
         {hasPrice && <RangeBar quote={quote} />}
 
-        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-white/5 pt-2 text-[11px] tabular-nums text-slate-600">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-white/5 pt-2 text-[11px] tabular-nums">
+          <MaValue
+            label="MA5"
+            value={quote.tech?.ma5 ?? null}
+            price={quote.price}
+            lang={lang}
+          />
+          <MaValue
+            label="MA20"
+            value={quote.tech?.ma20 ?? null}
+            price={quote.price}
+            lang={lang}
+          />
+          <RsiValue value={quote.tech?.rsi14 ?? null} lang={lang} />
+          {quote.tech && quote.tech.macd !== null && (
+            <MacdValue tech={quote.tech} lang={lang} />
+          )}
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-white/5 pt-2 text-[11px] tabular-nums text-slate-600">
           <span>
             {t.highLabel} {hasPrice ? `$${fmtPrice(quote.high)}` : "—"}
           </span>
@@ -121,7 +149,7 @@ export default function QuoteCard({
       </Link>
 
       <div className="mt-2.5 flex justify-end border-t border-white/5 pt-2">
-        <StockReportButton symbol={quote.symbol} lang={lang} variant="chip" />
+        <StockReportButton symbol={quote.symbol} lang={lang} plan={plan} variant="chip" />
       </div>
     </article>
   );

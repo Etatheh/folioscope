@@ -1,4 +1,4 @@
-import { getViewerPlan } from "@/lib/access";
+import { isProTier } from "@/lib/access";
 import { resolveRequestUser } from "@/lib/server/request-user";
 import { getQuoteForSymbol } from "@/lib/us-stocks";
 import { isFeaturedSymbol, normalizeSymbol } from "@/lib/watchlist";
@@ -25,12 +25,8 @@ export async function GET(request: Request) {
   }
 
   const session = await resolveRequestUser(request);
-  const plan = getViewerPlan(
-    session
-      ? { plan: session.user.plan, isAdmin: session.user.isAdmin }
-      : null
-  );
-  const isPro = plan === "pro" || plan === "admin";
+  // Paid access is defined by the tier only: pro/admin unlock the full market.
+  const isPro = isProTier(session?.user.tier);
   const featured = isFeaturedSymbol(symbol);
 
   if (!isPro && !featured) {

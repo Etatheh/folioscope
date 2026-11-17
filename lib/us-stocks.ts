@@ -443,13 +443,28 @@ export async function getWatchlistQuotes(symbols: readonly string[]): Promise<Us
     [...snapshot.indices, ...snapshot.stocks].map((quote) => [quote.symbol, quote])
   );
 
-  return mapWithConcurrency(symbols, 4, async (symbol) => {
+  const quotes = await mapWithConcurrency(symbols, 4, async (symbol) => {
     const normalized = symbol.toUpperCase();
     const known = existing.get(normalized);
     if (known) return known;
     const live = await fetchQuoteBySymbol(normalized);
     return live ?? demoFeaturedQuote(normalized);
   });
+
+  // Every featured card gets a sparkline and MA/RSI/MACD basics, even the
+  // symbols outside the regular dashboard snapshot (SPY/QQQ/LLY/BRK.B).
+  await mapWithConcurrency(quotes, 4, async (quote) => {
+    if (quote.tech) return quote;
+    try {
+      const bars = await fetchUsKlines(quote.symbol);
+      if (bars.length >= 5) quote.tech = computeTechnicals(bars);
+    } catch {
+      // leave technicals empty; the card renders graceful placeholders
+    }
+    return quote;
+  });
+
+  return quotes;
 }
 
 // ---------------------------------------------------------------------------

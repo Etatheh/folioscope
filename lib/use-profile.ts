@@ -2,10 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  highestTier,
+  isAdminTier,
+  isProTier,
+  tierToViewerPlan,
+  type ViewerPlan,
+} from "./access";
 import { getSupabaseClient } from "./supabase/client";
 import { useSession } from "./use-session";
 
 export type ProfileTier = "free" | "pro" | "admin";
+
+const PLAN_RANK: Record<ViewerPlan, number> = {
+  anon: 0,
+  free: 1,
+  pro: 2,
+  admin: 3,
+};
 
 export type ViewerProfile = {
   tier: ProfileTier;
@@ -61,22 +75,35 @@ export function useProfile() {
 
   const profile = useMemo<ViewerProfile | null>(() => {
     if (!user) return null;
-    const sessionTier: ProfileTier = user.isAdmin
-      ? "admin"
-      : user.plan === "pro"
-        ? "pro"
-        : "free";
+    const sessionTier: ProfileTier =
+      user.tier ??
+      (user.isAdmin ? "admin" : user.plan === "pro" ? "pro" : "free");
     const cloudTier = cloud?.key === userKey ? cloud.tier : null;
-    return { tier: cloudTier ?? sessionTier };
+    // Never let a stale `profiles.tier` downgrade a session-level admin/Pro.
+    return { tier: highestTier(sessionTier, cloudTier) };
   }, [cloud, user, userKey]);
 
-  // Mirrors the product rule: paid Pro and developer/admin accounts unlock all.
-  const isPro = profile?.tier === "pro" || profile?.tier === "admin";
+  // Single paid-access rule shared with the API routes.
+  const isPro = isProTier(profile?.tier);
+  const isAdmin = isAdminTier(profile?.tier);
 
   return {
     user,
     ready,
     profile,
     isPro,
+    isAdmin,
   };
+}
+
+/**
+ * Live viewer plan for client components that also receive a server-rendered
+ * plan. The highest of the two wins, so Supabase Pro/Admin sessions unlock the
+ * dashboard even when the server only sees an anonymous cookie.
+ */
+export function useViewerPlan(fallback: ViewerPlan): ViewerPlan {
+  const { user, ready, profile } = useProfile();
+  if (!ready || !user) return fallback;
+  const live = tierToViewerPlan(profile?.tier);
+  return PLAN_RANK[live] > PLAN_RANK[fallback] ? live : fallback;
 }

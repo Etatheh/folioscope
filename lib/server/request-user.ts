@@ -1,8 +1,10 @@
 import { cookies } from "next/headers";
 
+import { highestTier, isProTier } from "@/lib/access";
 import { getSessionUser, type AuthUser } from "./auth-service";
 import { COOKIE_NAME } from "./auth";
 import { readSupabaseEnv } from "./env";
+import { pgSelect } from "./rest";
 
 function isAdminEmail(email: string): boolean {
   const raw = process.env.ADMIN_EMAILS?.trim();
@@ -42,26 +44,53 @@ async function getBearerUser(
       id?: string;
       email?: string;
       user_metadata?: Record<string, unknown>;
+      app_metadata?: Record<string, unknown>;
     };
     if (!data.id || !data.email) return null;
 
     const meta = data.user_metadata ?? {};
-    const admin = isAdminEmail(data.email);
-    const pro = meta.plan === "pro";
+    const appMeta = data.app_metadata ?? {};
+    const admin =
+      isAdminEmail(data.email) ||
+      appMeta.role === "admin" ||
+      meta.role === "admin" ||
+      meta.is_admin === true;
+    const pro = meta.plan === "pro" || appMeta.plan === "pro";
     const nickname =
       (typeof meta.full_name === "string" && meta.full_name.trim()) ||
       (typeof meta.name === "string" && meta.name.trim()) ||
       data.email.split("@")[0] ||
       "User";
+    const baseTier = admin ? "admin" : pro ? "pro" : "free";
+
+    // `profiles.tier` is the paid tier shown by Account Settings. Merge it with
+    // the auth metadata so API routes see exactly the same tier as the UI.
+    let profileTier: string | null = null;
+    if (env?.secretKey) {
+      try {
+        const rows = await pgSelect<{ tier: string }>(
+          env,
+          "profiles",
+          `id=eq.${encodeURIComponent(data.id)}&select=tier`
+        );
+        profileTier = rows[0]?.tier ?? null;
+      } catch {
+        // profiles is optional; auth metadata remains the fallback.
+      }
+    }
+
+    const tier = highestTier(baseTier, profileTier);
+    const isAdmin = tier === "admin";
 
     return {
       user: {
         id: data.id,
         email: data.email,
         nickname,
-        plan: admin || pro ? "pro" : "free",
+        plan: isProTier(tier) ? "pro" : "free",
+        tier,
         createdAt: new Date().toISOString(),
-        isAdmin: admin,
+        isAdmin,
       },
       token,
     };

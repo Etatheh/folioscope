@@ -1,149 +1,72 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/client-api";
+import type { ViewerPlan } from "@/lib/access";
 import { dict, type Lang } from "@/lib/i18n";
+import type { MarketSearchHit, MarketSearchResponse } from "@/lib/market-search";
 import { useProfile } from "@/lib/use-profile";
-import type { UsQuote } from "@/lib/us-stocks";
-import {
-  BACKTEST_ADD_EVENT,
-  FEATURED_SYMBOLS,
-  isFeaturedSymbol,
-  normalizeSymbol,
-  symbolLabel,
-} from "@/lib/watchlist";
+import { BACKTEST_ADD_EVENT } from "@/lib/watchlist";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import ProBadge from "@/components/ui/ProBadge";
 import UpgradeModal from "@/components/ui/UpgradeModal";
-import { fmtPrice } from "@/components/market-ui";
 import FavoriteButton from "./FavoriteButton";
-import { useWatchlist } from "./WatchlistProvider";
+import QuoteCard from "./QuoteCard";
 
-const SEARCH_DEBOUNCE_MS = 380;
+const SEARCH_DEBOUNCE_MS = 280;
+const EXAMPLES = ["PLTR", "SOXL", "COIN"];
 
+function changeTone(value: number) {
+  return value >= 0 ? "text-emerald-400" : "text-rose-400";
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      className="h-4 w-4 shrink-0"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m16.5 16.5 4 4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/**
+ * Full U.S. market search.
+ *
+ * Pro/Admin users get live Yahoo Finance suggestions and can push a hit into
+ * the watchlist, the current board, or the backtest pool. Everyone else sees a
+ * blurred teaser that opens the auth / upgrade flow.
+ */
 export default function MarketSearch({
   lang,
-  featuredQuotes,
+  plan,
 }: {
   lang: Lang;
-  featuredQuotes: UsQuote[];
+  plan: ViewerPlan;
 }) {
   const t = dict[lang].watchlist;
   const { user, ready, isPro } = useProfile();
   const { openAuthModal } = useAuthModal();
-  const { symbols: savedSymbols, has } = useWatchlist();
 
   const [query, setQuery] = useState("");
-  const [focused, setFocused] = useState(false);
-  const [searching, setSearching] = useState(false);
-  const [asyncResult, setAsyncResult] = useState<UsQuote | null>(null);
-  const [serverLockedSymbol, setServerLockedSymbol] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [results, setResults] = useState<MarketSearchHit[]>([]);
   const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState<MarketSearchHit | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const requestId = useRef(0);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
-  const featuredMap = useMemo(
-    () => new Map(featuredQuotes.map((quote) => [quote.symbol, quote])),
-    [featuredQuotes]
-  );
-
-  const symbol = normalizeSymbol(query);
-  const normalizedQuery = query.trim().toUpperCase();
-
-  const derivedLocked =
-    !isPro && symbol && !isFeaturedSymbol(symbol) && symbol.length >= 2
-      ? symbol
-      : null;
-  const lockedSymbol = derivedLocked ?? serverLockedSymbol;
-  const localResult =
-    symbol && isFeaturedSymbol(symbol) ? featuredMap.get(symbol) : undefined;
-  const result = localResult ?? asyncResult;
-
-  const changeQuery = (value: string) => {
-    requestId.current += 1;
-    setQuery(value);
-    setAsyncResult(null);
-    setServerLockedSymbol(null);
-    setNotFound(false);
-    setError(false);
-    setSearching(false);
-  };
-
-  const suggestions = useMemo(() => {
-    if (!normalizedQuery) return [];
-    const pool = [...FEATURED_SYMBOLS, ...savedSymbols];
-    const seen = new Set<string>();
-    return pool
-      .filter((item) => {
-        if (seen.has(item)) return false;
-        seen.add(item);
-        if (item.includes(normalizedQuery)) return true;
-        const zh = symbolLabel(item, "zh");
-        const en = symbolLabel(item, "en");
-        return (
-          zh.toUpperCase().includes(normalizedQuery) ||
-          en.toUpperCase().includes(normalizedQuery)
-        );
-      })
-      .slice(0, 6);
-  }, [normalizedQuery, savedSymbols]);
-
-  useEffect(() => {
-    const currentRequest = ++requestId.current;
-    if (!symbol) return;
-
-    const featured = isFeaturedSymbol(symbol);
-
-    // Non-Pro visitors get a locked blur preview instead of a network request.
-    if (!isPro && !featured) return;
-
-    // Featured cards already carry a server quote; use it for an instant result.
-    if (featured && featuredMap.has(symbol)) return;
-
-    const timer = window.setTimeout(async () => {
-      setSearching(true);
-      try {
-        const response = await apiFetch(
-          `/api/markets/quote?symbol=${encodeURIComponent(symbol)}`
-        );
-        if (currentRequest !== requestId.current) return;
-
-        if (response.ok) {
-          const data = (await response.json()) as { quote?: UsQuote };
-          if (data.quote) {
-            setAsyncResult(data.quote);
-            setServerLockedSymbol(null);
-            setNotFound(false);
-          } else {
-            setNotFound(true);
-          }
-        } else if (response.status === 401 || response.status === 403) {
-          setAsyncResult(null);
-          setServerLockedSymbol(symbol);
-        } else if (response.status === 404) {
-          setAsyncResult(null);
-          setNotFound(true);
-        } else {
-          setAsyncResult(null);
-          setError(true);
-        }
-      } catch {
-        if (currentRequest === requestId.current) {
-          setAsyncResult(null);
-          setError(true);
-        }
-      } finally {
-        if (currentRequest === requestId.current) setSearching(false);
-      }
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [featuredMap, isPro, symbol]);
-
-  const requireUpgrade = () => {
+  const gate = () => {
     if (!ready) return;
     if (!user) {
       openAuthModal({ mode: "login", lang });
@@ -152,227 +75,327 @@ export default function MarketSearch({
     setUpgradeOpen(true);
   };
 
-  const syncToBacktest = (target: string) => {
-    if (!isPro) {
-      requireUpgrade();
-      return;
-    }
+  const changeQuery = (value: string) => {
+    requestId.current += 1;
+    setQuery(value);
+    setResults([]);
+    setSearched(false);
+    setError(false);
+    setLoading(false);
+    setOpen(Boolean(value.trim()));
+  };
+
+  useEffect(() => {
+    const currentRequest = ++requestId.current;
+    const term = query.trim();
+    if (!isPro || term.length === 0) return;
+
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      setError(false);
+
+      try {
+        const response = await apiFetch(
+          `/api/market/search?q=${encodeURIComponent(term)}`
+        );
+        if (currentRequest !== requestId.current) return;
+
+        const payload = (await response.json().catch(() => null)) as
+          | MarketSearchResponse
+          | null;
+
+        if (response.ok && payload?.ok === true) {
+          setResults(payload.results);
+          setSearched(true);
+        } else {
+          setResults([]);
+          setSearched(true);
+          setError(true);
+        }
+      } catch {
+        if (currentRequest === requestId.current) {
+          setResults([]);
+          setSearched(true);
+          setError(true);
+        }
+      } finally {
+        if (currentRequest === requestId.current) setLoading(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [isPro, query]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const loadToBoard = (hit: MarketSearchHit) => {
+    setLoaded(hit);
+    setOpen(false);
+    window.setTimeout(() => {
+      document
+        .getElementById("market-search-loaded")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+  };
+
+  const syncToBacktest = (symbol: string) => {
     window.dispatchEvent(
-      new CustomEvent(BACKTEST_ADD_EVENT, { detail: { symbol: target } })
+      new CustomEvent(BACKTEST_ADD_EVENT, { detail: { symbol } })
     );
   };
 
-  const showSuggestions = focused && normalizedQuery.length > 0 && suggestions.length > 0;
+  const dropdownVisible =
+    open &&
+    query.trim().length > 0 &&
+    (loading || searched || results.length > 0 || error);
 
-  return (
-    <div className="relative mt-4">
-      <div className="group/search relative">
-        <div className="glass flex items-center gap-2.5 rounded-2xl border-white/10 px-3.5 py-2.5 transition focus-within:border-purple-400/45 focus-within:shadow-[0_0_28px_-12px_rgba(168,85,247,0.85)]">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.9}
-            className="h-4 w-4 shrink-0 text-slate-500 transition group-focus-within/search:text-purple-300"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="m16.5 16.5 4 4" strokeLinecap="round" />
-          </svg>
-          <input
-            value={query}
-            onChange={(event) => changeQuery(event.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => window.setTimeout(() => setFocused(false), 140)}
-            aria-label={t.searchAria}
-            placeholder={t.searchPlaceholder}
-            spellCheck={false}
-            autoComplete="off"
-            className="min-w-0 flex-1 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-600"
-          />
-          {query && (
-            <button
-              type="button"
-              aria-label="Clear"
-              onClick={() => changeQuery("")}
-              className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-slate-600 transition hover:bg-white/5 hover:text-slate-300"
-            >
-              ×
-            </button>
-          )}
-          <ProBadge label="PRO" className="ml-0.5" title={t.proLockedBody} />
-        </div>
+  if (!isPro) {
+    return (
+      <div className="relative mt-4">
+        <button
+          type="button"
+          onClick={gate}
+          className="glass flex w-full items-center gap-2.5 rounded-2xl border-white/10 px-3.5 py-2.5 text-left transition hover:border-amber-300/30"
+        >
+          <span className="text-slate-500">
+            <SearchIcon />
+          </span>
+          <span className="min-w-0 flex-1 truncate text-sm text-slate-600">
+            {t.searchPlaceholder}
+          </span>
+          <ProBadge label="PRO" title={t.proLockedBody} />
+        </button>
 
-        {showSuggestions && (
-          <div className="glass-panel absolute inset-x-0 top-[calc(100%+0.4rem)] z-30 overflow-hidden rounded-xl p-1.5 shadow-2xl shadow-black/50">
-            {suggestions.map((item) => {
-              const label = symbolLabel(item, lang);
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => changeQuery(item)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left transition hover:bg-purple-500/10"
-                >
-                  <span className="text-xs font-medium text-slate-200">{item}</span>
-                  <span className="truncate text-[11px] text-slate-500">
-                    {label !== item ? `${label} · ` : ""}
-                    {isFeaturedSymbol(item) ? "Free" : "Pro"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {searching && (
-        <p className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-purple-400" />
-          {t.searching}
-        </p>
-      )}
-
-      {!searching && error && (
-        <p className="mt-2 text-[11px] text-rose-300">{t.searchError}</p>
-      )}
-
-      {!searching && notFound && (
-        <p className="mt-2 text-[11px] text-slate-500">{t.noResult}</p>
-      )}
-
-      {result && !searching && (
-        <div className="mt-3 overflow-hidden rounded-2xl border border-purple-400/20 bg-gradient-to-br from-purple-500/[0.09] via-white/[0.02] to-blue-500/[0.06] p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-purple-300/80">
-                {t.searchResult}
-              </p>
-              <p className="mt-1 flex items-baseline gap-2 text-sm font-semibold text-white">
-                {result.symbol}
-                {(() => {
-                  const label = lang === "zh" ? result.name : result.nameEn || result.name;
-                  return label && label.toUpperCase() !== result.symbol ? (
-                    <span className="truncate text-xs font-normal text-slate-400">
-                      {label}
-                    </span>
-                  ) : null;
-                })()}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-semibold tabular-nums text-white">
-                ${fmtPrice(result.price)}
-              </p>
-              <p
-                className={`text-[11px] tabular-nums ${
-                  result.change >= 0 ? "text-emerald-400" : "text-rose-400"
-                }`}
+        <button
+          type="button"
+          onClick={gate}
+          aria-label={t.upgrade}
+          className="relative mt-2 block w-full overflow-hidden rounded-2xl border border-amber-300/20 bg-gradient-to-br from-amber-400/[0.05] via-white/[0.02] to-purple-500/[0.08] p-3 text-left"
+        >
+          <div aria-hidden className="pointer-events-none space-y-2 blur-[5px]">
+            {EXAMPLES.map((symbol, index) => (
+              <div
+                key={symbol}
+                className="flex items-center justify-between gap-3 rounded-lg bg-white/[0.03] px-3 py-2"
               >
-                {result.change >= 0 ? "+" : ""}
-                {result.change.toFixed(2)} (
-                {result.change >= 0 ? "+" : ""}
-                {result.changePct.toFixed(2)}%)
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <FavoriteButton symbol={result.symbol} lang={lang} />
-            <span className="text-[11px] text-slate-400">
-              {has(result.symbol) ? t.added : t.addWatchlist}
-            </span>
-            <span className="mx-1 h-3 w-px bg-white/10" aria-hidden />
-            <button
-              type="button"
-              onClick={() => syncToBacktest(result.symbol)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] text-slate-300 transition hover:border-purple-400/30 hover:text-white"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                className="h-3.5 w-3.5"
-                aria-hidden="true"
-              >
-                <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" strokeLinecap="round" />
-              </svg>
-              {t.syncBacktest}
-            </button>
-            <Link
-              href={`/dashboard/markets/${encodeURIComponent(result.symbol)}?lang=${lang}`}
-              className="ml-auto text-[11px] text-purple-300 transition hover:text-purple-200"
-            >
-              {t.viewDetail} →
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {lockedSymbol && !searching && (
-        <div className="relative mt-3 overflow-hidden rounded-2xl border border-amber-300/20 bg-gradient-to-br from-amber-400/[0.06] via-white/[0.02] to-purple-500/[0.08] p-4">
-          <div
-            aria-hidden
-            className="pointer-events-none select-none blur-[5px]"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-amber-200/60">
-                  {t.searchResult}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-white">
-                  {lockedSymbol}
-                  {symbolLabel(lockedSymbol, lang) !== lockedSymbol && (
-                    <span className="ml-2 text-xs font-normal text-slate-400">
-                      {symbolLabel(lockedSymbol, lang)}
-                    </span>
-                  )}
-                </p>
+                <span className="text-xs font-semibold text-white">{symbol}</span>
+                <span className="h-2 w-28 rounded-full bg-white/15" />
+                <span className="text-xs tabular-nums text-white">
+                  ${(index + 1) * 97 + 24}.{index === 1 ? "40" : "18"}
+                </span>
               </div>
-              <p className="text-lg font-semibold tabular-nums text-white">$•••</p>
-            </div>
-            <div className="mt-3 h-1.5 w-2/3 rounded-full bg-white/15" />
-            <div className="mt-2 h-2 w-1/2 rounded-full bg-white/10" />
+            ))}
           </div>
-
-          <button
-            type="button"
-            onClick={requireUpgrade}
-            aria-label={t.upgrade}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-[#070b13]/35 p-4 text-center"
-          >
-            <span className="text-lg" aria-hidden>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[#070b13]/45 p-4 text-center">
+            <span className="text-base" aria-hidden>
               🔒
             </span>
-            <span className="block text-sm font-semibold text-amber-100">
-              {t.proLockedTitle}
+            <span className="text-sm font-semibold text-amber-100">
+              {t.searchLockedTitle}
             </span>
-            <span className="block max-w-sm text-[11px] leading-relaxed text-slate-400">
-              {t.proLockedBody}
+            <span className="max-w-md text-[11px] leading-relaxed text-slate-400">
+              {t.searchLockedBody}
             </span>
             <span className="btn-primary mt-1 rounded-full px-4 py-1.5 text-[11px] font-semibold text-white">
               {t.upgrade}
             </span>
+          </div>
+        </button>
+
+        <UpgradeModal
+          open={upgradeOpen}
+          onClose={() => setUpgradeOpen(false)}
+          lang={lang}
+          source="market-search"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div ref={wrapRef} className="relative mt-4">
+      <div className="group/search glass flex items-center gap-2.5 rounded-2xl border-white/10 px-3.5 py-2.5 transition focus-within:border-purple-400/45 focus-within:shadow-[0_0_28px_-12px_rgba(168,85,247,0.85)]">
+        <span className="text-slate-500 transition group-focus-within/search:text-purple-300">
+          <SearchIcon />
+        </span>
+        <input
+          value={query}
+          onChange={(event) => changeQuery(event.target.value)}
+          onFocus={() => {
+            if (query.trim()) setOpen(true);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && results[0]) {
+              event.preventDefault();
+              loadToBoard(results[0]);
+            }
+          }}
+          aria-label={t.searchAria}
+          placeholder={t.searchPlaceholder}
+          spellCheck={false}
+          autoComplete="off"
+          className="min-w-0 flex-1 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-600"
+        />
+        {loading && (
+          <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-purple-400/30 border-t-purple-300" />
+        )}
+        {query && !loading && (
+          <button
+            type="button"
+            aria-label="Clear"
+            onClick={() => changeQuery("")}
+            className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-slate-600 transition hover:bg-white/5 hover:text-slate-300"
+          >
+            ×
           </button>
-        </div>
-      )}
+        )}
+        <ProBadge label="PRO" title={t.proLockedBody} />
+      </div>
 
       {!query && (
         <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
           {t.searchHint}
-          {FEATURED_SYMBOLS.slice(0, 4).map((item) => (
+          {EXAMPLES.map((symbol) => (
             <button
-              key={item}
+              key={symbol}
               type="button"
-              onClick={() => changeQuery(item)}
+              onClick={() => changeQuery(symbol)}
               className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-500 transition hover:border-purple-400/30 hover:text-slate-200"
             >
-              {item}
+              {symbol}
             </button>
           ))}
         </p>
+      )}
+
+      {dropdownVisible && (
+        <div className="glass-panel absolute inset-x-0 top-[calc(100%+0.4rem)] z-40 max-h-[22rem] overflow-y-auto rounded-2xl p-1.5 shadow-2xl shadow-black/50">
+          {loading && results.length === 0 && (
+            <p className="px-3 py-3 text-[11px] text-slate-500">{t.searching}</p>
+          )}
+          {!loading && error && (
+            <p className="px-3 py-3 text-[11px] text-rose-300">{t.searchError}</p>
+          )}
+          {!loading && !error && searched && results.length === 0 && (
+            <p className="px-3 py-3 text-[11px] text-slate-500">{t.noResult}</p>
+          )}
+          {results.map((hit) => (
+            <div
+              key={hit.symbol}
+              className="flex items-center gap-2 rounded-xl px-2 py-2 transition hover:bg-white/[0.04]"
+            >
+              <button
+                type="button"
+                onClick={() => loadToBoard(hit)}
+                className="min-w-0 flex-1 text-left"
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-slate-100">
+                    {hit.symbol}
+                  </span>
+                  <span className="rounded border border-white/10 px-1 py-0.5 text-[8px] uppercase tracking-wider text-slate-500">
+                    {hit.quoteType === "ETF" ? "ETF" : "US"}
+                  </span>
+                  <span className="truncate text-[10px] text-slate-600">
+                    {hit.exchange}
+                  </span>
+                </span>
+                <span className="mt-0.5 block truncate text-[11px] text-slate-400">
+                  {lang === "zh" ? hit.name : hit.nameEn}
+                </span>
+              </button>
+
+              <div className="shrink-0 text-right">
+                <p className="text-xs font-medium tabular-nums text-white">
+                  ${hit.quote.price.toFixed(2)}
+                </p>
+                <p
+                  className={`text-[10px] tabular-nums ${changeTone(
+                    hit.quote.changePct
+                  )}`}
+                >
+                  {hit.quote.changePct >= 0 ? "+" : ""}
+                  {hit.quote.changePct.toFixed(2)}%
+                </p>
+              </div>
+
+              <FavoriteButton symbol={hit.symbol} lang={lang} size="sm" />
+
+              <button
+                type="button"
+                onClick={() => syncToBacktest(hit.symbol)}
+                title={t.syncBacktest}
+                aria-label={t.syncBacktest}
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-slate-400 transition hover:border-purple-400/35 hover:text-purple-200"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                  className="h-3.5 w-3.5"
+                  aria-hidden="true"
+                >
+                  <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {loaded && (
+        <div
+          id="market-search-loaded"
+          className="mt-6 rounded-2xl border border-purple-400/20 bg-gradient-to-br from-purple-500/[0.08] via-white/[0.02] to-blue-500/[0.05] p-4"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-purple-300/80">
+                {t.loadedToBoard}
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500">
+                {loaded.symbol} · {loaded.exchange}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => syncToBacktest(loaded.symbol)}
+                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[10px] text-slate-300 transition hover:border-purple-400/35 hover:text-white"
+              >
+                {t.syncBacktest}
+              </button>
+              <button
+                type="button"
+                aria-label={t.close}
+                onClick={() => setLoaded(null)}
+                className="grid h-7 w-7 place-items-center rounded-full text-slate-500 transition hover:bg-white/5 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 max-w-sm">
+            <QuoteCard quote={loaded.quote} lang={lang} plan={plan} />
+          </div>
+        </div>
       )}
 
       <UpgradeModal

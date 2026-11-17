@@ -3,21 +3,62 @@
 
 export type ViewerPlan = "anon" | "free" | "pro" | "admin";
 
+/** Stored profile tier. `admin` is the developer/owner tier. */
+export type AccessTier = "free" | "pro" | "admin";
+
 export type Viewer = {
   plan: "free" | "pro";
+  tier?: AccessTier;
   isAdmin?: boolean;
 } | null;
 
+/**
+ * The single paid-access rule used by every component and API route:
+ * only `pro` and `admin` tiers unlock paid features. Admins additionally get
+ * unlimited AI quota.
+ */
+export function isProTier(tier: AccessTier | string | null | undefined): boolean {
+  return tier === "pro" || tier === "admin";
+}
+
+/** Developer/owner tier — unlimited quota and every paid feature. */
+export function isAdminTier(tier: AccessTier | string | null | undefined): boolean {
+  return tier === "admin";
+}
+
+/** Pick the strongest tier, so a stale lower tier can never downgrade access. */
+export function highestTier(
+  ...tiers: (AccessTier | string | null | undefined)[]
+): AccessTier {
+  let best: AccessTier = "free";
+  for (const tier of tiers) {
+    if (tier === "admin") return "admin";
+    if (tier === "pro") best = "pro";
+  }
+  return best;
+}
+
+/** Resolve a stored tier to the viewer plan used by the dashboard UI. */
+export function tierToViewerPlan(
+  tier: AccessTier | string | null | undefined
+): ViewerPlan {
+  if (tier === "admin") return "admin";
+  if (tier === "pro") return "pro";
+  return "free";
+}
+
 /** Resolve the effective dashboard role. Developer access never depends on billing. */
 export function getViewerPlan(viewer: Viewer): ViewerPlan {
-  if (viewer?.isAdmin) return "admin";
-  if (viewer?.plan === "pro") return "pro";
-  return viewer ? "free" : "anon";
+  if (!viewer) return "anon";
+  if (viewer.isAdmin || isAdminTier(viewer.tier)) return "admin";
+  // Accept either the stored tier or the legacy plan field, whichever is highest.
+  if (isProTier(viewer.tier) || viewer.plan === "pro") return "pro";
+  return "free";
 }
 
 /** Developers and paid Pro users both unlock every dashboard feature. */
 export function hasFullDashboardAccess(plan: ViewerPlan): boolean {
-  return plan === "admin" || plan === "pro";
+  return isProTier(plan);
 }
 
 export const FREE_STOCK_COUNT = 4;

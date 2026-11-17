@@ -23,6 +23,8 @@ export type AuthUser = {
   email: string;
   nickname: string;
   plan: "free" | "pro";
+  /** Effective tier: paid Pro or developer/admin. */
+  tier: "free" | "pro" | "admin";
   createdAt: string;
   /** true when the email is listed in ADMIN_EMAILS — full dashboard access */
   isAdmin?: boolean;
@@ -63,10 +65,10 @@ function isAdminEmail(email: string): boolean {
   return getAdminEmails().has(email.toLowerCase());
 }
 
-/** Apply admin override: force plan="pro" and flag isAdmin. */
+/** Apply admin override: force plan="pro", tier="admin" and flag isAdmin. */
 function applyAdmin(user: AuthUser): AuthUser {
   if (isAdminEmail(user.email)) {
-    return { ...user, plan: "pro", isAdmin: true };
+    return { ...user, plan: "pro", tier: "admin", isAdmin: true };
   }
   return user;
 }
@@ -80,11 +82,13 @@ type UserRow = {
 };
 
 function userFromRow(row: UserRow): AuthUser {
+  const plan = row.plan === "pro" ? "pro" : "free";
   return applyAdmin({
     id: row.id,
     email: row.email,
     nickname: row.nickname,
-    plan: row.plan === "pro" ? "pro" : "free",
+    plan,
+    tier: plan,
     createdAt: row.created_at,
   });
 }
@@ -269,7 +273,7 @@ function localRegister(
   );
   return {
     ok: true,
-    user: applyAdmin({ id, email, nickname, plan: "free", createdAt: now }),
+    user: applyAdmin({ id, email, nickname, plan: "free", tier: "free", createdAt: now }),
     token,
   };
 }

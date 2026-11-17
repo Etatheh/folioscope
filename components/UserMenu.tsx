@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { logout, type SessionUser } from "@/lib/auth";
+import { isAdminTier, type AccessTier } from "@/lib/access";
+import { useProfile } from "@/lib/use-profile";
 import { useSession } from "@/lib/use-session";
 import { dict, type Lang } from "@/lib/i18n";
 import { signOutOfSupabase } from "@/lib/supabase/client";
@@ -17,16 +19,16 @@ function displayName(user: SessionUser): string {
   return user.email.split("@")[0] || user.email || "User";
 }
 
-function planBadge(user: SessionUser, lang: Lang) {
+function planBadge(tier: AccessTier, lang: Lang) {
   const t = dict[lang].user;
-  if (user.isAdmin) {
+  if (isAdminTier(tier)) {
     return {
       label: "ADMIN",
       className:
         "bg-gradient-to-r from-rose-500/30 to-orange-400/30 text-rose-300 ring-1 ring-rose-400/30",
     };
   }
-  if (user.plan === "pro") {
+  if (tier === "pro") {
     return {
       label: t.planPro,
       className:
@@ -42,6 +44,7 @@ function planBadge(user: SessionUser, lang: Lang) {
 export default function UserMenu({ lang }: { lang: Lang }) {
   const t = dict[lang].user;
   const { user, ready, mode } = useSession();
+  const { profile } = useProfile();
   const { openAuthModal } = useAuthModal();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -85,7 +88,13 @@ export default function UserMenu({ lang }: { lang: Lang }) {
     );
   }
 
-  const badge = planBadge(user, lang);
+  // Prefer the live profile tier (includes `profiles.tier === "admin"`), and
+  // fall back to the session flags while the profile row is loading.
+  const tier: AccessTier =
+    profile?.tier ??
+    user.tier ??
+    (user.isAdmin ? "admin" : user.plan === "pro" ? "pro" : "free");
+  const badge = planBadge(tier, lang);
   const name = displayName(user);
   const isDemo = mode === "local";
 

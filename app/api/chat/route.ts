@@ -120,7 +120,7 @@ export async function GET(request: Request) {
   }
 
   const headers = { "Cache-Control": "no-store" };
-  if (user.isAdmin) {
+  if (user.tier === "admin") {
     return Response.json(
       {
         ok: true,
@@ -138,7 +138,7 @@ export async function GET(request: Request) {
   try {
     const usage = await getUsage(user.id, user.plan);
     return Response.json(
-      { ok: true, unlimited: false, tier: user.plan, ...usage },
+      { ok: true, unlimited: false, tier: user.tier, ...usage },
       { headers }
     );
   } catch {
@@ -146,7 +146,7 @@ export async function GET(request: Request) {
       {
         ok: true,
         unlimited: false,
-        tier: user.plan,
+        tier: user.tier,
         used: 0,
         limit,
         remaining: limit,
@@ -188,7 +188,7 @@ export async function POST(request: Request) {
   // Developers skip metering; the quota is enforced best-effort so a missing
   // usage table never blocks the assistant entirely.
   let usage: Usage | null = null;
-  if (!user.isAdmin) {
+  if (user.tier !== "admin") {
     try {
       usage = await getUsage(user.id, user.plan);
       if (usage.remaining <= 0) {

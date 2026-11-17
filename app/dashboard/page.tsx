@@ -250,6 +250,7 @@ export default async function DashboardPage({
           <WatchlistHub
             lang={lang}
             quotes={watchlistQuotes}
+            plan={plan}
             initialTab={watchlistTab}
           />
         </section>

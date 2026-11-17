@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { cookies } from "next/headers";
 
+import { isProTier } from "@/lib/access";
 import { getUsMarketSnapshot } from "@/lib/us-stocks";
 import { getCnMarketSnapshot } from "@/lib/cn-markets";
 import { getAsiaMarketSnapshot } from "@/lib/asia-markets";
@@ -10,8 +10,7 @@ import {
   localAnalyze,
   type MarketBundle,
 } from "@/lib/agent-context";
-import { getSessionUser } from "@/lib/server/auth-service";
-import { COOKIE_NAME } from "@/lib/server/auth";
+import { resolveRequestUser } from "@/lib/server/request-user";
 import { getUsage, incrementUsage } from "@/lib/server/quota";
 
 export const runtime = "nodejs";
@@ -22,6 +21,7 @@ type Lang = "zh" | "en";
 const MSG = {
   en: {
     unauthorized: "Please log in to use the AI assistant.",
+    forbidden: "The AI market summary is a Pro feature. Upgrade to continue.",
     quota: (limit: number) =>
       `Daily limit reached (${limit} questions). Upgrade to Pro for a higher limit.`,
     badRequest: "Invalid request.",
@@ -29,6 +29,7 @@ const MSG = {
   },
   zh: {
     unauthorized: "请先登录再使用 AI 助手。",
+    forbidden: "AI 市场摘要为 Pro 专属功能，请升级后再试。",
     quota: (limit: number) =>
       `今日提问额度已用完（${limit} 次）。升级 Pro 可获得更高额度。`,
     badRequest: "请求格式错误。",
@@ -124,18 +125,19 @@ export async function POST(request: Request) {
   const lang: Lang = body.lang === "zh" ? "zh" : "en";
   const t = MSG[lang];
 
-  const store = await cookies();
-  const token = store.get(COOKIE_NAME)?.value;
-  let user = null;
-  try {
-    user = token ? await getSessionUser(token) : null;
-  } catch {
-    user = null;
-  }
+  const session = await resolveRequestUser(request);
+  const user = session?.user ?? null;
   if (!user) {
     return Response.json(
       { ok: false, error: t.unauthorized, code: "UNAUTHORIZED" },
       { status: 401 }
+    );
+  }
+  // AI market summary is a paid feature: pro/admin only.
+  if (!isProTier(user.tier)) {
+    return Response.json(
+      { ok: false, error: t.forbidden, code: "UPGRADE_REQUIRED" },
+      { status: 403 }
     );
   }
 
@@ -155,8 +157,9 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: t.empty }, { status: 400 });
   }
 
-  // Developers bypass metering entirely; Pro and Free retain their plan quotas.
-  const usage = user.isAdmin ? null : await getUsage(user.id, user.plan);
+  // Admins (tier === "admin") bypass metering entirely; Pro keeps its quota.
+  const unlimited = user.tier === "admin";
+  const usage = unlimited ? null : await getUsage(user.id, user.plan);
   if (usage && usage.remaining <= 0) {
     return Response.json(
       { ok: false, error: t.quota(usage.limit), code: "QUOTA_EXCEEDED", usage },
@@ -171,13 +174,14 @@ export async function POST(request: Request) {
   };
 
   const { mode, reply } = await generateReply(bundle, messages, lang);
-  const used = user.isAdmin ? null : await incrementUsage(user.id);
+  const used = unlimited ? null : await incrementUsage(user.id);
 
   return Response.json({
     ok: true,
     mode,
     reply,
-    unlimited: user.isAdmin === true,
+    tier: user.tier,
+    unlimited,
     usage:
       usage && used !== null
         ? { used, limit: usage.limit, remaining: Math.max(0, usage.limit - used) }

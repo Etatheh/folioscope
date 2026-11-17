@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { dict, type Lang } from "@/lib/i18n";
 import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
+import { apiFetch } from "@/lib/client-api";
+import { useViewerPlan } from "@/lib/use-profile";
 import ProBadge from "./ui/ProBadge";
 import ProUpgradeButton from "./ui/ProUpgradeButton";
 
@@ -30,7 +32,8 @@ export default function AiSummaryCard({
   plan: ViewerPlan;
 }) {
   const t = dict[lang].aiSummary;
-  const hasFullAccess = hasFullDashboardAccess(plan);
+  const effectivePlan = useViewerPlan(plan);
+  const hasFullAccess = hasFullDashboardAccess(effectivePlan);
   const [summary, setSummary] = useState<string | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [busy, setBusy] = useState(false);
@@ -42,7 +45,7 @@ export default function AiSummaryCard({
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch("/api/agent", {
+      const response = await apiFetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

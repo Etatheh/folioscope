@@ -18,6 +18,7 @@ export type PublicUser = {
   email: string;
   nickname: string;
   plan: "free" | "pro";
+  tier: "free" | "pro" | "admin";
   createdAt: string;
   isAdmin?: boolean;
 };
@@ -58,6 +59,7 @@ export function publicUser(user: StoredUser): PublicUser {
     email: user.email,
     nickname: user.nickname,
     plan: user.plan,
+    tier: user.plan,
     createdAt: user.created_at,
   };
 }

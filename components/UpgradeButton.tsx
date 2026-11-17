@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 
-import { useSession } from "@/lib/use-session";
+import { isAdminTier, isProTier } from "@/lib/access";
+import { useProfile } from "@/lib/use-profile";
 import ProUpgradeButton from "./ui/ProUpgradeButton";
 
 export default function UpgradeButton({ planId }: { planId: "free" | "pro" }) {
-  const { user, ready } = useSession();
+  const { user, ready, profile } = useProfile();
 
   if (planId === "free") {
     return (
@@ -23,10 +24,12 @@ export default function UpgradeButton({ planId }: { planId: "free" | "pro" }) {
     return <div className="mt-8 h-11 animate-pulse rounded-full bg-white/5" />;
   }
 
-  if (user?.isAdmin || user?.plan === "pro") {
+  if (isProTier(profile?.tier)) {
     return (
       <span className="mt-8 block rounded-full bg-emerald-400/10 py-3 text-center text-sm text-emerald-400">
-        {user.isAdmin ? "Developer access · all unlocked" : "Pro active ✓"}
+        {isAdminTier(profile?.tier)
+          ? "Developer access · all unlocked"
+          : "Pro active ✓"}
       </span>
     );
   }

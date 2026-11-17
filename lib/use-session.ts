@@ -8,23 +8,54 @@ import { getSupabaseClient } from "./supabase/client";
 
 export type SessionMode = "local" | "server" | "supabase";
 
+type ServerTier = "free" | "pro" | "admin";
+
 type ServerUser = {
   id?: string;
   email: string;
   nickname: string;
   plan: "free" | "pro";
+  tier?: ServerTier;
   createdAt?: string;
   isAdmin?: boolean;
 };
 
+/** Collapse plan + admin flags into the shared tier rule. */
+function resolveTier(user: {
+  plan?: "free" | "pro";
+  tier?: ServerTier;
+  isAdmin?: boolean;
+}): ServerTier {
+  if (user.tier === "admin" || user.isAdmin) return "admin";
+  if (user.tier === "pro" || user.plan === "pro") return "pro";
+  return "free";
+}
+
 function adaptServer(user: ServerUser): SessionUser {
+  const tier = resolveTier(user);
   return {
     id: user.id,
     email: user.email,
     name: user.nickname,
-    plan: user.plan,
+    plan: tier === "free" ? "free" : "pro",
+    tier,
     createdAt: user.createdAt ? new Date(user.createdAt).getTime() : Date.now(),
-    isAdmin: user.isAdmin,
+    isAdmin: tier === "admin",
+  };
+}
+
+/**
+ * Keep the Supabase-shaped user but overwrite its plan/admin flags with the
+ * authoritative server result. This is how an ADMIN_EMAILS developer gets the
+ * ADMIN badge even before `profiles.tier` is read.
+ */
+function mergeServerAccess(user: SessionUser, server: ServerUser): SessionUser {
+  const tier = resolveTier(server);
+  return {
+    ...user,
+    plan: tier === "free" ? "free" : "pro",
+    tier,
+    isAdmin: tier === "admin",
   };
 }
 
@@ -46,14 +77,18 @@ function adaptSupabase(user: User): SessionUser {
     "User";
   const avatarUrl = firstString(meta.avatar_url, meta.picture);
   const provider = firstString(appMeta.provider);
+  const isAdmin =
+    appMeta.role === "admin" || meta.role === "admin" || meta.is_admin === true;
+  const tier: ServerTier = isAdmin ? "admin" : meta.plan === "pro" ? "pro" : "free";
 
   return {
     id: user.id,
     email,
     name,
-    plan: meta.plan === "pro" ? "pro" : "free",
+    plan: tier === "free" ? "free" : "pro",
+    tier,
     createdAt: user.created_at ? new Date(user.created_at).getTime() : Date.now(),
-    isAdmin: appMeta.role === "admin" || meta.role === "admin" || meta.is_admin === true,
+    isAdmin: tier === "admin",
     avatarUrl,
     provider,
   };
@@ -84,6 +119,27 @@ const listeners = new Set<() => void>();
 function patch(partial: Partial<SessionSnapshot>) {
   snapshot = { ...snapshot, ...partial };
   for (const listener of listeners) listener();
+}
+
+/**
+ * Ask the server for the authoritative tier of a Supabase session. The server
+ * owns ADMIN_EMAILS, so this is the only reliable way for the nav bar to show
+ * ADMIN when the token itself carries no admin role.
+ */
+async function hydrateServerAccess(token: string) {
+  try {
+    const response = await fetch("/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!response.ok) return;
+    const data = (await response.json()) as { user?: ServerUser };
+    const current = snapshot.supabaseUser;
+    if (!data.user || !current || current.id !== data.user.id) return;
+    patch({ supabaseUser: mergeServerAccess(current, data.user) });
+  } catch {
+    // Keep the token/session metadata as-is when the probe fails.
+  }
 }
 
 function startSessionStore() {
@@ -138,12 +194,18 @@ function startSessionStore() {
         supabaseUser: data.session?.user ? adaptSupabase(data.session.user) : null,
         supabaseReady: true,
       });
+      if (data.session?.access_token) {
+        void hydrateServerAccess(data.session.access_token);
+      }
 
       supabase.auth.onAuthStateChange((_event, session) => {
         patch({
           supabaseUser: session?.user ? adaptSupabase(session.user) : null,
           supabaseReady: true,
         });
+        if (session?.access_token) {
+          void hydrateServerAccess(session.access_token);
+        }
       });
     } catch {
       patch({ supabaseReady: true });

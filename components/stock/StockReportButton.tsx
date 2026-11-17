@@ -7,7 +7,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { apiFetch } from "@/lib/client-api";
 import { dict, type Lang } from "@/lib/i18n";
 import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
-import { useSession } from "@/lib/use-session";
+import { useProfile, useViewerPlan } from "@/lib/use-profile";
 import {
   type StockFinancials,
   type StockReport,
@@ -488,7 +488,7 @@ export default function StockReportButton({
   className?: string;
 }) {
   const t = dict[lang].stockReport;
-  const { user, ready } = useSession();
+  const { ready } = useProfile();
   const [open, setOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -497,13 +497,8 @@ export default function StockReportButton({
     null
   );
 
-  const effectivePlan: ViewerPlan = user
-    ? user.isAdmin
-      ? "admin"
-      : user.plan === "pro"
-        ? "pro"
-        : "free"
-    : (plan ?? "anon");
+  // Live tier (including `profiles.tier === "admin"`) overrides the server plan.
+  const effectivePlan: ViewerPlan = useViewerPlan(plan ?? "anon");
   const hasAccess = hasFullDashboardAccess(effectivePlan);
 
   const load = useCallback(async () => {

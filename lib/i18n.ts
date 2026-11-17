@@ -260,7 +260,7 @@ const zh = {
   watchlist: {
     title: "自选与精选",
     subtitle: "14 只核心标的免费收藏 · Pro 解锁全美股搜索",
-    tabFeatured: "热门精选",
+    tabFeatured: "精选池",
     tabMine: "我的自选",
     featuredNote: "免费精选 · 14 只核心标的",
     mineNote: "已云端同步",
@@ -276,15 +276,17 @@ const zh = {
     savedToast: (symbol: string) => `${symbol} 已加入自选`,
     removedToast: (symbol: string) => `${symbol} 已移出自选`,
     errorToast: "自选同步失败，请稍后重试",
-    searchPlaceholder: "搜索美股 / ETF 代码…",
-    searchHint: "试试 NVDA、SPY、BRK.B",
-    searchAria: "搜索美股代码",
-    searching: "正在获取报价…",
-    noResult: "未找到该标的，请检查代码后重试。",
-    searchError: "行情接口暂不可用，请稍后再试。",
+    searchPlaceholder: "搜索全部美股与 ETF（例如 PLTR、SOXL、COIN）…",
+    searchHint: "搜索代码或公司名，如 PLTR、SOXL、COIN",
+    searchAria: "搜索全部美股与 ETF",
+    searching: "正在搜索并获取报价…",
+    noResult: "未找到匹配的美股或 ETF，请换个关键词。",
+    searchError: "搜索接口暂不可用，请稍后再试。",
     proLocked: "Pro 专属",
     proLockedTitle: "该标的仅对 Pro 开放",
     proLockedBody: "免费版可查看 14 只精选标的；升级 Pro 解锁全美股与 ETF 搜索。",
+    searchLockedTitle: "Pro 解锁全市场搜索",
+    searchLockedBody: "免费版可浏览 14 只精选标的；Pro / Admin 可实时搜索全部美股与 ETF，并直接加入自选或回测池。",
     upgrade: "升级 Pro",
     searchResult: "搜索结果",
     addWatchlist: "加入自选",
@@ -294,6 +296,8 @@ const zh = {
     syncFailed: "该标的暂时无法加入回测池",
     viewDetail: "查看详情",
     priceLocked: "价格已锁定",
+    loadedToBoard: "已载入当前看板",
+    close: "关闭",
     proSearchBadge: "PRO SEARCH",
     navTitle: "我的自选",
     navEmpty: "还没有收藏的股票",
@@ -683,6 +687,8 @@ type Dict = {
     proLocked: string;
     proLockedTitle: string;
     proLockedBody: string;
+    searchLockedTitle: string;
+    searchLockedBody: string;
     upgrade: string;
     searchResult: string;
     addWatchlist: string;
@@ -692,6 +698,8 @@ type Dict = {
     syncFailed: string;
     viewDetail: string;
     priceLocked: string;
+    loadedToBoard: string;
+    close: string;
     proSearchBadge: string;
     navTitle: string;
     navEmpty: string;
@@ -1072,8 +1080,8 @@ const en: Dict = {
   watchlist: {
     title: "Watchlist & Featured",
     subtitle: "14 core names free to save · Pro unlocks the whole U.S. market",
-    tabFeatured: "Featured",
-    tabMine: "My Watchlist",
+    tabFeatured: "Curated",
+    tabMine: "Watchlist",
     featuredNote: "Free curated pool · 14 core names",
     mineNote: "Synced to the cloud",
     count: (n: number) => `${n} saved`,
@@ -1088,15 +1096,17 @@ const en: Dict = {
     savedToast: (symbol: string) => `${symbol} added to your watchlist`,
     removedToast: (symbol: string) => `${symbol} removed from your watchlist`,
     errorToast: "Could not sync your watchlist. Please try again.",
-    searchPlaceholder: "Search U.S. Market…",
-    searchHint: "Try NVDA, SPY or BRK.B",
-    searchAria: "Search U.S. ticker",
-    searching: "Fetching quote…",
-    noResult: "No match for that ticker. Check the symbol and retry.",
-    searchError: "Quote feed unavailable. Please try again shortly.",
+    searchPlaceholder: "Search all U.S. equities & ETFs (e.g. PLTR, SOXL, COIN)...",
+    searchHint: "Search tickers or company names, e.g. PLTR, SOXL, COIN",
+    searchAria: "Search all U.S. equities and ETFs",
+    searching: "Searching and fetching quotes…",
+    noResult: "No matching U.S. stock or ETF. Try another keyword.",
+    searchError: "Market search is unavailable. Please try again shortly.",
     proLocked: "Pro only",
     proLockedTitle: "This symbol is Pro-only",
     proLockedBody: "Free includes 14 curated names. Upgrade to Pro to search every U.S. stock and ETF.",
+    searchLockedTitle: "Unlock full-market search with Pro",
+    searchLockedBody: "Free includes the 14 curated names. Pro / Admin unlocks live search across every U.S. equity and ETF, with one-click watchlist and backtest actions.",
     upgrade: "Upgrade to Pro",
     searchResult: "Search result",
     addWatchlist: "Add to watchlist",
@@ -1106,6 +1116,8 @@ const en: Dict = {
     syncFailed: "This symbol could not be added to the backtest pool",
     viewDetail: "View details",
     priceLocked: "Price locked",
+    loadedToBoard: "Loaded to the board",
+    close: "Close",
     proSearchBadge: "PRO SEARCH",
     navTitle: "My Watchlist",
     navEmpty: "No saved stocks yet",

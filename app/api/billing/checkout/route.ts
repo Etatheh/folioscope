@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 
+import { isProTier } from "@/lib/access";
 import { buildCheckoutUrl, isBillingConfigured } from "@/lib/billing";
 import { COOKIE_NAME } from "@/lib/server/auth";
 import { getSessionUser } from "@/lib/server/auth-service";
@@ -34,7 +35,7 @@ export async function POST() {
   if (!user) {
     return Response.json({ ok: false, error: "请先登录" }, { status: 401 });
   }
-  if (user.plan === "pro" || user.isAdmin) {
+  if (isProTier(user.tier)) {
     return Response.json({ ok: true, alreadyPro: true });
   }
   if (!isBillingConfigured()) {

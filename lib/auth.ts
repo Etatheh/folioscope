@@ -2,6 +2,8 @@
 // No backend yet: users and sessions live in localStorage on this browser only.
 // Password is checked only for presence — do NOT use this for real accounts.
 
+import type { AccessTier } from "./access";
+
 export type PlanId = "free" | "pro";
 
 export type SessionUser = {
@@ -10,6 +12,8 @@ export type SessionUser = {
   email: string;
   name: string;
   plan: PlanId;
+  /** Effective access tier: free / pro / admin. */
+  tier?: AccessTier;
   createdAt: number;
   isAdmin?: boolean;
   /** Google/Microsoft OAuth avatar (from `user_metadata.avatar_url`). */
@@ -72,6 +76,7 @@ export function register(email: string, name: string, password: string): AuthRes
     email: e,
     name: name.trim(),
     plan: "free",
+    tier: "free",
     createdAt: Date.now(),
   };
   writeUsers([...users, user]);
@@ -97,8 +102,8 @@ export function upgradeToPro() {
   const session = getSession();
   if (!session) return;
   const users = readUsers().map((u) =>
-    u.email === session.email ? { ...u, plan: "pro" as const } : u
+    u.email === session.email ? { ...u, plan: "pro" as const, tier: "pro" as const } : u
   );
   writeUsers(users);
-  persistSession({ ...session, plan: "pro" });
+  persistSession({ ...session, plan: "pro", tier: "pro" });
 }
