@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
-import AgentChat from "@/components/AgentChat";
+import AiAssistantDrawer from "@/components/ai/AiAssistantDrawer";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import LangToggle from "@/components/LangToggle";
 import PriceChart from "@/components/PriceChart";
@@ -18,6 +18,7 @@ import {
   fmtVolume,
 } from "@/components/market-ui";
 import { buildChartSeries } from "@/lib/us-stocks";
+import type { ChatMarketContext } from "@/lib/chat";
 import { getInstrumentDetail } from "@/lib/instruments";
 import { getViewerPlan, isSymbolUnlocked } from "@/lib/access";
 import { getSessionUser } from "@/lib/server/auth-service";
@@ -161,6 +162,34 @@ export default async function MarketDetailPage({
 
   const series = bars.length >= 2 ? buildChartSeries(bars, 60) : null;
   const valuation = quote.valuation;
+
+  const chatContext: ChatMarketContext = {
+    page: "instrument",
+    lang,
+    indices: [],
+    focused: {
+      symbol: quote.symbol,
+      name: lang === "zh" ? quote.name : quote.nameEn || quote.name,
+      price: quote.price,
+      changePct: quote.changePct,
+      currency,
+      open: quote.open,
+      high: quote.high,
+      low: quote.low,
+      prevClose: quote.prevClose,
+      pe: quote.pe,
+      pb: valuation?.pb ?? null,
+      pePercentile: valuation?.pePercentile ?? null,
+      week52Low: quote.week52Low,
+      week52High: quote.week52High,
+      ma5: quote.tech?.ma5 ?? null,
+      ma10: quote.tech?.ma10 ?? null,
+      ma20: quote.tech?.ma20 ?? null,
+      rsi14: quote.tech?.rsi14 ?? null,
+      macd: quote.tech?.macd ?? null,
+      macdCross: quote.tech?.macdCross ?? null,
+    },
+  };
 
   return (
     <div className="relative min-h-screen">
@@ -308,7 +337,7 @@ export default async function MarketDetailPage({
           </div>
         </article>
       </main>
-      <AgentChat lang={lang} />
+      <AiAssistantDrawer lang={lang} marketContext={chatContext} />
     </div>
   );
 }

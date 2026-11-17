@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import AgentChat from "@/components/AgentChat";
+import AiAssistantDrawer from "@/components/ai/AiAssistantDrawer";
 import AiSummaryCard from "@/components/AiSummaryCard";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import DcaBacktestCard from "@/components/DcaBacktestCard";
@@ -11,6 +11,8 @@ import PortfolioSimulator from "@/components/PortfolioSimulator";
 import UsStockPanel from "@/components/UsStockPanel";
 import UserMenu from "@/components/UserMenu";
 import ProUpgradeButton from "@/components/ui/ProUpgradeButton";
+import type { ChatMarketContext } from "@/lib/chat";
+import { getUsMarketSnapshot } from "@/lib/us-stocks";
 import {
   FREE_STOCK_SYMBOLS,
   getViewerPlan,
@@ -101,7 +103,8 @@ export default async function DashboardPage({
   const fullAccess = hasFullDashboardAccess(plan);
 
   const showCn = lang === "zh";
-  const [simData, asiaData, dcaData, cnData] = await Promise.all([
+  const [usData, simData, asiaData, dcaData, cnData] = await Promise.all([
+    getUsMarketSnapshot(),
     getSimulationData(),
     getAsiaMarketSnapshot(),
     getDcaDataset(),
@@ -121,6 +124,49 @@ export default async function DashboardPage({
   const simDefaults = fullAccess
     ? ["AAPL", "MSFT", "NVDA", "AMZN", "JPM"]
     : ["AAPL", "MSFT", "NVDA", "GOOGL"];
+
+  // Live context for indepth AI. DcaBacktestCard keeps the DCA figures in sync
+  // after hydration; these values match its default plan for first paint.
+  const dcaTarget = dcaData.sp500.points.length > 0 ? "sp500" : "nasdaq";
+  const dcaMonths = Math.max(
+    1,
+    Math.min(60, dcaData[dcaTarget].points.length || 60)
+  );
+  const chatContext: ChatMarketContext = {
+    page: "dashboard",
+    asOf: usData.fetchedAt,
+    lang,
+    indices: usData.indices.map((quote) => ({
+      symbol: quote.symbol,
+      name: lang === "zh" ? quote.name : quote.nameEn || quote.name,
+      price: quote.price,
+      changePct: quote.changePct,
+      pe: quote.valuation?.pe ?? quote.pe ?? null,
+      pePercentile: quote.valuation?.pePercentile ?? null,
+    })),
+    dca: {
+      target: dcaTarget,
+      targetName:
+        dcaTarget === "sp500"
+          ? lang === "zh"
+            ? "标普500"
+            : "S&P 500"
+          : lang === "zh"
+            ? "纳斯达克100"
+            : "Nasdaq 100",
+      period: t.dca.periods.y5,
+      months: dcaMonths,
+      monthly: 500,
+      benchmark:
+        dcaTarget === "sp500"
+          ? lang === "zh"
+            ? "纳斯达克100"
+            : "Nasdaq 100"
+          : lang === "zh"
+            ? "标普500"
+            : "S&P 500",
+    },
+  };
 
   const navItems = (
     [
@@ -203,7 +249,7 @@ export default async function DashboardPage({
 
         <section id="markets" className="mt-8">
           <Suspense fallback={<MarketsSkeleton />}>
-            <UsStockPanel lang={lang} plan={plan} />
+            <UsStockPanel lang={lang} plan={plan} snapshot={usData} />
           </Suspense>
         </section>
 
@@ -277,7 +323,7 @@ export default async function DashboardPage({
           </Suspense>
         </section>
       </main>
-      <AgentChat lang={lang} />
+      <AiAssistantDrawer lang={lang} marketContext={chatContext} />
     </div>
   );
 }

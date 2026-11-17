@@ -140,6 +140,62 @@ const zh = {
     upgrade: "升级 Pro",
     quota: (remaining: number, limit: number) => `今日剩余 ${remaining}/${limit} 次提问`,
   },
+  assistant: {
+    open: "AI 助手",
+    title: "indepth AI",
+    live: "Live Context",
+    synced: "已同步当前页面行情",
+    contextLabel: "当前页面上下文",
+    welcome:
+      "你好，我是 indepth AI。我会结合当前页面的美股指数、估值与定投数据，给出结构化的行情与资产配置分析。",
+    quick: ["解读今日美股盘面", "分析当前定投回测方案", "标普500与纳指100配置建议"],
+    placeholder: "问行情、估值、定投或资产配置…",
+    send: "发送",
+    thinking: "分析中…",
+    newChat: "新对话",
+    close: "关闭",
+    stop: "停止",
+    error: "请求失败，请稍后重试。",
+    loginRequired: "请先登录再开始对话。",
+    quota: (remaining: number, limit: number) => `今日剩余 ${remaining}/${limit} 次`,
+    disclaimer: "AI 可能出错，行情与回测数据仅供参考，不构成投资建议。",
+  },
+  account: {
+    title: "账号管理",
+    subtitle: "管理个人资料、套餐额度与账号安全。",
+    profile: "个人资料",
+    avatarHint: "头像来自 Google 账号",
+    email: "邮箱",
+    emailManaged: "邮箱由登录服务商管理，不可修改",
+    nickname: "昵称",
+    nicknamePlaceholder: "输入昵称",
+    nicknameHint: "2–32 个字符，将显示在顶部导航与 AI 助手中。",
+    save: "保存修改",
+    saving: "保存中…",
+    saved: "资料已更新",
+    plan: "套餐与额度",
+    currentPlan: "当前套餐",
+    aiCredits: "AI Assistant 剩余次数",
+    unlimited: "不限次数",
+    upgrade: "升级 Pro",
+    proActive: "PRO 已激活",
+    danger: "危险区域",
+    dangerHint:
+      "删除账号后，您的个人资料、套餐与所有数据将被永久删除，且无法恢复。",
+    delete: "删除账号",
+    confirmTitle: "确认删除账号",
+    confirmHint: "此操作不可撤销。请输入 DELETE 以激活删除按钮。",
+    confirmPlaceholder: "DELETE",
+    cancel: "取消",
+    confirmDelete: "永久删除账号",
+    deleting: "删除中…",
+    deletedToast: "账号及所有数据已永久删除",
+    errorProfile: "资料保存失败，请稍后重试。",
+    errorDelete: "删除失败，请稍后重试。",
+    errorSupabase: "此操作需要 Supabase 登录。请先通过 Google 或邮箱登录。",
+    errorNickname: "昵称长度需为 2–32 个字符。",
+    close: "关闭",
+  },
   user: {
     login: "登录",
     upgrade: "升级 Pro",
@@ -148,7 +204,7 @@ const zh = {
     free: "免费版",
     planFree: "FREE",
     planPro: "PRO",
-    accountPlan: "账户与订阅",
+    accountPlan: "账号管理",
     signOut: "退出登录",
     menuLabel: "账户菜单",
   },
@@ -395,6 +451,60 @@ type Dict = {
     limitReached: string;
     upgrade: string;
     quota: (remaining: number, limit: number) => string;
+  };
+  assistant: {
+    open: string;
+    title: string;
+    live: string;
+    synced: string;
+    contextLabel: string;
+    welcome: string;
+    quick: string[];
+    placeholder: string;
+    send: string;
+    thinking: string;
+    newChat: string;
+    close: string;
+    stop: string;
+    error: string;
+    loginRequired: string;
+    quota: (remaining: number, limit: number) => string;
+    disclaimer: string;
+  };
+  account: {
+    title: string;
+    subtitle: string;
+    profile: string;
+    avatarHint: string;
+    email: string;
+    emailManaged: string;
+    nickname: string;
+    nicknamePlaceholder: string;
+    nicknameHint: string;
+    save: string;
+    saving: string;
+    saved: string;
+    plan: string;
+    currentPlan: string;
+    aiCredits: string;
+    unlimited: string;
+    upgrade: string;
+    proActive: string;
+    danger: string;
+    dangerHint: string;
+    delete: string;
+    confirmTitle: string;
+    confirmHint: string;
+    confirmPlaceholder: string;
+    cancel: string;
+    confirmDelete: string;
+    deleting: string;
+    deletedToast: string;
+    errorProfile: string;
+    errorDelete: string;
+    errorSupabase: string;
+    errorNickname: string;
+    close: string;
   };
   user: {
     login: string;
@@ -659,6 +769,69 @@ const en: Dict = {
     upgrade: "Upgrade to Pro",
     quota: (remaining: number, limit: number) => `${remaining}/${limit} questions left today`,
   },
+  assistant: {
+    open: "AI Assistant",
+    title: "indepth AI",
+    live: "Live Context",
+    synced: "Synced with the current page",
+    contextLabel: "Current page context",
+    welcome:
+      "Hi, I'm indepth AI. I combine the live US indices, valuations and DCA figures on this page to give you structured market and allocation analysis.",
+    quick: [
+      "Explain today's US market",
+      "Review the current DCA plan",
+      "S&P 500 vs Nasdaq 100 allocation",
+    ],
+    placeholder: "Ask about markets, valuations, DCA or allocation…",
+    send: "Send",
+    thinking: "Analyzing…",
+    newChat: "New chat",
+    close: "Close",
+    stop: "Stop",
+    error: "Request failed. Please try again.",
+    loginRequired: "Please log in to start chatting.",
+    quota: (remaining: number, limit: number) => `${remaining}/${limit} questions left today`,
+    disclaimer:
+      "AI can make mistakes. Market and backtest data are for reference only — not investment advice.",
+  },
+  account: {
+    title: "Account Settings",
+    subtitle: "Manage your profile, plan credits and account security.",
+    profile: "Profile",
+    avatarHint: "Avatar from your Google account",
+    email: "Email",
+    emailManaged: "Managed by your sign-in provider and read-only",
+    nickname: "Display name",
+    nicknamePlaceholder: "Enter a display name",
+    nicknameHint: "2–32 characters, shown in the header and assistant.",
+    save: "Save changes",
+    saving: "Saving…",
+    saved: "Profile updated",
+    plan: "Plan & AI Credits",
+    currentPlan: "Current plan",
+    aiCredits: "AI Assistant credits",
+    unlimited: "Unlimited",
+    upgrade: "Upgrade to Pro",
+    proActive: "PRO active",
+    danger: "Danger Zone",
+    dangerHint:
+      "Deleting your account permanently removes your profile, plan and all data. This cannot be undone.",
+    delete: "Delete Account",
+    confirmTitle: "Confirm account deletion",
+    confirmHint:
+      "This action cannot be undone. Type DELETE to enable the deletion button.",
+    confirmPlaceholder: "DELETE",
+    cancel: "Cancel",
+    confirmDelete: "Permanently delete account",
+    deleting: "Deleting…",
+    deletedToast: "Account and all data have been permanently deleted",
+    errorProfile: "Could not save your profile. Please try again.",
+    errorDelete: "Could not delete the account. Please try again.",
+    errorSupabase:
+      "This action requires a Supabase session. Sign in with Google or email first.",
+    errorNickname: "Display name must be 2–32 characters.",
+    close: "Close",
+  },
   user: {
     login: "Log in",
     upgrade: "Upgrade to Pro",
@@ -667,7 +840,7 @@ const en: Dict = {
     free: "FREE",
     planFree: "FREE",
     planPro: "PRO",
-    accountPlan: "Account & Plan",
+    accountPlan: "Account Settings",
     signOut: "Sign out",
     menuLabel: "Account menu",
   },

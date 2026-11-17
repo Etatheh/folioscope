@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { dict, type Lang } from "@/lib/i18n";
+import type { ChatDcaContext } from "@/lib/chat";
+import { setAiDca } from "@/lib/ai-context-store";
 import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
 import type { DcaDataset, DcaTarget } from "@/lib/dca";
 import ProBadge from "./ui/ProBadge";
@@ -110,6 +112,42 @@ export default function DcaBacktestCard({
       tone: stats.xirr === null || stats.xirr >= 0 ? "text-emerald-400" : "text-rose-400",
     },
   ];
+
+  // Publish the live plan to the AI assistant drawer. Locked users only share
+  // the plan inputs — the blurred backtest results are never sent.
+  const aiDca = useMemo<ChatDcaContext | null>(() => {
+    if (!hasData) return null;
+    return {
+      target,
+      targetName: activeName,
+      period: periodLabel,
+      months,
+      monthly,
+      benchmark: altName,
+      ...(hasFullAccess
+        ? {
+            invested: stats.invested,
+            finalValue: stats.finalValue,
+            totalReturn: stats.totalReturn,
+            xirr: stats.xirr,
+          }
+        : {}),
+    };
+  }, [
+    activeName,
+    altName,
+    hasData,
+    hasFullAccess,
+    months,
+    monthly,
+    periodLabel,
+    stats,
+    target,
+  ]);
+
+  useEffect(() => {
+    setAiDca(aiDca);
+  }, [aiDca]);
 
   const targets: { key: DcaTarget; label: string; disabled: boolean }[] = [
     {

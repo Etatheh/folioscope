@@ -1,4 +1,4 @@
-import { getUsMarketSnapshot } from "@/lib/us-stocks";
+import { getUsMarketSnapshot, type UsMarketSnapshot } from "@/lib/us-stocks";
 import { dict, type Lang } from "@/lib/i18n";
 import {
   hasFullDashboardAccess,
@@ -22,12 +22,15 @@ function fmtTime(ms: number) {
 export default async function UsStockPanel({
   lang,
   plan,
+  snapshot: providedSnapshot,
 }: {
   lang: Lang;
   plan: ViewerPlan;
+  /** Reuse the dashboard-level snapshot instead of fetching quotes twice. */
+  snapshot?: UsMarketSnapshot;
 }) {
   const t = dict[lang].markets;
-  const snapshot = await getUsMarketSnapshot();
+  const snapshot = providedSnapshot ?? (await getUsMarketSnapshot());
   const { indices, stocks, demo, fetchedAt } = snapshot;
   const hrefFor = (symbol: string) => `/dashboard/markets/${symbol}?lang=${lang}`;
   const visibleStocks = hasFullDashboardAccess(plan)
