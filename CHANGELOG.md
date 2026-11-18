@@ -6,6 +6,25 @@
 
 ---
 
+## 2026-11-18 - 首页 Features 六卡网格、Hero 排版与英文文案精修（style / fix）
+
+1. **日期与版本主题**：2026-11-18 — 首页 Features 补齐 2×3 网格，移除英文站的双语自述，优化 Hero 层级与 `?error` 地址栏清理。
+2. **核心改动内容**：
+   - **Features 文案**：`Indicators & valuations` 描述替换为 “Spot overbought levels and historical valuation extremes at a glance.”；`Global context, kept quiet` 改为 `Multi-market macro view` 并使用新描述；`AI market assistant` 去掉 “Connect an LLM key” 开发者术语；新增第 6 张 `Cloud Watchlist Sync` 卡片（指定英文描述）。
+   - **英文站去双语自述**：清理 `lib/i18n.ts` 中英文 locale 的 “bilingual” 表述（AI Analysis / AI Earnings 副标题），中文 locale 的“中英双语”保留。
+   - **Hero 排版**：副标题字号上调、提高对比度，增加副标题与 CTA 按钮组之间的垂直间距；保持现有深色紫金视觉与响应式结构。
+   - **URL 清理**：新增 `components/ClearErrorParam.tsx`，仅在首页挂载；检测到 `?error` 时用 `history.replaceState` 清除查询参数，不触发刷新或重新请求。
+   - **品牌**：继续统一使用 `FolioScope`，不新增旧品牌或大小写混用。
+   - **验证结果**：首页 Features 渲染 6 张卡片且文案逐字匹配；带 `?error` 的首页加载后 `window.location.search` 为空；副标题计算字号 20px、颜色提升为 `slate-300`。`npx tsc --noEmit`、ESLint、`npm run build` 全部通过。
+3. **涉及的核心文件路径**：`app/page.tsx`、`components/ClearErrorParam.tsx`（新增）、`lib/i18n.ts`、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：
+   - 不改动 Dashboard、Equity Curve、Simulator 图表与现有深色紫金卡片体系。
+   - Features 网格保持 2 列 × 3 行（`sm:grid-cols-2`），6 张卡片文案与图标一一对应。
+   - 英文站不得再出现 “English and Chinese” / “bilingual” 这类双语自述；中文站文案不受影响。
+   - `?error` 清理只允许操作浏览器 history，不得触发页面刷新、登录重定向或新增鉴权拦截。
+
+---
+
 ## 2026-11-18 - FolioScope 品牌升级与支付审核合规页面（feat / style / docs）
 
 1. **日期与版本主题**：2026-11-18 — 全站品牌统一为 FolioScope，主域名固定为 `https://folioscope.live`；新增 4 个公开合规页面并更新 Pricing 与全站页脚。

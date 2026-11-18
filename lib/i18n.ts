@@ -951,7 +951,7 @@ const en: Dict = {
   },
   aiAnalysis: {
     title: "AI Earnings & Fundamentals",
-    subtitle: "Pick any curated symbol to generate a bilingual earnings report",
+    subtitle: "Pick a curated symbol to generate an AI-powered earnings report",
     hint: "AI research is based on public fundamentals and is for reference only — not investment advice.",
     pick: "Pick a symbol",
   },
@@ -1320,7 +1320,7 @@ const en: Dict = {
     button: "AI Earnings Analysis",
     badge: "PRO",
     title: "AI Fundamental Earnings Report",
-    subtitle: "Yahoo Finance fundamentals · bilingual DeepSeek research",
+    subtitle: "Yahoo Finance fundamentals · DeepSeek-powered research",
     loading: "Fetching the latest fundamentals and drafting the report…",
     cached: "24h cache",
     generated: "Generated",

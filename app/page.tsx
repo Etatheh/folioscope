@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import BackgroundEffects from "@/components/BackgroundEffects";
+import ClearErrorParam from "@/components/ClearErrorParam";
 import Navbar from "@/components/Navbar";
 import SiteFooter from "@/components/SiteFooter";
 import LegalInlineLinks from "@/components/legal/LegalInlineLinks";
@@ -24,7 +25,7 @@ const features: { icon: IconName; title: string; desc: string }[] = [
   {
     icon: "indicators",
     title: "Indicators & valuations",
-    desc: "MA / RSI / MACD, 52-week ranges and PE/PB percentiles. Every detail page speaks both English and Chinese.",
+    desc: "Spot overbought levels and historical valuation extremes at a glance.",
   },
   {
     icon: "backtest",
@@ -34,12 +35,17 @@ const features: { icon: IconName; title: string; desc: string }[] = [
   {
     icon: "ai",
     title: "AI market assistant",
-    desc: "Ask about quotes, indicators and valuations. Connect an LLM key for free-form conversations.",
+    desc: "Get instant AI-powered market summaries, valuation breakdowns, and financial insights.",
   },
   {
     icon: "globe",
-    title: "Global context, kept quiet",
-    desc: "European and Asia-Pacific index boards sit beside the U.S. market view, so macro context stays one click away.",
+    title: "Multi-market macro view",
+    desc: "Track European and Asia-Pacific indices alongside U.S. equities in one unified workspace.",
+  },
+  {
+    icon: "watchlist",
+    title: "Cloud Watchlist Sync",
+    desc: "Save custom stock pools and backtest presets in the cloud, synced seamlessly across devices.",
   },
 ];
 
@@ -54,6 +60,7 @@ export default async function Home({
 
   return (
     <>
+      <ClearErrorParam />
       <BackgroundEffects />
       <Navbar lang={lang} />
       <main>
@@ -63,12 +70,12 @@ export default async function Home({
             <br />
             <span className="gradient-text">in focus.</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">
+          <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-slate-300 sm:text-xl">
             Live U.S., European and Asia-Pacific indices and stocks with
             technical indicators, a backtest simulator and an AI research
             analyst. Built for quantitative research, not investment advice.
           </p>
-          <div className="mt-10 flex flex-wrap justify-center gap-4">
+          <div className="mt-12 flex flex-wrap justify-center gap-4">
             <Link
               href="/register"
               className="btn-primary rounded-full px-8 py-3.5 text-sm font-semibold text-white"
