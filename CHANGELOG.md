@@ -6,6 +6,25 @@
 
 ---
 
+## 2026-11-18 - FolioScope AI 流式渲染光效、主动诊断与模拟器上下文同步（feat / style）
+
+1. **日期与版本主题**：2026-11-18 — 升级 FolioScope AI 抽屉的流式渲染手感与主动诊断体验，并把模拟器持仓／回测指标接入 Live Context。
+2. **核心改动内容**：
+   - **流式渲染**：token 通过 `requestAnimationFrame` 合并为每帧一次更新；新增气泡淡入、紫色文字柔光、行内脉冲紫色光标与块级淡入；自动滚动改为“粘底 + 用户上滑即停止”，并保留 `prefers-reduced-motion` 降级。
+   - **主动诊断**：抽屉首次打开或点击 `↻` 时以 `mode: "diagnosis"` 立即生成少于 150 词的诊断，固定 **Key Takeaway / Risk / Concentration Check / Next Action** 三段，不再输出通用菜单；缺失或锁定数据必须明确说明。
+   - **快捷指令**：输入框上方新增 3 个可横向滚动的一键胶囊（Cut Risk / Optimize Split / Compare Benchmarks）。
+   - **上下文**：模拟器发布持仓、权重、模式、本金／初始投入／周期投入、Custom 区间与回测指标到 `ai-context-store`，抽屉优先使用该快照并避免与旧 DCA 默认方案混用。
+   - **验证结果**：`npx tsc --noEmit`、`npx eslint components lib app`、`NEXT_DIST_DIR=.next/build-check npx next build` 全部通过；本地 `/dashboard?view=simulator` 返回 200；未登录诊断请求返回 401。
+3. **涉及的核心文件路径**：`components/ai/AiAssistantDrawer.tsx`、`components/ai/MarkdownText.tsx`、`app/globals.css`、`app/api/chat/route.ts`、`lib/chat.ts`、`lib/ai-context-store.ts`、`components/simulator/SimulatorWorkbench.tsx`、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：
+   - `.ai-stream-in` / `.ai-block-in` / `.ai-stream-glow` 与 `prefers-reduced-motion` 降级必须保留；流式更新必须继续走 rAF 合并，避免逐 token 重渲染。
+   - 诊断模式必须保持 `mode: "diagnosis"`、三段式少于 150 词契约，不得回退为欢迎菜单或示例问题列表。
+   - 用户主动上滑后不得强制拉回底部；只有回到底部附近才恢复自动跟随。
+   - 模拟器上下文必须来自真实 `result` 与当前 `selected`／`weights`，不得编造锁定或缺失指标；`setAiSimulator` 在卸载时必须清理。
+   - 保留抽屉头部（Live Context、刷新、关闭）与底部免责声明。
+
+---
+
 ## 2026-11-18 - 模拟器 Custom 区间、DCA 参数升级、本金基线与上市日期对齐（feat）
 
 1. **日期与版本主题**：2026-11-18 — Investment Simulator 新增 Pro/Admin Custom 日期区间与历史剧本、完善 DCA 初始/周期投入与收益指标、增加累计本金阶梯线与共同上市日期对齐容错。

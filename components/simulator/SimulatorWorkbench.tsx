@@ -19,6 +19,7 @@ import { apiFetch } from "@/lib/client-api";
 import type { SimulationData } from "@/lib/us-stocks";
 import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
 import { dict, type Lang } from "@/lib/i18n";
+import { setAiSimulator } from "@/lib/ai-context-store";
 import { useViewerPlan } from "@/lib/use-profile";
 import {
   BACKTEST_ADD_EVENT,
@@ -34,6 +35,14 @@ import SimulatorChart from "./SimulatorChart";
 
 const MAX_MONTHLY = 5000;
 const MIN_MONTHLY = 50;
+
+const PERIOD_LABEL: Record<PeriodKey, string> = {
+  m6: "6M",
+  y1: "1Y",
+  y3: "3Y",
+  y5: "5Y",
+  y10: "10Y",
+};
 
 const CUSTOM_SCENARIOS = [
   {
@@ -196,6 +205,48 @@ export default function SimulatorWorkbench({
       customEnd,
     ]
   );
+
+  // Publish the live simulator state so the AI drawer can diagnose the exact
+  // holdings, weights and backtest metrics the user is looking at.
+  useEffect(() => {
+    setAiSimulator({
+      mode,
+      period: PERIOD_LABEL[safePeriod],
+      months,
+      capital,
+      initialDeposit,
+      contribution: mode === "dca" ? contribution : undefined,
+      frequency: mode === "dca" ? frequency : undefined,
+      startDate: customIsActive ? customStart : null,
+      endDate: customIsActive ? customEnd : null,
+      holdings: selected.map((symbol, index) => ({
+        symbol,
+        weight: displayPcts[index] ?? 0,
+      })),
+      invested: result?.invested,
+      finalValue: result?.finalValue,
+      totalReturn: result?.totalReturn,
+      maxDrawdown: result?.maxDrawdown,
+      cagr: result?.cagr ?? null,
+      benchmark: "S&P 500",
+    });
+  }, [
+    capital,
+    contribution,
+    customEnd,
+    customIsActive,
+    customStart,
+    displayPcts,
+    frequency,
+    initialDeposit,
+    mode,
+    months,
+    result,
+    safePeriod,
+    selected,
+  ]);
+
+  useEffect(() => () => setAiSimulator(null), []);
 
   const chartData = useMemo(() => {
     if (!result) return null;

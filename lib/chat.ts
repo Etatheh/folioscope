@@ -39,8 +39,11 @@ export type ChatSimulatorContext = {
   period: string;
   months: number;
   capital: number;
+  initialDeposit?: number;
   contribution?: number;
   frequency?: "weekly" | "biweekly" | "monthly";
+  startDate?: string | null;
+  endDate?: string | null;
   holdings: ChatSimulatorHolding[];
   invested?: number;
   finalValue?: number;
@@ -210,8 +213,11 @@ export function normalizeMarketContext(raw: unknown): ChatMarketContext {
         period: safeText(value.period, 24) || `${Math.round(months)}M`,
         months: Math.max(1, Math.min(240, Math.round(months))),
         capital: Math.max(0, Math.min(1_000_000_000, capital)),
+        initialDeposit: optionalNumber(value.initialDeposit) ?? undefined,
         contribution: optionalNumber(value.contribution) ?? undefined,
         frequency,
+        startDate: safeText(value.startDate, 12) || null,
+        endDate: safeText(value.endDate, 12) || null,
         holdings,
         invested: optionalNumber(value.invested) ?? undefined,
         finalValue: optionalNumber(value.finalValue) ?? undefined,
@@ -351,10 +357,16 @@ export function formatMarketContext(context: ChatMarketContext, lang: Lang): str
     lines.push(`- Mode: ${s.mode === "dca" ? "DCA" : "Lump sum"}`);
     lines.push(`- Period: ${s.period} (${s.months} months)`);
     lines.push(`- Starting capital: $${nf(s.capital, 0)}`);
+    if (typeof s.initialDeposit === "number" && s.initialDeposit > 0) {
+      lines.push(`- Initial deposit: $${nf(s.initialDeposit, 0)}`);
+    }
     if (s.mode === "dca" && typeof s.contribution === "number") {
       lines.push(
         `- Contribution: $${nf(s.contribution, 0)} ${s.frequency ?? "monthly"}`
       );
+    }
+    if (s.startDate && s.endDate) {
+      lines.push(`- Custom window: ${s.startDate} to ${s.endDate}`);
     }
     if (s.holdings.length) {
       lines.push(
