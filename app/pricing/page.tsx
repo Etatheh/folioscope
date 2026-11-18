@@ -1,18 +1,21 @@
 import Link from "next/link";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import Navbar from "@/components/Navbar";
+import SiteFooter from "@/components/SiteFooter";
+import LegalInlineLinks from "@/components/legal/LegalInlineLinks";
 import UpgradeButton from "@/components/UpgradeButton";
 import { PLANS } from "@/lib/plans";
 
 export const metadata = {
   title: "Pricing",
-  description: "Start free, upgrade to Pro whenever you need more.",
+  description:
+    "Compare FolioScope Free and Pro plans. Prices in USD, with full-market search, multi-market data and AI financial report summaries.",
 };
 
 const faqs = [
   {
     q: "How do I pay for Pro?",
-    a: "Pro is billed through Lemon Squeezy. Once the store keys are configured, “Upgrade to Pro” opens the hosted checkout; until then the same button activates Pro instantly in demo mode so you can try every feature.",
+    a: "Pro subscriptions are processed by Creem, our authorized Merchant of Record. “Upgrade to Pro” opens the hosted checkout; if billing is not configured yet, the button activates a demo Pro preview so you can explore every feature.",
   },
   {
     q: "Where does the market data come from?",
@@ -20,7 +23,7 @@ const faqs = [
   },
   {
     q: "Can I cancel anytime?",
-    a: "During the preview there is no charge at all. Paid plans will be cancel-anytime when billing goes live.",
+    a: "Yes. Cancel from Account Settings → Manage Subscription. You keep Pro access until the end of your current paid billing period. First-time purchases also include a 7-day refund window; see the Refund Policy for details.",
   },
 ];
 
@@ -35,8 +38,13 @@ export default function PricingPage() {
             Simple, <span className="gradient-text">honest pricing</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-slate-400">
-            Start free with everything you need to explore the markets. Upgrade
-            when you want longer backtests and a bigger AI budget.
+            Start free with 14 curated stocks and core backtesting. Upgrade to
+            Pro for full U.S. equity search, multi-market coverage across the
+            U.S., Europe, Japan and South Korea, and AI financial report
+            summaries.
+          </p>
+          <p className="mt-3 text-xs text-slate-500">
+            Prices are in USD. Taxes may apply at checkout.
           </p>
         </div>
 
@@ -75,6 +83,7 @@ export default function PricingPage() {
                 ))}
               </ul>
               <UpgradeButton planId={plan.id} />
+              <LegalInlineLinks className="mt-3" />
             </article>
           ))}
         </div>
@@ -101,9 +110,7 @@ export default function PricingPage() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-purple-500/10 py-8 text-center text-sm text-slate-500">
-        <p>&copy; {new Date().getFullYear()} · For reference only — not investment advice</p>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

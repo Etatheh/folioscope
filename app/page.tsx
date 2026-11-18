@@ -2,15 +2,17 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import Navbar from "@/components/Navbar";
+import SiteFooter from "@/components/SiteFooter";
+import LegalInlineLinks from "@/components/legal/LegalInlineLinks";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { parseLang } from "@/lib/i18n";
 import { LANG_COOKIE } from "@/lib/lang-pref";
 import { PLANS } from "@/lib/plans";
+import { SITE_DESCRIPTION } from "@/lib/site";
 
 export const metadata = {
-  title: "US market intelligence, one dashboard",
-  description:
-    "Live US market data with technical indicators, backtesting and an AI market analyst. A-shares and Japan/Korea included for global context.",
+  title: { absolute: "FolioScope — Quantitative Market Research" },
+  description: SITE_DESCRIPTION,
 };
 
 const features: { icon: IconName; title: string; desc: string }[] = [
@@ -37,7 +39,7 @@ const features: { icon: IconName; title: string; desc: string }[] = [
   {
     icon: "globe",
     title: "Global context, kept quiet",
-    desc: "A-shares and Japan/Korea panels sit below the fold — Chinese names stay Chinese, everything else stays English.",
+    desc: "European and Asia-Pacific index boards sit beside the U.S. market view, so macro context stays one click away.",
   },
 ];
 
@@ -57,14 +59,14 @@ export default async function Home({
       <main>
         <section className="relative z-10 mx-auto max-w-5xl px-6 pb-14 pt-40 text-center">
           <h1 className="text-4xl font-bold leading-tight text-white sm:text-6xl">
-            US markets,
+            Global markets,
             <br />
-            <span className="gradient-text">in depth.</span>
+            <span className="gradient-text">in focus.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">
-            Live US indices and stocks with technical indicators, a backtest
-            simulator and an AI analyst. Japan/Korea context is included, and
-            the A-share board appears in the Chinese version of the site.
+            Live U.S., European and Asia-Pacific indices and stocks with
+            technical indicators, a backtest simulator and an AI research
+            analyst. Built for quantitative research, not investment advice.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
@@ -154,15 +156,14 @@ export default async function Home({
                 >
                   {plan.id === "free" ? "Start for free" : "See Pro details"}
                 </Link>
+                <LegalInlineLinks className="mt-3" />
               </article>
             ))}
           </div>
         </section>
       </main>
 
-      <footer className="relative z-10 border-t border-purple-500/10 py-8 text-center text-sm text-slate-500">
-        <p>&copy; {new Date().getFullYear()} · For reference only — not investment advice</p>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

@@ -26,7 +26,7 @@ export default function Navbar({ lang = "en" }: { lang?: Lang }) {
 
           <Link
             href="/"
-            aria-label="InDepth home"
+            aria-label="FolioScope home"
             className="flex shrink-0 items-center gap-2.5"
           >
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-500/25">
@@ -45,7 +45,7 @@ export default function Navbar({ lang = "en" }: { lang?: Lang }) {
               </svg>
             </span>
             <span className="text-sm font-semibold tracking-tight text-white">
-              InDepth
+              FolioScope
             </span>
           </Link>
 

@@ -88,11 +88,17 @@ export default function AuthModal({
   onClose,
   lang,
   initialMode = "login",
+  inline = false,
+  redirectTo,
 }: {
   open: boolean;
   onClose: () => void;
   lang: Lang;
   initialMode?: AuthModalMode;
+  /** Render the panel inline (used by /login and /register) instead of a portal. */
+  inline?: boolean;
+  /** After a successful auth, refresh and navigate here instead of just closing. */
+  redirectTo?: string;
 }) {
   const t = dict[lang].auth;
   const router = useRouter();
@@ -118,8 +124,9 @@ export default function AuthModal({
   }, [busy, onClose]);
 
   // Escape to close, lock background scroll, keep focus inside the dialog.
+  // Inline auth pages behave like normal pages, so keep their scroll usable.
   useEffect(() => {
-    if (!open) return;
+    if (!open || inline) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -153,12 +160,25 @@ export default function AuthModal({
       document.body.style.overflow = previousOverflow;
       window.clearTimeout(focusTimer);
     };
-  }, [open, handleClose]);
+  }, [open, handleClose, inline]);
 
-  const finish = useCallback(() => {
-    onClose();
-    router.refresh();
-  }, [onClose, router]);
+  const finish = useCallback(
+    (destination?: string) => {
+      const target = destination?.trim();
+      // Auth pages must refresh the server session before leaving for the
+      // dashboard; the modal keeps its existing close-and-refresh behavior.
+      if (target) {
+        // Close the global dialog first so it does not survive the route push.
+        if (!inline) onClose();
+        router.refresh();
+        router.push(target);
+        return;
+      }
+      onClose();
+      router.refresh();
+    },
+    [inline, onClose, router]
+  );
 
   const handleGoogle = useCallback(async () => {
     setError(null);
@@ -262,7 +282,7 @@ export default function AuthModal({
               setError(t.errors[mapAuthError(signInError.message)]);
               return;
             }
-            finish();
+            finish(redirectTo);
             return;
           }
 
@@ -276,7 +296,7 @@ export default function AuthModal({
             return;
           }
           if (data.session) {
-            finish();
+            finish(redirectTo ?? "/dashboard");
             return;
           }
           setNotice(t.confirmEmail);
@@ -312,7 +332,7 @@ export default function AuthModal({
                   password
                 );
           if (local.ok) {
-            finish();
+            finish(mode === "signup" ? (redirectTo ?? "/dashboard") : redirectTo);
             return;
           }
           setError(localizeLegacyError(local.error));
@@ -324,7 +344,7 @@ export default function AuthModal({
           error?: string;
         };
         if (response.ok && data.ok) {
-          finish();
+          finish(mode === "signup" ? (redirectTo ?? "/dashboard") : redirectTo);
           return;
         }
         setError(data.error ? localizeLegacyError(data.error) : t.errors.generic);
@@ -334,7 +354,7 @@ export default function AuthModal({
         setBusy(null);
       }
     },
-    [busy, email, finish, lang, mode, password, t]
+    [busy, email, finish, lang, mode, password, redirectTo, t]
   );
 
   const legalNotice = useMemo(
@@ -370,7 +390,7 @@ export default function AuthModal({
     [t]
   );
 
-  if (!mounted) return null;
+  if (!mounted && !inline) return null;
 
   const authView = (
     <motion.div
@@ -574,8 +594,8 @@ export default function AuthModal({
   const panel = (
     <motion.div
       ref={panelRef}
-      role="dialog"
-      aria-modal="true"
+      role={inline ? undefined : "dialog"}
+      aria-modal={inline ? undefined : true}
       aria-labelledby="auth-modal-title"
       initial={reduceMotion ? false : { opacity: 0, y: 22, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -630,6 +650,10 @@ export default function AuthModal({
       </div>
     </motion.div>
   );
+
+  if (inline) {
+    return <div className="w-full max-w-[460px]">{panel}</div>;
+  }
 
   return createPortal(
     <AnimatePresence>

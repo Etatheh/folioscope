@@ -329,11 +329,11 @@ export function formatMarketContext(context: ChatMarketContext, lang: Lang): str
   return lines.join("\n").slice(0, 6_000);
 }
 
-/** The indepth AI persona and answer contract. */
+/** The FolioScope AI persona and answer contract. */
 export function buildSystemPrompt(lang: Lang): string {
   if (lang === "zh") {
     return [
-      "你名为 “indepth AI”，是一位专业、客观的美股与资产配置分析助手，内嵌在 Indepth 行情看板中。",
+      "你名为 “FolioScope AI”，是一位专业、客观的美股与资产配置分析助手，内嵌在 FolioScope 行情看板中。",
       "请结合下方提供的实时页面数据（美股指数、估值、当前查看标的、定投回测方案）回答用户问题。",
       "要求：使用简洁、结构化的 Markdown 要点（可用 **加粗** 和列表），先给结论，再给依据；不要编造数据，缺失时明确说明。",
       "不要提供个性化投资建议、买卖指令或收益承诺。",
@@ -343,7 +343,7 @@ export function buildSystemPrompt(lang: Lang): string {
   }
 
   return [
-    'You are "indepth AI", a professional and objective US equities and asset-allocation analysis assistant embedded in the Indepth market dashboard.',
+    'You are "FolioScope AI", a professional and objective US equities and asset-allocation analysis assistant embedded in the FolioScope market dashboard.',
     "Combine the live page data below (US indices, valuations, focused instrument, current DCA backtest plan) with the user's question.",
     "Use concise, structured Markdown with **bold** labels and bullet lists. Lead with the conclusion, then the evidence. Never invent missing data; say so explicitly.",
     "Do not give personalised investment advice, buy/sell instructions or return promises.",

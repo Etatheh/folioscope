@@ -6,6 +6,28 @@
 
 ---
 
+## 2026-11-18 - FolioScope 品牌升级与支付审核合规页面（feat / style / docs）
+
+1. **日期与版本主题**：2026-11-18 — 全站品牌统一为 FolioScope，主域名固定为 `https://folioscope.live`；新增 4 个公开合规页面并更新 Pricing 与全站页脚。
+2. **核心改动内容**：
+   - **品牌与域名**：新增 `lib/site.ts` 集中维护 `SITE_NAME = "FolioScope"`、`SITE_URL = "https://folioscope.live"`、联系邮箱 `etatheh@hotmail.com` 与合规链接；`app/layout.tsx` 配置 `metadataBase`、`title.default/template`、Open Graph/Twitter 元数据。
+   - **Logo / Title 替换**：`components/Navbar.tsx`、`components/dashboard/DashboardShell.tsx`、`app/dashboard/markets/[symbol]/page.tsx` 的 Logo 文本替换为 `FolioScope`；`app/page.tsx`、`app/pricing/page.tsx`、`app/journey/page.tsx`、`app/journey/[category]/[slug]/page.tsx`、`app/dashboard/page.tsx` 的 metadata/title 统一品牌后缀；新增 `app/login/layout.tsx`、`app/register/layout.tsx` 提供页面标题。
+   - **全站页脚**：新增 `components/SiteFooter.tsx`，固定展示 Disclaimer / Terms of Service / Privacy Policy / Refund Policy 四个链接、精简免责声明与 `© FolioScope. All rights reserved.`；挂载到首页、Pricing、登录/注册、Journey 列表/文章及 4 个合规页。
+   - **4 个公开合规页面**：新增 `app/disclaimer/page.tsx`、`app/terms/page.tsx`、`app/privacy/page.tsx`、`app/refund/page.tsx`，共用 `components/legal/LegalPage.tsx` 深色阅读排版；英文正文严格按用户提供原文逐段落位，不删减、不改写。路由默认公开；若未来新增 middleware/proxy，必须将这 4 个路径列入白名单。
+   - **Pricing 更新**：`lib/plans.ts` 调整为 Free（14 支精选股票 + 基础回测）与 Pro（全市场股票搜索 + 欧美日韩多市场 + AI 财报深度总结）的美元定价对比；`app/pricing/page.tsx` 在订阅按钮下方增加 Terms / Privacy / Refund 链接，并同步首页定价卡片；FAQ 支付与取消说明改为合规口径。
+   - **品牌残留清理**：`lib/i18n.ts`、`lib/chat.ts`、`app/api/chat/route.ts` 中用户可见的 `indepth AI` / `Indepth` 品牌文案替换为 `FolioScope AI` / `FolioScope`；不修改 `indepth:*` 事件名、localStorage key 等内部兼容标识，避免破坏已有会话与本地状态。
+   - **验证结果**：`npx tsc --noEmit`、`npx eslint app components lib --max-warnings=0`、`npm run build` 全部通过；匿名访问 `/disclaimer`、`/terms`、`/privacy`、`/refund` 均返回 200，且构建产物将四个页面识别为静态公开路由。
+3. **涉及的核心文件路径**：`lib/site.ts`（新增）、`components/SiteFooter.tsx`（新增）、`components/legal/LegalPage.tsx`（新增）、`components/legal/LegalInlineLinks.tsx`（新增）、`app/disclaimer/page.tsx`（新增）、`app/terms/page.tsx`（新增）、`app/privacy/page.tsx`（新增）、`app/refund/page.tsx`（新增）、`app/layout.tsx`、`app/page.tsx`、`app/pricing/page.tsx`、`lib/plans.ts`、`components/Navbar.tsx`、`components/dashboard/DashboardShell.tsx`、`app/dashboard/page.tsx`、`app/dashboard/markets/[symbol]/page.tsx`、`app/journey/page.tsx`、`app/journey/[category]/[slug]/page.tsx`、`app/login/page.tsx`、`app/register/page.tsx`、`app/login/layout.tsx`（新增）、`app/register/layout.tsx`（新增）、`lib/i18n.ts`、`lib/chat.ts`、`app/api/chat/route.ts`、`components/ai/MarkdownText.tsx`（注释）、`components/ui/UpgradeModal.tsx`（注释）、`.env.example`、`supabase/schema.sql`、`supabase/usage.sql`（品牌注释）。
+4. **架构与设计约定（Do Not Break）**：
+   - **图表与 Dashboard 布局保护**：严禁修改 `components/simulator/*`、`components/dca/*`、`components/market-cards.tsx`、`components/MarketBoard.tsx`、`components/UsStockPanel.tsx` 的净值曲线（Equity Curve）样式、配色、交互与仪表盘布局；本任务只允许在 Dashboard 页面补充 metadata，不得改动 `DashboardShell` 主体布局（Logo 文本除外）。
+   - **公开路由**：`/disclaimer`、`/terms`、`/privacy`、`/refund` 必须无需登录直接访问；当前项目没有 middleware/proxy，若后续增加鉴权拦截，必须将这四个路径加入公开白名单。
+   - **合规正文**：四个页面的英文正文只能逐字使用用户提供的版本，不得删减、合并或改写；仅允许增加页面壳、标题、导航、页脚等外围结构。
+   - **品牌单一来源**：品牌名与主域名以 `lib/site.ts` 为唯一来源；不要再在页面里散落硬编码 `FolioScope` 域名。内部 `indepth:*` 事件名、`indepth.*` localStorage key 与既有 API 路径保持不变。
+   - **页脚与 Pricing**：页脚必须始终包含四个合规链接与精简免责声明；Pricing 的 Free/Pro 权益与美元价格必须与 `lib/plans.ts` 一致，订阅按钮下方必须保留 Terms / Privacy / Refund 链接。
+   - **支付文案**：合规页明确 Creem 为 Merchant of Record；前端升级文案与 Pricing FAQ 使用 Creem 口径，但不得改动现有结算 API/环境变量逻辑（本次不重构支付集成）。
+
+---
+
 ## 2026-11-18 - Dashboard 侧边栏重构、Markets 独立视图与 Simulator 旧版图表还原（refactor / feat / fix）
 
 1. **日期与版本主题**：2026-11-18 — 深色金融看板改为侧边栏 + 独立视图结构；新增欧洲/亚太指数与后端白名单；合并 Lump Sum / DCA 工作台并按旧版组件还原青绿色交互图表。

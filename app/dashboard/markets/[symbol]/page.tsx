@@ -95,7 +95,7 @@ export default async function MarketDetailPage({
               {tx.backToDashboard}
             </Link>
             <Link href="/" className="text-xl font-bold gradient-text">
-              GUI
+              FolioScope
             </Link>
             <LangToggle lang={lang} path={basePath} />
           </nav>
@@ -140,7 +140,7 @@ export default async function MarketDetailPage({
               {tx.backToDashboard}
             </Link>
             <Link href="/" className="text-xl font-bold gradient-text">
-              GUI
+              FolioScope
             </Link>
             <LangToggle lang={lang} path={basePath} />
           </nav>
@@ -214,7 +214,7 @@ export default async function MarketDetailPage({
             {tx.backToDashboard}
           </Link>
           <Link href="/" className="text-xl font-bold gradient-text">
-            GUI
+            FolioScope
           </Link>
           <div className="flex items-center gap-2.5">
             <LangToggle lang={lang} path={basePath} />

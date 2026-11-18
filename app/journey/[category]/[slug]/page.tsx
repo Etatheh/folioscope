@@ -1,5 +1,6 @@
 import BackgroundEffects from "@/components/BackgroundEffects";
 import MarkdownArticle from "@/components/MarkdownArticle";
+import SiteFooter from "@/components/SiteFooter";
 import { getJourneyCategory, getJourneyPost, getJourneyPosts } from "@/lib/journey";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -23,12 +24,12 @@ export async function generateMetadata({
 
   if (!post) {
     return {
-      title: "Journey | GUI",
+      title: "Journey",
     };
   }
 
   return {
-    title: `${post.title} | Journey`,
+    title: post.title,
     description: post.excerpt,
   };
 }
@@ -94,6 +95,8 @@ export default async function JourneyPostPage({
           </div>
         </article>
       </main>
+
+      <SiteFooter />
     </>
   );
 }

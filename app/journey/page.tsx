@@ -1,5 +1,6 @@
 import BackgroundEffects from "@/components/BackgroundEffects";
 import Navbar from "@/components/Navbar";
+import SiteFooter from "@/components/SiteFooter";
 import { getJourneyPosts, journeyCategories } from "@/lib/journey";
 import Link from "next/link";
 
@@ -157,6 +158,8 @@ export default function JourneyPage() {
           })}
         </section>
       </main>
+
+      <SiteFooter />
     </>
   );
 }

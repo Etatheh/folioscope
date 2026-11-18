@@ -1,4 +1,4 @@
--- GUI Markets · 自建账号体系（Supabase Postgres）
+-- FolioScope · 自建账号体系（Supabase Postgres）
 -- 在 Supabase 控制台 → SQL Editor 中整段运行一次。
 
 -- 用户表：邮箱唯一，密码只存 scrypt 哈希

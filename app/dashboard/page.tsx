@@ -30,6 +30,12 @@ import { COOKIE_NAME } from "@/lib/server/auth";
 import { dict, parseLang } from "@/lib/i18n";
 import { LANG_COOKIE } from "@/lib/lang-pref";
 
+export const metadata = {
+  title: "Dashboard",
+  description:
+    "FolioScope market dashboard with global indices, watchlists, backtesting and AI research.",
+};
+
 function emptySnapshot(): UsMarketSnapshot {
   return { demo: true, fetchedAt: Date.now(), indices: [], stocks: [] };
 }
@@ -111,7 +117,7 @@ export default async function DashboardPage({
     ? ["AAPL", "MSFT", "NVDA", "AMZN", "JPM"]
     : ["AAPL", "MSFT", "NVDA", "GOOGL"];
 
-  // Live context for indepth AI. The simulator publishes its own live DCA
+  // Live context for FolioScope AI. The simulator publishes its own live DCA
   // plan; these values match the fallback plan for first paint.
   const dcaTarget = dcaData.sp500.points.length > 0 ? "sp500" : "nasdaq";
   const dcaMonths = Math.max(

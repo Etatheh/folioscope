@@ -25,7 +25,7 @@ type Lang = "zh" | "en";
 
 const MSG = {
   zh: {
-    unauthorized: "请先登录再使用 indepth AI。",
+    unauthorized: "请先登录再使用 FolioScope AI。",
     empty: "请输入问题。",
     badRequest: "请求格式错误。",
     quota: (limit: number) =>
@@ -36,7 +36,7 @@ const MSG = {
     emptyReply: "AI 没有返回内容，请换个问法再试。",
   },
   en: {
-    unauthorized: "Please log in to use indepth AI.",
+    unauthorized: "Please log in to use FolioScope AI.",
     empty: "Please ask a question.",
     badRequest: "Invalid request.",
     quota: (limit: number) =>

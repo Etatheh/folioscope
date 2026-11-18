@@ -60,7 +60,7 @@ export default function UpgradeModal({
     onClose();
   }, [onClose]);
 
-  // Ask the billing route once whether Lemon Squeezy keys are present.
+  // Ask the billing route once whether hosted checkout keys are present.
   useEffect(() => {
     if (!open || configured !== null) return;
     let cancelled = false;

@@ -3,7 +3,7 @@ import { createElement, type ReactNode } from "react";
 /**
  * Small, dependency-free Markdown renderer for streamed assistant answers.
  * Supports headings, bullet/ordered lists, blockquotes, rules, bold, italic,
- * inline code and safe links — enough for indepth AI's structured replies.
+ * inline code and safe links — enough for FolioScope AI's structured replies.
  */
 
 function safeHref(raw: string): string | null {

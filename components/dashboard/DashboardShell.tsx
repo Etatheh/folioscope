@@ -159,7 +159,7 @@ export default function DashboardShell({
             className={`flex min-w-0 items-center gap-2.5 ${
               collapsed ? "lg:mx-auto lg:justify-center" : ""
             }`}
-            aria-label="InDepth dashboard"
+            aria-label="FolioScope dashboard"
           >
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-500/25">
               <svg
@@ -181,7 +181,7 @@ export default function DashboardShell({
                 collapsed ? "lg:hidden" : ""
               }`}
             >
-              InDepth
+              FolioScope
             </span>
           </Link>
 
