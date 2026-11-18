@@ -6,6 +6,44 @@
 
 ---
 
+## 2026-11-18 - 支付成功回跳 dashboard 并自动激活 Pro（fix / billing）
+
+1. **日期与版本主题**：2026-11-18 — 修复 Creem 结账成功后的回跳体验：付款完成直接回到 dashboard，并在 webhook 稍晚到达时自动轮询激活 Pro，而不是停在首页且仍显示 Free。
+2. **核心改动内容**：
+   - `app/api/checkout/route.ts`：`success_url` 由 `/?checkout=success` 改为 `/dashboard?checkout=success`。
+   - 新增 `components/CheckoutReturn.tsx`：检测 `?checkout=success`，提示 `Payment successful — activating your Pro plan…`，随后每 1.5s 轮询 `GET /api/auth/me`（最多 10 次）；一旦 `tier` 为 `pro`/`admin` 就执行 `window.location.replace("/dashboard")` 整页刷新，使 `use-session` 的模块级 store 重新读取到 Pro；轮询超时则提示 webhook 仍在处理。进入时用 `history.replaceState` 清掉参数，避免刷新重放。
+   - `app/layout.tsx`：在 `<ToastHost />` 之后挂载 `<CheckoutReturn />`（不渲染任何 DOM，不改变布局）。
+3. **涉及的核心文件路径**：`components/CheckoutReturn.tsx`（新增）、`app/layout.tsx`、`app/api/checkout/route.ts`、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：
+   - 必须用整页跳转（`window.location.replace`），不能用 `router.push`：`lib/use-session.ts` 的 session store 每个文档只初始化一次，客户端路由不会重新拉取 tier。
+   - `CheckoutReturn` 必须挂在 `<ToastHost />` 之后，否则首个 toast 会早于监听器注册而丢失。
+   - 不改动 dashboard / 主页面布局、K 线图表与全局 CSS。
+   - **验证结果**：`npx tsc --noEmit`、ESLint 通过，`NEXT_DIST_DIR=.next/build-check next build --webpack` 构建成功。
+
+---
+
+## 2026-11-18 - Upgrade Pro 新增暗色套餐对比弹窗 PricingModal（feat / ui）
+
+1. **日期与版本主题**：2026-11-18 — 在跳转 Creem 支付前新增暗色金融终端风格的 Free vs Pro 双栏对比弹窗（含月付／年付切换）作为确认缓冲页；升级入口改为「先弹窗、再支付」并统一视觉。
+2. **核心改动内容**：
+   - 新增 `components/ui/PricingModal.tsx`：桌面左右双栏、移动端上下堆叠。左卡 Free（$0 / month，副标题 `For exploring market data`，3 项权益，底部灰态不可点击 `Current Plan`）；右卡 FolioScope Pro（$9 / month，紫色高亮边框 + 右上角 `PRO` 徽章，副标题 `Full institutional-grade research & AI tools`，5 项权益，白色高对比主按钮 `Continue to Checkout →`，下方小字 `Secured by Creem · Cancel anytime`）。
+   - 视觉：`bg-zinc-950` 纯黑底、`border-white/10` 细边框、顶部 hairline 微光、紫／蓝柔光晕、半透明毛玻璃遮罩（`bg-black/70` + `backdrop-blur-md`）；只用 Tailwind 类与内联样式，未新增全局 CSS。
+   - **月付／年付切换**：Pro 卡片内新增分段开关 `Monthly · $9/mo` / `Yearly · $79/yr · Save 34%`，主价格随之在 `$9 / month` 与 `$79 / year` 之间切换；仅当 `GET /api/checkout` 返回 `yearly: true` 时才渲染，年付不可用时用派生值 `effectiveCycle` 自动回落月付（不在 effect 内 setState）。
+   - 交互：点击 `Continue to Checkout` 才调用既有 `POST /api/checkout`（`billingCycle` 取当前选中的周期）；请求期间按钮禁用并显示加载图标 + `Connecting to Checkout...`，拿到链接后跳转 Creem；接口报错在弹窗底部显示红色提示；401 带 `redirect` 跳登录页。支持遮罩点击、右上角 `×`、`Esc` 关闭，保留滚动锁与焦点陷阱。
+   - `components/ui/ProUpgradeButton.tsx`：仅替换触发目标——未登录仍先弹登录框，已登录改为打开 `PricingModal`，不再直接请求支付接口。
+   - `components/ui/UnlockCtaButton.tsx`（Unlock all stocks 磁贴）一并改走 `PricingModal`，保持升级入口视觉统一。
+3. **涉及的核心文件路径**：`components/ui/PricingModal.tsx`（新增）、`components/ui/ProUpgradeButton.tsx`、`components/ui/UnlockCtaButton.tsx`、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：
+   - 未改动主页面、K 线图表（`components/PriceChart.tsx`）、侧边栏布局与 `app/globals.css`；不得为弹窗新增全局样式或改写 `.glass` / `.btn-primary` 等既有类。
+   - `components/ui/UpgradeModal.tsx` 仍在使用中（`components/watchlist/MarketSearch.tsx`、`components/stock/StockReportButton.tsx`、`components/simulator/SimulatorWorkbench.tsx`），不要删除或改写；如需统一升级入口，应逐个替换引用后再评估删除。
+   - `/pricing` 页面的 Monthly / Yearly 切换与年付能力保持原样；`PricingModal` 与其共用 `GET /api/checkout` 返回的 `monthly` / `yearly` 开关，两处都必须尊重后端配置，不得写死年付可用。
+   - 年付不可用时必须回落到月付，且不得用 effect 内同步 setState 实现（ESLint `react-hooks/set-state-in-effect` 会报错），统一用派生值 `effectiveCycle`。
+   - `prefers-reduced-motion` 降级必须保留：reduce 时加载图标不加 `animate-spin`，进出场动效退化为纯透明度。
+   - 弹窗文案按 English-first 固定英文，不新增中文翻译键。
+   - **验证结果**：`npx tsc --noEmit`、ESLint 通过，`NEXT_DIST_DIR=.next/build-check next build --webpack` 全路由构建成功。
+
+---
+
 ## 2026-11-18 - FolioScope AI 流式渲染光效、主动诊断与模拟器上下文同步（feat / style）
 
 1. **日期与版本主题**：2026-11-18 — 升级 FolioScope AI 抽屉的流式渲染手感与主动诊断体验，并把模拟器持仓／回测指标接入 Live Context。

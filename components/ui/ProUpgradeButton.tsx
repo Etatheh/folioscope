@@ -5,7 +5,7 @@ import { useState } from "react";
 import { dict, type Lang } from "@/lib/i18n";
 import { useSession } from "@/lib/use-session";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
-import UpgradeModal from "./UpgradeModal";
+import PricingModal from "./PricingModal";
 
 type Variant = "primary" | "secondary" | "link";
 
@@ -19,10 +19,11 @@ const VARIANT_CLASS: Record<Variant, string> = {
 
 /**
  * Any "Upgrade to Pro" call-to-action: renders the button and owns the
- * frosted-glass comparison dialog it opens.
+ * dark plan-comparison dialog (`PricingModal`) it opens.
  *
- * Anonymous visitors are sent to the auth modal first — the Pro dialog is only
- * useful once there is an account to attach the plan to.
+ * Anonymous visitors are sent to the auth modal first — signed-in users get the
+ * comparison dialog, and the Creem checkout request is only fired from inside
+ * it, never directly from this button.
  */
 export default function ProUpgradeButton({
   lang,
@@ -74,7 +75,7 @@ export default function ProUpgradeButton({
           </svg>
         )}
       </button>
-      <UpgradeModal open={open} onClose={() => setOpen(false)} lang={lang} source={source} />
+      <PricingModal open={open} onClose={() => setOpen(false)} source={source} />
     </>
   );
 }

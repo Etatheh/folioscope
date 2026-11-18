@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
 import ToastHost from "@/components/ui/ToastHost";
+import CheckoutReturn from "@/components/CheckoutReturn";
 import { WatchlistProvider } from "@/components/watchlist/WatchlistProvider";
 import {
   SITE_DESCRIPTION,
@@ -45,6 +46,7 @@ export default function RootLayout({
           <WatchlistProvider>{children}</WatchlistProvider>
         </AuthModalProvider>
         <ToastHost />
+        <CheckoutReturn />
       </body>
     </html>
   );

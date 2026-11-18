@@ -6,7 +6,7 @@ import Link from "next/link";
 import { dict, type Lang } from "@/lib/i18n";
 import type { ViewerPlan } from "@/lib/access";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
-import UpgradeModal from "./UpgradeModal";
+import PricingModal from "./PricingModal";
 
 /**
  * "Unlock all stocks" tile. Anonymous visitors open the auth modal (sign up),
@@ -62,10 +62,9 @@ export default function UnlockCtaButton({
         <button type="button" onClick={() => setOpen(true)} className={surface}>
           {body}
         </button>
-        <UpgradeModal
+        <PricingModal
           open={open}
           onClose={() => setOpen(false)}
-          lang={lang}
           source="market-unlock"
         />
       </>

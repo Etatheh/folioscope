@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     product_id: productId,
     request_id: `${user.id}_${Date.now()}`,
     customer: { email: user.email },
-    success_url: `${getAppUrl(request)}/?checkout=success`,
+    success_url: `${getAppUrl(request)}/dashboard?checkout=success`,
     metadata: { user_id: user.id },
   };
 
