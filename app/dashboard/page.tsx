@@ -76,7 +76,7 @@ export default async function DashboardPage({
         ? getAsiaMarketSnapshot()
         : Promise.resolve(null),
       showCn && view === "all" ? getCnMarketSnapshot() : Promise.resolve(null),
-      view === "simulator" ? getSimulationData(1300) : Promise.resolve(null),
+      view === "simulator" ? getSimulationData(3200) : Promise.resolve(null),
     ]);
 
   const europe = europeData ?? emptySnapshot();

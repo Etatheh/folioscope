@@ -14,6 +14,7 @@ export default function PeriodTabs({
   onChange,
   maxMonths,
   disabled = false,
+  custom,
 }: {
   lang: Lang;
   value: PeriodKey;
@@ -21,6 +22,12 @@ export default function PeriodTabs({
   /** Longest period the loaded history supports; longer tabs are disabled. */
   maxMonths: number;
   disabled?: boolean;
+  custom?: {
+    active: boolean;
+    locked: boolean;
+    onSelect: () => void;
+    onUpgrade: () => void;
+  };
 }) {
   const labels = dict[lang].dca.periods;
 
@@ -31,7 +38,7 @@ export default function PeriodTabs({
       className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/10 bg-white/[0.03] p-1"
     >
       {PERIODS.map((period) => {
-        const selected = period.key === value;
+        const selected = !custom?.active && period.key === value;
         const unavailable = period.months > maxMonths;
         const label = labels[period.key];
         return (
@@ -62,6 +69,33 @@ export default function PeriodTabs({
           </button>
         );
       })}
+      {custom && (
+        <button
+          type="button"
+          role="tab"
+          aria-selected={custom.active}
+          onClick={() => (custom.locked ? custom.onUpgrade() : custom.onSelect())}
+          className={`relative flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
+            custom.active
+              ? "text-white"
+              : "text-slate-500 hover:text-slate-200"
+          }`}
+        >
+          {custom.active && (
+            <motion.span
+              layoutId="dca-period-pill"
+              transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/30 to-purple-500/30 ring-1 ring-purple-400/30"
+            />
+          )}
+          <span className="relative">Custom</span>
+          {custom.locked && (
+            <span className="relative rounded bg-gradient-to-r from-amber-400/25 to-purple-400/25 px-1 py-px text-[8px] font-bold tracking-wider text-amber-300">
+              ✦ PRO
+            </span>
+          )}
+        </button>
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { useAnimatedNumber } from "@/components/dca/hooks";
 import MonthlyControl from "@/components/dca/MonthlyControl";
 import PeriodTabs from "@/components/dca/PeriodTabs";
 import { showToast } from "@/components/ui/ToastHost";
+import UpgradeModal from "@/components/ui/UpgradeModal";
 import { apiFetch } from "@/lib/client-api";
 import type { SimulationData } from "@/lib/us-stocks";
 import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
@@ -34,6 +35,30 @@ import SimulatorChart from "./SimulatorChart";
 const MAX_MONTHLY = 5000;
 const MIN_MONTHLY = 50;
 
+const CUSTOM_SCENARIOS = [
+  {
+    key: "tech-bear",
+    label: "2022 Tech Bear",
+    range: "2021-11 → 2023-06",
+    start: "2021-11-01",
+    end: "2023-06-30",
+  },
+  {
+    key: "covid-crash",
+    label: "COVID Crash",
+    range: "2020-02 → 2021-11",
+    start: "2020-02-01",
+    end: "2021-11-30",
+  },
+  {
+    key: "ai-bull",
+    label: "AI Bull Run",
+    range: "2023-01 → Present",
+    start: "2023-01-01",
+    end: null,
+  },
+] as const;
+
 export default function SimulatorWorkbench({
   lang,
   plan,
@@ -51,11 +76,27 @@ export default function SimulatorWorkbench({
 
   const [mode, setMode] = useState<SimMode>("lump");
   const [capital, setCapital] = useState(10000);
+  const [initialDeposit, setInitialDeposit] = useState(0);
   const [contribution, setContribution] = useState(500);
   const [frequency, setFrequency] = useState<SimFrequency>("monthly");
   const [period, setPeriod] = useState<PeriodKey>(DEFAULT_PERIOD);
   const [extraSeries, setExtraSeries] = useState<Record<string, number[]>>({});
   const [syncingSymbol, setSyncingSymbol] = useState<string | null>(null);
+
+  const latestHistoryDate = data.dates.at(-1) ?? "";
+  const earliestHistoryDate = data.dates[0] ?? "";
+  const defaultCustomStart =
+    data.dates[
+      Math.max(
+        0,
+        data.dates.length -
+          Math.round(periodMonths(DEFAULT_PERIOD) * 21)
+      )
+    ] ?? earliestHistoryDate;
+  const [customActive, setCustomActive] = useState(false);
+  const [customStart, setCustomStart] = useState(defaultCustomStart);
+  const [customEnd, setCustomEnd] = useState(latestHistoryDate);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const mergedData = useMemo<SimulationData>(
     () => ({
@@ -121,84 +162,64 @@ export default function SimulatorWorkbench({
       computeSimulation({
         dates: mergedData.dates,
         series: mergedData.series,
+        benchmark: mergedData.benchmark.closes,
         selected,
         weights,
         mode,
         capital,
+        initialDeposit,
         contribution,
         frequency,
         months,
+        startDate: customActive ? customStart : null,
+        endDate: customActive ? customEnd : null,
       }),
     [
       mergedData.dates,
       mergedData.series,
+      mergedData.benchmark.closes,
       selected,
       weights,
       mode,
       capital,
+      initialDeposit,
       contribution,
       frequency,
       months,
+      customActive,
+      customStart,
+      customEnd,
     ]
   );
 
-  /**
- * Build the two series exactly as the legacy chart consumed them.
- *
- * Lump Sum keeps the original normalized-100 view: emerald = portfolio,
- * slate dashed = S&P 500. DCA switches to absolute dollars: emerald =
- * portfolio market value, slate dashed = cumulative invested principal.
- */
   const chartData = useMemo(() => {
     if (!result) return null;
     const labels = result.curve.map((point) => point.month);
 
     if (mode === "lump") {
-      const startIndex = Math.max(0, mergedData.dates.length - result.days);
-      const benchmark = mergedData.benchmark.closes.slice(
-        startIndex,
-        startIndex + result.days
-      );
-      let base = NaN;
-      for (const value of benchmark) {
-        if (Number.isFinite(value) && value > 0) {
-          base = value;
-          break;
-        }
-      }
       return {
         labels,
-        primary: result.curve.map(
-          (point) => (point.value / Math.max(1, capital)) * 100
-        ),
-        secondary: benchmark.map((value) =>
-          Number.isFinite(value) && base > 0 ? (value / base) * 100 : NaN
-        ),
-        mode: "percent" as const,
+        primary: result.curve.map((point) => point.value),
+        secondary: result.benchmarkCurve,
+        tertiary: undefined,
+        mode: "value" as const,
         legendPrimary: t.legendPortfolio,
         legendSecondary: t.legendBenchmark,
+        legendTertiary: undefined,
       };
     }
 
     return {
       labels,
       primary: result.curve.map((point) => point.value),
-      secondary: result.curve.map((point) => point.invested),
+      secondary: result.benchmarkCurve,
+      tertiary: result.curve.map((point) => point.invested),
       mode: "value" as const,
       legendPrimary: t.legendValue,
-      legendSecondary: t.legendInvested,
+      legendSecondary: t.legendBenchmark,
+      legendTertiary: "Principal",
     };
-  }, [
-    result,
-    mode,
-    capital,
-    mergedData.dates.length,
-    mergedData.benchmark.closes,
-    t.legendPortfolio,
-    t.legendBenchmark,
-    t.legendValue,
-    t.legendInvested,
-  ]);
+  }, [result, mode, t.legendPortfolio, t.legendBenchmark, t.legendValue]);
 
   const invested = useAnimatedNumber(result?.invested ?? 0);
   const finalValue = useAnimatedNumber(result?.finalValue ?? 0);
@@ -301,29 +322,38 @@ export default function SimulatorWorkbench({
   const retColor = (value: number) =>
     value >= 0 ? "text-emerald-400" : "text-rose-400";
 
+  const isDca = mode === "dca";
   const stats = [
     {
-      label: t.invested,
+      label: isDca ? "Total Invested" : t.invested,
       value: `$${fmtMoney(invested)}`,
       tone: "text-slate-200",
     },
     {
-      label: t.finalValueLabel,
+      label: isDca ? "Final Value" : t.finalValueLabel,
       value: `$${fmtMoney(finalValue)}`,
       tone: "text-white",
     },
     {
-      label: t.returnLabel,
-      value: result ? fmtPct(result.totalReturn) : "—",
-      tone: result ? retColor(totalReturn) : "text-slate-400",
+      label: isDca ? "Net Profit" : t.returnLabel,
+      value: result
+        ? isDca
+          ? `${result.netProfit >= 0 ? "+" : "-"}$${fmtMoney(
+              Math.abs(result.netProfit)
+            )} (${fmtPct(result.totalReturn)})`
+          : fmtPct(result.totalReturn)
+        : "—",
+      tone: result
+        ? retColor(isDca ? result.netProfit : totalReturn)
+        : "text-slate-400",
     },
     {
-      label: t.drawdownLabel,
+      label: isDca ? "Max Drawdown" : t.drawdownLabel,
       value: result ? `-${maxDrawdown.toFixed(1)}%` : "—",
       tone: "text-rose-400",
     },
     {
-      label: t.cagr,
+      label: isDca ? "CAGR" : t.cagr,
       value:
         result?.cagr === null || result?.cagr === undefined
           ? "—"
@@ -404,36 +434,65 @@ export default function SimulatorWorkbench({
             />
           </label>
         ) : (
-          <div className="min-w-0">
-            <MonthlyControl
-              label={t.contribution}
-              value={contribution}
-              onChange={setContribution}
-              min={MIN_MONTHLY}
-              max={MAX_MONTHLY}
-              step={50}
-            />
-          </div>
+          <>
+            <label className="flex min-w-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-slate-500">
+              <span className="whitespace-nowrap">Initial Deposit</span>
+              <span className="text-slate-300">$</span>
+              <input
+                type="number"
+                min={0}
+                step={500}
+                value={initialDeposit}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  if (Number.isFinite(value) && value >= 0) {
+                    setInitialDeposit(Math.round(value));
+                  }
+                }}
+                className="w-24 min-w-0 bg-transparent text-right text-sm tabular-nums text-slate-200 outline-none"
+                aria-label="Initial Deposit"
+              />
+            </label>
+            <div className="min-w-0">
+              <MonthlyControl
+                label="Recurring Amount"
+                value={contribution}
+                onChange={setContribution}
+                min={MIN_MONTHLY}
+                max={MAX_MONTHLY}
+                step={50}
+              />
+            </div>
+          </>
         )}
 
         <div className="min-w-0">
           <PeriodTabs
             lang={lang}
             value={period}
-            onChange={setPeriod}
+            onChange={(key) => {
+              setPeriod(key);
+              setCustomActive(false);
+            }}
             maxMonths={maxMonths}
+            custom={{
+              active: customActive,
+              locked: !hasFullAccess,
+              onSelect: () => setCustomActive(true),
+              onUpgrade: () => setUpgradeOpen(true),
+            }}
           />
         </div>
 
         {mode === "dca" && (
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="text-[11px] text-slate-500">{t.frequency}</span>
+            <span className="text-[11px] text-slate-500">Frequency</span>
             <div className="flex items-center rounded-xl border border-white/10 bg-white/[0.04] p-0.5">
               {(
                 [
-                  { key: "weekly", label: t.frequencies.weekly },
-                  { key: "biweekly", label: t.frequencies.biweekly },
-                  { key: "monthly", label: t.frequencies.monthly },
+                  { key: "weekly", label: "Weekly" },
+                  { key: "biweekly", label: "Bi-weekly" },
+                  { key: "monthly", label: "Monthly" },
                 ] as const
               ).map((option) => (
                 <button
@@ -453,6 +512,98 @@ export default function SimulatorWorkbench({
           </div>
         )}
       </div>
+
+      {hasFullAccess && (
+        <div
+          className={`grid overflow-hidden transition-all duration-300 ease-out ${
+            customActive
+              ? "mt-3 grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+        <div className="min-h-0">
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+            <div className="flex flex-wrap items-end gap-2.5">
+              <label className="flex min-w-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-slate-500">
+                <span className="whitespace-nowrap">Start Date</span>
+                <input
+                  type="date"
+                  value={customStart}
+                  min={earliestHistoryDate}
+                  max={customEnd || latestHistoryDate}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    if (!next) return;
+                    setCustomStart(
+                      next < earliestHistoryDate
+                        ? earliestHistoryDate
+                        : next > customEnd
+                          ? customEnd
+                          : next
+                    );
+                  }}
+                  className="bg-transparent text-xs text-slate-200 outline-none [color-scheme:dark]"
+                  aria-label="Start Date"
+                />
+              </label>
+              <label className="flex min-w-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-slate-500">
+                <span className="whitespace-nowrap">End Date</span>
+                <input
+                  type="date"
+                  value={customEnd}
+                  min={customStart}
+                  max={latestHistoryDate}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    if (!next) return;
+                    setCustomEnd(
+                      next > latestHistoryDate
+                        ? latestHistoryDate
+                        : next < customStart
+                          ? customStart
+                          : next
+                    );
+                  }}
+                  className="bg-transparent text-xs text-slate-200 outline-none [color-scheme:dark]"
+                  aria-label="End Date"
+                />
+              </label>
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-slate-600">
+                  Scenarios
+                </span>
+                {CUSTOM_SCENARIOS.map((scenario) => (
+                  <button
+                    key={scenario.key}
+                    type="button"
+                    onClick={() => {
+                      const start =
+                        scenario.start < earliestHistoryDate
+                          ? earliestHistoryDate
+                          : scenario.start;
+                      const end = scenario.end
+                        ? scenario.end > latestHistoryDate
+                          ? latestHistoryDate
+                          : scenario.end
+                        : latestHistoryDate;
+                      setCustomStart(start);
+                      setCustomEnd(end < start ? start : end);
+                      setCustomActive(true);
+                    }}
+                    className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] text-slate-400 transition hover:border-purple-400/35 hover:bg-purple-500/10 hover:text-white"
+                  >
+                    <span className="font-medium">{scenario.label}</span>
+                    <span className="ml-1 text-slate-600">
+                      {scenario.range}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      )}
 
       <div className="mt-4 min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -587,18 +738,35 @@ export default function SimulatorWorkbench({
               <p className="uppercase tracking-wider text-slate-600">
                 {t.chartTitleSim}
               </p>
-              <p className="tabular-nums text-slate-600">
-                {result.days} {t.days} · {result.startDate} → {result.endDate}
-              </p>
+              <div className="text-right">
+                <p className="tabular-nums text-slate-600">
+                  {result.days} {t.days} · {result.startDate} →{" "}
+                  {result.endDate}
+                </p>
+                {result.adjustedStart && (
+                  <p className="mt-0.5 text-[10px] text-amber-300/80">
+                    Start date adjusted to {result.startDate} due to asset
+                    listing history
+                  </p>
+                )}
+                {result.excludedSymbols.length > 0 && (
+                  <p className="mt-0.5 text-[10px] text-slate-500">
+                    No price history for {result.excludedSymbols.join(", ")} in
+                    this range.
+                  </p>
+                )}
+              </div>
             </div>
             {chartData && (
               <SimulatorChart
                 labels={chartData.labels}
                 primary={chartData.primary}
                 secondary={chartData.secondary}
+                tertiary={chartData.tertiary}
                 mode={chartData.mode}
                 legendPrimary={chartData.legendPrimary}
                 legendSecondary={chartData.legendSecondary}
+                legendTertiary={chartData.legendTertiary}
                 ariaLabel={t.chartTitleSim}
               />
             )}
@@ -606,7 +774,9 @@ export default function SimulatorWorkbench({
         </>
       ) : (
         <p className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-sm text-slate-500">
-          {t.empty}
+          {selected.length > 0
+            ? "No overlapping price history for this date range."
+            : t.empty}
         </p>
       )}
 
@@ -615,6 +785,13 @@ export default function SimulatorWorkbench({
         <br />
         {t.disclaimer}
       </p>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        lang={lang}
+        source="simulator-custom-range"
+      />
     </article>
   );
 }

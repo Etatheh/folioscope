@@ -16,9 +16,19 @@ const PLOT_H = H - PT - PB;
 
 function axisLabel(value: number, mode: "percent" | "value") {
   if (mode === "percent") return value.toFixed(0);
-  if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
-  return value.toFixed(0);
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) {
+    return `${sign}$${(abs / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  }
+  if (abs >= 1_000) {
+    return `${sign}$${(abs / 1_000).toFixed(1).replace(/\.0$/, "")}k`;
+  }
+  return `${sign}$${abs.toFixed(0)}`;
+}
+
+function pnlLabel(value: number) {
+  return `${value >= 0 ? "+" : "-"}$${fmtMoney(Math.abs(value))}`;
 }
 
 /**
@@ -27,29 +37,30 @@ function axisLabel(value: number, mode: "percent" | "value") {
  *
  * Visual contract:
  * - emerald 2px portfolio line (subtle glow, same geometry)
- * - slate 1.4px dashed comparison line
+ * - slate 1.4px dashed S&P 500 comparison line
+ * - optional light-violet stepped principal line for DCA
  * - 720×240 viewBox, five grid lines, MM-DD x-axis labels
  * - pointer/touch crosshair, endpoint dot and the date/value readout
- *
- * The caller supplies the data pairs:
- * - Lump Sum: portfolio % vs S&P 500 %
- * - DCA: portfolio value ($) vs cumulative invested ($)
  */
 export default function SimulatorChart({
   labels,
   primary,
   secondary,
+  tertiary,
   mode,
   legendPrimary,
   legendSecondary,
+  legendTertiary,
   ariaLabel,
 }: {
   labels: string[];
   primary: number[];
   secondary: number[];
+  tertiary?: number[];
   mode: "percent" | "value";
   legendPrimary: string;
   legendSecondary: string;
+  legendTertiary?: string;
   ariaLabel: string;
 }) {
   const uid = useId().replace(/[:]/g, "");
@@ -60,8 +71,8 @@ export default function SimulatorChart({
     const n = labels.length;
     if (n < 2) return null;
 
-    const values = [...primary, ...secondary].filter((value) =>
-      Number.isFinite(value)
+    const values = [...primary, ...secondary, ...(tertiary ?? [])].filter(
+      (value) => Number.isFinite(value)
     );
     let min = Math.min(...values);
     let max = Math.max(...values);
@@ -78,11 +89,24 @@ export default function SimulatorChart({
     const x = (i: number) => PL + (i / Math.max(1, n - 1)) * PLOT_W;
     const y = (value: number) =>
       PT + ((max - value) / Math.max(1, max - min)) * PLOT_H;
-    const line = (series: number[]) => {
+    const line = (series: readonly number[]) => {
       let d = "";
       series.forEach((value, i) => {
         if (!Number.isFinite(value)) return;
         d += `${d ? "L" : "M"}${x(i).toFixed(1)} ${y(value).toFixed(1)}`;
+      });
+      return d;
+    };
+    const stepLine = (series: readonly number[]) => {
+      let d = "";
+      let previousY: number | null = null;
+      series.forEach((value, i) => {
+        if (!Number.isFinite(value)) return;
+        const px = x(i).toFixed(1);
+        const py = y(value).toFixed(1);
+        if (!d) d = `M${px} ${py}`;
+        else if (previousY !== null) d += `H${px}V${py}`;
+        previousY = Number(py);
       });
       return d;
     };
@@ -93,10 +117,11 @@ export default function SimulatorChart({
       y,
       primaryPath: line(primary),
       secondaryPath: line(secondary),
+      tertiaryPath: tertiary ? stepLine(tertiary) : "",
       grid: [0, 1, 2, 3, 4].map((i) => min + ((max - min) * i) / 4),
       labelEvery: Math.max(1, Math.ceil(n / 6)),
     };
-  }, [labels.length, mode, primary, secondary]);
+  }, [labels.length, mode, primary, secondary, tertiary]);
 
   const setHoverFromPointer = (event: PointerEvent<SVGSVGElement>) => {
     if (!chart) return;
@@ -113,50 +138,45 @@ export default function SimulatorChart({
 
   const hoveredPrimary = hover !== null ? primary[hover] : null;
   const hoveredSecondary = hover !== null ? secondary[hover] : null;
-  const hoverText = useMemo(() => {
-    if (hover === null) return "";
-    const date = labels[hover] ?? "";
-    if (mode === "percent") {
-      const parts = [date];
-      if (Number.isFinite(hoveredPrimary)) {
-        parts.push(`${legendPrimary} ${fmtSigned((hoveredPrimary as number) - 100)}%`);
-      }
-      if (Number.isFinite(hoveredSecondary)) {
-        parts.push(
-          `${legendSecondary} ${fmtSigned((hoveredSecondary as number) - 100)}%`
-        );
-      }
-      return parts.join(" · ");
-    }
+  const hoveredTertiary = hover !== null && tertiary ? tertiary[hover] : null;
 
-    const parts = [date];
-    if (Number.isFinite(hoveredPrimary)) {
-      parts.push(`${legendPrimary} $${fmtMoney(hoveredPrimary as number)}`);
-    }
-    if (Number.isFinite(hoveredSecondary)) {
-      parts.push(`${legendSecondary} $${fmtMoney(hoveredSecondary as number)}`);
-    }
-    if (
-      Number.isFinite(hoveredPrimary) &&
-      Number.isFinite(hoveredSecondary) &&
-      (hoveredSecondary as number) > 0
-    ) {
-      parts.push(
-        `${fmtSigned(
-          ((hoveredPrimary as number) / (hoveredSecondary as number) - 1) * 100
-        )}%`
-      );
-    }
-    return parts.join(" · ");
-  }, [
-    hover,
-    labels,
-    mode,
-    legendPrimary,
-    legendSecondary,
-    hoveredPrimary,
-    hoveredSecondary,
-  ]);
+  const hoverReadout = useMemo(() => {
+    if (hover === null) return null;
+    const primaryValue = Number.isFinite(hoveredPrimary)
+      ? (hoveredPrimary as number)
+      : null;
+    const secondaryValue = Number.isFinite(hoveredSecondary)
+      ? (hoveredSecondary as number)
+      : null;
+    const tertiaryValue = Number.isFinite(hoveredTertiary)
+      ? (hoveredTertiary as number)
+      : null;
+    const alpha =
+      primaryValue !== null &&
+      secondaryValue !== null &&
+      secondaryValue > 0
+        ? (primaryValue / secondaryValue - 1) * 100
+        : null;
+    const pnl =
+      primaryValue !== null && tertiaryValue !== null
+        ? primaryValue - tertiaryValue
+        : null;
+    const pnlPct =
+      primaryValue !== null &&
+      tertiaryValue !== null &&
+      tertiaryValue > 0
+        ? (primaryValue / tertiaryValue - 1) * 100
+        : null;
+    return {
+      date: labels[hover] ?? "",
+      primary: primaryValue,
+      secondary: secondaryValue,
+      tertiary: tertiaryValue,
+      alpha,
+      pnl,
+      pnlPct,
+    };
+  }, [hover, labels, hoveredPrimary, hoveredSecondary, hoveredTertiary]);
 
   return (
     <div className="relative min-w-0">
@@ -166,13 +186,82 @@ export default function SimulatorChart({
           {legendPrimary}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block h-0.5 w-4 rounded bg-slate-400" />
+          <span className="inline-block w-4 border-t border-dashed border-slate-400/70" />
           {legendSecondary}
         </span>
+        {tertiary && legendTertiary && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block w-4 border-t border-dashed border-[#c4b5fd]/80" />
+            {legendTertiary}
+          </span>
+        )}
       </div>
 
-      <div className="min-h-4 text-right text-[11px] tabular-nums text-slate-500">
-        {hoverText}
+      <div className="min-h-5 text-right text-[11px] tabular-nums text-slate-500">
+        {hoverReadout ? (
+          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+            <span className="text-slate-500">{hoverReadout.date}</span>
+            {hoverReadout.primary !== null && (
+              <span>
+                {legendPrimary}{" "}
+                <span className="font-medium text-emerald-400">
+                  ${fmtMoney(hoverReadout.primary)}
+                </span>
+              </span>
+            )}
+            {hoverReadout.secondary !== null && (
+              <span>
+                {legendSecondary}{" "}
+                <span className="font-medium text-slate-200">
+                  ${fmtMoney(hoverReadout.secondary)}
+                </span>
+              </span>
+            )}
+            {hoverReadout.tertiary !== null && legendTertiary && (
+              <span>
+                {legendTertiary}{" "}
+                <span className="font-medium text-[#c4b5fd]">
+                  ${fmtMoney(hoverReadout.tertiary)}
+                </span>
+              </span>
+            )}
+            {hoverReadout.pnl !== null && (
+              <span>
+                P/L{" "}
+                <span
+                  className={
+                    hoverReadout.pnl >= 0
+                      ? "font-medium text-emerald-400"
+                      : "font-medium text-rose-400"
+                  }
+                >
+                  {pnlLabel(hoverReadout.pnl)}
+                  {hoverReadout.pnlPct !== null
+                    ? ` (${fmtSigned(hoverReadout.pnlPct)}%)`
+                    : ""}
+                </span>
+              </span>
+            )}
+            {hoverReadout.alpha !== null && (
+              <span>
+                Alpha{" "}
+                <span
+                  className={
+                    hoverReadout.alpha >= 0
+                      ? "font-medium text-emerald-400"
+                      : "font-medium text-rose-400"
+                  }
+                >
+                  {fmtSigned(hoverReadout.alpha)}%
+                </span>
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-slate-600">
+            Hover or drag the curve to inspect daily values
+          </span>
+        )}
       </div>
 
       {chart && (
@@ -181,7 +270,10 @@ export default function SimulatorChart({
           className="w-full select-none"
           style={{ touchAction: "pan-y" }}
           onPointerMove={setHoverFromPointer}
-          onPointerDown={setHoverFromPointer}
+          onPointerDown={(event) => {
+            event.currentTarget.setPointerCapture(event.pointerId);
+            setHoverFromPointer(event);
+          }}
           onPointerLeave={() => setHover(null)}
           onPointerCancel={() => setHover(null)}
           role="img"
@@ -225,6 +317,16 @@ export default function SimulatorChart({
             strokeDasharray="5 4"
             opacity="0.7"
           />
+          {tertiary && (
+            <path
+              d={chart.tertiaryPath}
+              fill="none"
+              stroke="#c4b5fd"
+              strokeWidth="1.4"
+              strokeDasharray="3 4"
+              opacity="0.85"
+            />
+          )}
           <path
             d={chart.primaryPath}
             fill="none"
@@ -266,6 +368,58 @@ export default function SimulatorChart({
                   stroke="#030712"
                   strokeWidth="1.5"
                 />
+                <g pointerEvents="none">
+                  <rect
+                    x={W - PR + 2}
+                    y={Math.min(
+                      Math.max(chart.y(hoveredPrimary as number) - 8, PT),
+                      PT + PLOT_H - 16
+                    )}
+                    width={PR - 4}
+                    height={16}
+                    rx={3}
+                    fill="#111827"
+                    stroke="#34d399"
+                    strokeOpacity="0.6"
+                  />
+                  <text
+                    x={W - PR + 2 + (PR - 4) / 2}
+                    y={Math.min(
+                      Math.max(chart.y(hoveredPrimary as number) - 8, PT),
+                      PT + PLOT_H - 16
+                    ) + 11.5}
+                    textAnchor="middle"
+                    fontSize="9.5"
+                    fill="#e2e8f0"
+                  >
+                    {axisLabel(hoveredPrimary as number, mode)}
+                  </text>
+                  <rect
+                    x={Math.min(
+                      Math.max(chart.x(hover) - 28, PL),
+                      W - PR - 56
+                    )}
+                    y={H - 17}
+                    width={56}
+                    height={14}
+                    rx={3}
+                    fill="#111827"
+                    stroke="#475569"
+                    strokeOpacity="0.7"
+                  />
+                  <text
+                    x={
+                      Math.min(Math.max(chart.x(hover) - 28, PL), W - PR - 56) +
+                      28
+                    }
+                    y={H - 6.5}
+                    textAnchor="middle"
+                    fontSize="9"
+                    fill="#e2e8f0"
+                  >
+                    {(labels[hover] ?? "").slice(5)}
+                  </text>
+                </g>
               </g>
             )}
 

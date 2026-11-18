@@ -6,6 +6,25 @@
 
 ---
 
+## 2026-11-18 - 模拟器 Custom 区间、DCA 参数升级、本金基线与上市日期对齐（feat）
+
+1. **日期与版本主题**：2026-11-18 — Investment Simulator 新增 Pro/Admin Custom 日期区间与历史剧本、完善 DCA 初始/周期投入与收益指标、增加累计本金阶梯线与共同上市日期对齐容错。
+2. **核心改动内容**：
+   - **Custom 区间**：`PeriodTabs` 末尾新增 `Custom`（免费用户显示 `✦ PRO`，点击打开 `UpgradeModal`；Pro/Admin 直接解锁）；展开暗黑日期栏，包含 `Start Date` / `End Date`，数据窗口扩至 3200 根日线（约 12 年，最早 2014-03），并保留 `2022 Tech Bear`、`COVID Crash`、`AI Bull Run` 三个历史剧本快捷按钮。
+   - **DCA 参数**：新增 `Initial Deposit`（允许 $0）、`Recurring Amount`（默认 $500）与 `Weekly / Bi-weekly / Monthly` 频率胶囊；引擎按交易日周期买入，先投入初始本金，再按频率定投（有初始本金时首期定投从下一周期开始）。
+   - **DCA 指标**：统计改为 `Total Invested`、`Final Value`、`Net Profit`（金额 + 总收益率 %）、`Max Drawdown`、`CAGR`；XIRR 现金流包含初始本金与每期定投。
+   - **本金基线**：DCA 图表同时绘制绿色组合总资产、灰色虚线 S&P 500 镜像（相同现金流）与淡紫 `#c4b5fd` 阶梯虚线累计本金；图例与悬停 HUD 显示 `Portfolio Value / S&P 500 / Principal / P/L` 与 Alpha；Y 轴保持真实美元刻度。
+   - **上市日期对齐**：实际回测起始日自动对齐到所有已选标的的共同最早有效交易日；若请求起始日早于某标的上市日，图表右上角显示 `Start date adjusted to YYYY-MM-DD due to asset listing history`；无有效数据的标的会记录并在图表下方提示，曲线与基准不会出现 NaN。
+   - **验证结果**：`tsc --noEmit`、本次涉及文件 ESLint 通过；Chrome 实测 Custom 日期栏/剧本、免费 PRO 升级提示、DCA 参数与本金线、悬停 P/L；另用合成数据验证上市日期对齐（请求 2020-01-01、实际对齐到 2020-01-06，曲线/基准无 NaN，无重叠日期返回 null）。
+3. **涉及的核心文件路径**：`components/simulator/SimulatorWorkbench.tsx`、`components/simulator/SimulatorChart.tsx`、`components/simulator/engine.ts`、`components/dca/PeriodTabs.tsx`、`app/dashboard/page.tsx`、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：
+   - `Custom` 必须仅对 Pro/Admin 解锁；免费用户只能看到 `✦ PRO` 并触发升级，不得渲染可用日期栏。
+   - 回测起始日必须先对齐所有已选标的的共同最早有效交易日；不得通过丢弃资产或输出 NaN 规避上市日期差异，调整提示必须保留。
+   - DCA 主图固定为绿色组合线 + 灰色虚线 S&P 500 镜像 + 淡紫 `#c4b5fd` 阶梯虚线本金；P/L 与 Alpha 的悬停读数不得丢失。
+   - 新增 UI 文案全部使用金融英文；不修改任何既有中文文案。保持 720×240 viewBox、红色/绿色暗色霓虹图表语言与现有自定义 SVG 绘制逻辑。
+
+---
+
 ## 2026-11-18 - 首页 Features 六卡网格、Hero 排版与英文文案精修（style / fix）
 
 1. **日期与版本主题**：2026-11-18 — 首页 Features 补齐 2×3 网格，移除英文站的双语自述，优化 Hero 层级与 `?error` 地址栏清理。
