@@ -6,6 +6,19 @@
 
 ---
 
+## 2026-11-18 - Pricing FAQ 市场数据来源披露文案调整（copy / pricing）
+
+1. **日期与版本主题**：2026-11-18 — 更新 `/pricing` 页 FAQ 第二条「Where does the market data come from?」的回答文案，改为通用第三方数据源披露与免责声明表述，不再点名具体供应商。
+2. **核心改动内容**：
+   - `app/pricing/page.tsx`：`faqs` 第二项答案由「Quotes come from Tencent and Eastmoney public endpoints, index valuations from Danjuan…」替换为「Market quotes, historical prices, and valuation metrics are aggregated from established third-party financial data providers… does not constitute financial advice.」；问题标题与其余 FAQ 条目未变。
+3. **涉及的核心文件路径**：`app/pricing/page.tsx`、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：
+   - 仅文案变更，不得改动 FAQ 卡片布局、玻璃拟态样式与 `/pricing` 页其他区块（套餐对比、CTA）。
+   - 英文文案中保持无 CJK 字符。
+   - **验证结果**：纯文本修改，`npx tsc --noEmit` 通过。
+
+---
+
 ## 2026-11-18 - 支付成功回跳 dashboard 并自动激活 Pro（fix / billing）
 
 1. **日期与版本主题**：2026-11-18 — 修复 Creem 结账成功后的回跳体验：付款完成直接回到 dashboard，并在 webhook 稍晚到达时自动轮询激活 Pro，而不是停在首页且仍显示 Free。
