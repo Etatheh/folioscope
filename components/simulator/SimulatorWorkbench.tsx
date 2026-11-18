@@ -130,7 +130,12 @@ export default function SimulatorWorkbench({
   );
 
   const maxMonths = Math.max(1, Math.floor(data.dates.length / 21));
-  const months = Math.min(periodMonths(period), maxMonths);
+  // 10Y is Pro-only. Keep a safe display state even if the plan changes while
+  // the page is open or the server sends an unexpected period.
+  const safePeriod: PeriodKey =
+    !hasFullAccess && period === "y10" ? "y5" : period;
+  const customIsActive = hasFullAccess && customActive;
+  const months = Math.min(periodMonths(safePeriod), maxMonths);
 
   const totalWeight = selected.reduce(
     (sum, symbol) => sum + Math.max(0, weights[symbol] ?? 0),
@@ -171,8 +176,8 @@ export default function SimulatorWorkbench({
         contribution,
         frequency,
         months,
-        startDate: customActive ? customStart : null,
-        endDate: customActive ? customEnd : null,
+        startDate: customIsActive ? customStart : null,
+        endDate: customIsActive ? customEnd : null,
       }),
     [
       mergedData.dates,
@@ -186,7 +191,7 @@ export default function SimulatorWorkbench({
       contribution,
       frequency,
       months,
-      customActive,
+      customIsActive,
       customStart,
       customEnd,
     ]
@@ -469,14 +474,16 @@ export default function SimulatorWorkbench({
         <div className="min-w-0">
           <PeriodTabs
             lang={lang}
-            value={period}
+            value={safePeriod}
             onChange={(key) => {
               setPeriod(key);
               setCustomActive(false);
             }}
             maxMonths={maxMonths}
+            hasFullAccess={hasFullAccess}
+            onUpgrade={() => setUpgradeOpen(true)}
             custom={{
-              active: customActive,
+              active: customIsActive,
               locked: !hasFullAccess,
               onSelect: () => setCustomActive(true),
               onUpgrade: () => setUpgradeOpen(true),
@@ -516,7 +523,7 @@ export default function SimulatorWorkbench({
       {hasFullAccess && (
         <div
           className={`grid overflow-hidden transition-all duration-300 ease-out ${
-            customActive
+            customIsActive
               ? "mt-3 grid-rows-[1fr] opacity-100"
               : "grid-rows-[0fr] opacity-0"
           }`}

@@ -15,6 +15,8 @@ export default function PeriodTabs({
   maxMonths,
   disabled = false,
   custom,
+  hasFullAccess = true,
+  onUpgrade,
 }: {
   lang: Lang;
   value: PeriodKey;
@@ -28,6 +30,9 @@ export default function PeriodTabs({
     onSelect: () => void;
     onUpgrade: () => void;
   };
+  /** Pro/Admin unlock periods marked `pro` (currently 10Y). */
+  hasFullAccess?: boolean;
+  onUpgrade?: () => void;
 }) {
   const labels = dict[lang].dca.periods;
 
@@ -40,6 +45,7 @@ export default function PeriodTabs({
       {PERIODS.map((period) => {
         const selected = !custom?.active && period.key === value;
         const unavailable = period.months > maxMonths;
+        const locked = Boolean(period.pro) && !hasFullAccess;
         const label = labels[period.key];
         return (
           <button
@@ -47,8 +53,15 @@ export default function PeriodTabs({
             type="button"
             role="tab"
             aria-selected={selected}
-            disabled={disabled || unavailable}
-            onClick={() => onChange(period.key)}
+            aria-disabled={locked}
+            disabled={disabled || (unavailable && !locked)}
+            onClick={() => {
+              if (locked) {
+                onUpgrade?.();
+                return;
+              }
+              if (!unavailable) onChange(period.key);
+            }}
             className={`relative flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
               selected ? "text-white" : "text-slate-500 hover:text-slate-200"
             }`}
