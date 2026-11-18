@@ -66,7 +66,7 @@ function firstString(...values: unknown[]): string | undefined {
   return undefined;
 }
 
-/** Map a Supabase auth user (Google/Microsoft/email) onto the local shape. */
+/** Map a Supabase auth user (Google/GitHub/email) onto the local shape. */
 function adaptSupabase(user: User): SessionUser {
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const appMeta = (user.app_metadata ?? {}) as Record<string, unknown>;
@@ -223,7 +223,7 @@ function subscribe(listener: () => void) {
 
 /**
  * Session hook with three backends:
- * - supabase: Google/Microsoft/email auth through supabase-js
+ * - supabase: Google/GitHub/email auth through supabase-js
  * - server mode: httpOnly cookie verified through /api/auth/me
  * - local mode: demo localStorage accounts (when Supabase is not configured)
  *

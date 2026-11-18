@@ -56,14 +56,14 @@ function GoogleIcon({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
-/** Standard four-colour Microsoft mark. */
-function MicrosoftIcon({ className = "h-4 w-4" }: { className?: string }) {
+/** GitHub mark. Monochrome so it matches the dark glass buttons. */
+function GitHubIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 23 23" aria-hidden="true" className={className}>
-      <path fill="#f25022" d="M1 1h10v10H1z" />
-      <path fill="#7fba00" d="M12 1h10v10H12z" />
-      <path fill="#00a4ef" d="M1 12h10v10H1z" />
-      <path fill="#ffb900" d="M12 12h10v10H12z" />
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path
+        fill="currentColor"
+        d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"
+      />
     </svg>
   );
 }
@@ -111,15 +111,15 @@ export default function AuthModal({
   const [mode, setMode] = useState<AuthModalMode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState<null | "google" | "email">(null);
+  const [busy, setBusy] = useState<null | "google" | "github" | "email">(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [microsoftSoon, setMicrosoftSoon] = useState(false);
 
   const doc = view === "auth" ? null : legalDocs[lang][view];
 
   const handleClose = useCallback(() => {
-    if (busy === "google") return;
+    // OAuth redirects are in flight; don't let the dialog disappear mid-flow.
+    if (busy === "google" || busy === "github") return;
     onClose();
   }, [busy, onClose]);
 
@@ -180,39 +180,11 @@ export default function AuthModal({
     [inline, onClose, router]
   );
 
-  const handleGoogle = useCallback(async () => {
-    setError(null);
-    setNotice(null);
-    setBusy("google");
-    try {
-      const supabase = await getSupabaseClient();
-      if (!supabase) {
-        setError(t.errors.notConfigured);
-        setBusy(null);
-        return;
-      }
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin },
-      });
-      if (oauthError) {
-        setError(t.errors.oauth);
-        setBusy(null);
-      }
-      // On success the browser is redirected to Google, so keep the busy state.
-    } catch {
-      setError(t.errors.oauth);
-      setBusy(null);
-    }
-  }, [t]);
-
-  const handleMicrosoft = useCallback(async () => {
-    // Azure AD is reserved for a later release. Enable the flag (and the Azure
-    // provider in Supabase) to turn this into a real OAuth flow.
-    const MICROSOFT_OAUTH_ENABLED = false;
-    if (MICROSOFT_OAUTH_ENABLED) {
+  const handleOAuth = useCallback(
+    async (provider: "google" | "github") => {
       setError(null);
-      setBusy("google");
+      setNotice(null);
+      setBusy(provider);
       try {
         const supabase = await getSupabaseClient();
         if (!supabase) {
@@ -221,26 +193,29 @@ export default function AuthModal({
           return;
         }
         const { error: oauthError } = await supabase.auth.signInWithOAuth({
-          provider: "azure",
-          options: {
-            scopes: "email openid profile",
-            redirectTo: window.location.origin,
-          },
+          provider,
+          options: { redirectTo: window.location.origin },
         });
         if (oauthError) {
           setError(t.errors.oauth);
           setBusy(null);
         }
+        // On success the browser is redirected to the provider, so keep busy.
       } catch {
         setError(t.errors.oauth);
         setBusy(null);
       }
-      return;
-    }
+    },
+    [t]
+  );
 
-    setMicrosoftSoon(true);
-    window.setTimeout(() => setMicrosoftSoon(false), 3200);
-  }, [t]);
+  const handleGoogle = useCallback(() => {
+    void handleOAuth("google");
+  }, [handleOAuth]);
+
+  const handleGithub = useCallback(() => {
+    void handleOAuth("github");
+  }, [handleOAuth]);
 
   const handleEmailAuth = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -423,31 +398,14 @@ export default function AuthModal({
 
         <button
           type="button"
-          onClick={handleMicrosoft}
+          onClick={handleGithub}
           disabled={busy !== null}
-          className="flex w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-xl border border-white/12 bg-white/[0.03] px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-white/20 hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-xl border border-white/12 bg-white/[0.06] px-4 py-3 text-sm font-medium text-slate-100 transition hover:border-white/25 hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <MicrosoftIcon className="h-[17px] w-[17px] shrink-0" />
-          <span>{t.microsoft}</span>
-          <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-200">
-            {t.comingSoon}
-          </span>
+          <GitHubIcon className="h-[18px] w-[18px] shrink-0" />
+          <span>{t.github}</span>
         </button>
       </div>
-
-      <AnimatePresence initial={false}>
-        {microsoftSoon && (
-          <motion.p
-            key="ms-soon"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden text-center text-[11px] leading-relaxed text-amber-200/90"
-          >
-            <span className="mt-2 block">{t.microsoftSoon}</span>
-          </motion.p>
-        )}
-      </AnimatePresence>
 
       <div className="my-5 flex items-center gap-3">
         <span className="h-px flex-1 bg-white/10" />

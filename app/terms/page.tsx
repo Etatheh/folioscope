@@ -46,7 +46,7 @@ export default function TermsPage() {
       <h2>3. User Accounts &amp; Security</h2>
       <p>
         You may sign in to FolioScope using supported third-party identity
-        providers, specifically Google OAuth and Microsoft OAuth. You are
+        providers, specifically Google OAuth and GitHub OAuth. You are
         responsible for maintaining the security of your connected OAuth account
         and for all activity conducted under your FolioScope profile. You must be
         at least 18 years old (or the age of legal majority in your jurisdiction)

@@ -24,7 +24,7 @@ const en: Record<LegalDocId, LegalDoc> = {
       {
         heading: "1. Acceptance of these Terms",
         paragraphs: [
-          "By creating an account, signing in with a third-party provider (such as Google or Microsoft), or otherwise using Markets, you agree to be bound by these Terms of Service. If you do not agree, please do not use the service.",
+          "By creating an account, signing in with a third-party provider (such as Google or GitHub), or otherwise using Markets, you agree to be bound by these Terms of Service. If you do not agree, please do not use the service.",
           "If you use Markets on behalf of an organisation, you represent that you have authority to bind that organisation, and “you” refers to both you and the organisation.",
         ],
       },
@@ -54,7 +54,7 @@ const en: Record<LegalDocId, LegalDoc> = {
         heading: "5. Third-party services and market data",
         paragraphs: [
           "Markets displays market data obtained from third-party providers. Data may be delayed, incomplete, interrupted or subject to provider terms. We do not guarantee that any quote, index level, valuation, indicator or K-line series is accurate or current at any given moment.",
-          "Sign-in through Google or Microsoft is provided by those providers and is subject to their own terms and privacy policies. We are not responsible for third-party services, links or content.",
+          "Sign-in through Google or GitHub is provided by those providers and is subject to their own terms and privacy policies. We are not responsible for third-party services, links or content.",
         ],
       },
       {
@@ -123,7 +123,7 @@ const en: Record<LegalDocId, LegalDoc> = {
       {
         heading: "2. Information we collect",
         paragraphs: [
-          "Account information: your email address, display name and profile image supplied when you sign in with Google, Microsoft or email. If you use email sign-in, we also process authentication credentials through our authentication provider.",
+          "Account information: your email address, display name and profile image supplied when you sign in with Google, GitHub or email. If you use email sign-in, we also process authentication credentials through our authentication provider.",
           "Usage information: pages viewed, features used, approximate region, browser and device type, and diagnostic logs. We use this information to operate, secure and improve the service.",
           "Payment information: if you subscribe to Pro, our payment provider processes billing details. We receive limited information such as your plan status and transaction reference, not your full card number.",
         ],
@@ -151,7 +151,7 @@ const en: Record<LegalDocId, LegalDoc> = {
       {
         heading: "6. Sharing and processors",
         paragraphs: [
-          "We share data with service providers that help us run Markets, including Supabase (database and authentication), Google and Microsoft (optional single sign-on), payment processors, hosting providers and analytics tools. These providers process data on our instructions and under appropriate contractual safeguards.",
+          "We share data with service providers that help us run Markets, including Supabase (database and authentication), Google and GitHub (optional single sign-on), payment processors, hosting providers and analytics tools. These providers process data on our instructions and under appropriate contractual safeguards.",
           "We may disclose information if required by law, to protect our rights or the safety of users, or in connection with a merger, acquisition or sale of assets, subject to appropriate confidentiality protections.",
         ],
       },
@@ -280,7 +280,7 @@ const zh: Record<LegalDocId, LegalDoc> = {
       {
         heading: "一、条款的接受",
         paragraphs: [
-          "当您创建账号、通过第三方账号（如 Google、Microsoft）登录或以其他方式使用 Markets 时，即表示您同意受本《服务条款》约束。如您不同意，请停止使用本服务。",
+          "当您创建账号、通过第三方账号（如 Google、GitHub）登录或以其他方式使用 Markets 时，即表示您同意受本《服务条款》约束。如您不同意，请停止使用本服务。",
           "如您代表某一组织使用 Markets，您声明已获得代表该组织接受本条款的授权，此时“您”同时指您本人与该组织。",
         ],
       },
@@ -310,7 +310,7 @@ const zh: Record<LegalDocId, LegalDoc> = {
         heading: "五、第三方服务与市场数据",
         paragraphs: [
           "Markets 展示来自第三方数据供应商的行情数据。数据可能存在延迟、缺失、中断或受供应商条款限制。我们不保证任何报价、指数点位、估值、技术指标或 K 线在任何时点均准确或及时。",
-          "通过 Google 或 Microsoft 登录由相应服务商提供，并受其自身条款与隐私政策约束。我们不对第三方服务、链接或内容负责。",
+          "通过 Google 或 GitHub 登录由相应服务商提供，并受其自身条款与隐私政策约束。我们不对第三方服务、链接或内容负责。",
         ],
       },
       {
@@ -379,7 +379,7 @@ const zh: Record<LegalDocId, LegalDoc> = {
       {
         heading: "二、我们收集的信息",
         paragraphs: [
-          "账号信息：当您通过 Google、Microsoft 或邮箱登录时提供的电子邮箱、显示名称及头像。如使用邮箱登录，我们还会通过身份验证服务商处理登录凭证。",
+          "账号信息：当您通过 Google、GitHub 或邮箱登录时提供的电子邮箱、显示名称及头像。如使用邮箱登录，我们还会通过身份验证服务商处理登录凭证。",
           "使用信息：访问的页面、使用的功能、大致地区、浏览器与设备类型及诊断日志。我们使用这些信息运营、保护并改进服务。",
           "支付信息：如您订阅 Pro，计费详情由第三方支付服务商处理。我们仅收到套餐状态、交易编号等有限信息，不会收到完整卡号。",
         ],
@@ -407,7 +407,7 @@ const zh: Record<LegalDocId, LegalDoc> = {
       {
         heading: "六、共享与受托处理方",
         paragraphs: [
-          "我们与协助运营 Markets 的服务商共享数据，包括 Supabase（数据库与身份验证）、Google 与 Microsoft（可选单点登录）、支付服务商、托管服务商及分析工具。上述服务商依我们的指示并在适当的合同保障下处理数据。",
+          "我们与协助运营 Markets 的服务商共享数据，包括 Supabase（数据库与身份验证）、Google 与 GitHub（可选单点登录）、支付服务商、托管服务商及分析工具。上述服务商依我们的指示并在适当的合同保障下处理数据。",
           "在法律要求、为保护我们或用户的权利与安全、或在与合并、收购、资产出售相关且采取适当保密措施的情况下，我们可能披露相关信息。",
         ],
       },

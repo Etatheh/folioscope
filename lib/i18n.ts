@@ -265,9 +265,7 @@ const zh = {
     signupTitle: "创建免费账号",
     signupSubtitle: "免费开始，无需信用卡。",
     google: "使用 Google 账号继续",
-    microsoft: "使用 Microsoft 账号继续",
-    comingSoon: "即将支持",
-    microsoftSoon: "Microsoft 登录即将上线，请先使用 Google 或邮箱登录。",
+    github: "使用 GitHub 账号继续",
     orEmail: "或使用邮箱登录",
     orEmailSignup: "或使用邮箱注册",
     email: "邮箱",
@@ -712,9 +710,7 @@ type Dict = {
     signupTitle: string;
     signupSubtitle: string;
     google: string;
-    microsoft: string;
-    comingSoon: string;
-    microsoftSoon: string;
+    github: string;
     orEmail: string;
     orEmailSignup: string;
     email: string;
@@ -1179,9 +1175,7 @@ const en: Dict = {
     signupTitle: "Create a free account",
     signupSubtitle: "Start free. No credit card required.",
     google: "Continue with Google",
-    microsoft: "Continue with Microsoft",
-    comingSoon: "Coming soon",
-    microsoftSoon: "Microsoft sign-in is coming soon. Please use Google or email for now.",
+    github: "Continue with GitHub",
     orEmail: "or continue with email",
     orEmailSignup: "or sign up with email",
     email: "Email",

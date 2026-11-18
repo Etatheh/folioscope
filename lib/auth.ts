@@ -16,7 +16,7 @@ export type SessionUser = {
   tier?: AccessTier;
   createdAt: number;
   isAdmin?: boolean;
-  /** Google/Microsoft OAuth avatar (from `user_metadata.avatar_url`). */
+  /** Google/GitHub OAuth avatar (from `user_metadata.avatar_url`). */
   avatarUrl?: string;
   /** OAuth provider id, e.g. "google". */
   provider?: string;

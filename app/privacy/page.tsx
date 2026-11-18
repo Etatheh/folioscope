@@ -24,7 +24,7 @@ export default function PrivacyPage() {
       <ul>
         <li>
           <strong>Account &amp; Identity Information:</strong> When you log in
-          via Google OAuth or Microsoft OAuth, we receive your name, email
+          via Google OAuth or GitHub OAuth, we receive your name, email
           address, and profile avatar URL to create and authenticate your user
           account.
         </li>

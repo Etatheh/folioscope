@@ -56,8 +56,8 @@ function AuthPageInner({ mode }: { mode: AuthModalMode }) {
  * Shared shell for the standalone auth routes.
  *
  * `/login` and `/register` both render the same panel as the global auth
- * dialog, so email/password, Google and Microsoft (COMING SOON) never drift
- * between the modal and the full pages.
+ * dialog, so email/password, Google and GitHub never drift between the modal
+ * and the full pages.
  */
 export default function AuthPage({ mode }: { mode: AuthModalMode }) {
   return (
