@@ -43,7 +43,9 @@ export default function ProUpgradeButton({
   const text = label ?? dict[lang].pro.upgrade;
 
   const handleClick = () => {
-    if (ready && !user) {
+    // Never decide from a half-initialised session.
+    if (!ready) return;
+    if (!user) {
       openAuthModal({ mode: "login", lang });
       return;
     }
@@ -55,6 +57,7 @@ export default function ProUpgradeButton({
       <button
         type="button"
         onClick={handleClick}
+        disabled={!ready}
         className={`${VARIANT_CLASS[variant]} ${className}`}
       >
         {text}

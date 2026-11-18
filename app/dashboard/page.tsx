@@ -25,8 +25,7 @@ import { getCnMarketSnapshot } from "@/lib/cn-markets";
 import { getAsiaMarketSnapshot, ASIA_CURRENCY } from "@/lib/asia-markets";
 import { getEuropeMarketSnapshot } from "@/lib/europe-markets";
 import { parseDashboardView } from "@/lib/dashboard-views";
-import { getSessionUser } from "@/lib/server/auth-service";
-import { COOKIE_NAME } from "@/lib/server/auth";
+import { getServerViewer } from "@/lib/server/viewer";
 import { dict, parseLang } from "@/lib/i18n";
 import { LANG_COOKIE } from "@/lib/lang-pref";
 
@@ -58,13 +57,7 @@ export default async function DashboardPage({
   const watchlistTab =
     (Array.isArray(rawTab) ? rawTab[0] : rawTab) === "mine" ? "mine" : "featured";
 
-  const token = store.get(COOKIE_NAME)?.value;
-  let viewer = null;
-  try {
-    viewer = token ? await getSessionUser(token) : null;
-  } catch {
-    viewer = null;
-  }
+  const viewer = await getServerViewer();
   const plan = getViewerPlan(viewer);
   const fullAccess = hasFullDashboardAccess(plan);
 

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { isAdminTier, isProTier } from "@/lib/access";
+import { apiFetch } from "@/lib/client-api";
 import { dict, type Lang } from "@/lib/i18n";
 import { useProfile } from "@/lib/use-profile";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
@@ -16,6 +17,7 @@ type BillingConfigResponse = {
   ok?: boolean;
   configured?: boolean;
   url?: string;
+  checkout_url?: string;
   demo?: boolean;
   alreadyPro?: boolean;
 };
@@ -64,7 +66,7 @@ export default function UpgradeModal({
   useEffect(() => {
     if (!open || configured !== null) return;
     let cancelled = false;
-    fetch("/api/billing/checkout", { cache: "no-store" })
+    fetch("/api/checkout", { cache: "no-store" })
       .then((res) => res.json())
       .then((data: BillingConfigResponse) => {
         if (!cancelled) setConfigured(Boolean(data.configured));
@@ -116,20 +118,39 @@ export default function UpgradeModal({
   }, [open, handleClose]);
 
   const handleUpgrade = useCallback(async () => {
+    // Wait for the live session; never decide from a half-initialised auth store.
+    if (!ready) return;
+    if (!user) {
+      setStatus("idle");
+      openAuthModal({ mode: "login", lang });
+      return;
+    }
+
     setStatus("busy");
     try {
-      const response = await fetch("/api/billing/checkout", { method: "POST" });
+      const response = await apiFetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ billingCycle: "monthly" }),
+      });
       const data = (await response.json().catch(() => ({}))) as BillingConfigResponse;
 
       if (response.status === 401) {
+        // Re-check the server session before sending a signed-in user to login.
+        const me = await fetch("/api/auth/me", { cache: "no-store" });
+        if (me.ok) {
+          setStatus("error");
+          return;
+        }
         setStatus("idle");
         const next = encodeURIComponent(window.location.pathname + window.location.search);
         window.location.href = `/login?redirect=${next}`;
         return;
       }
 
-      if (response.ok && data.url) {
-        window.location.href = data.url;
+      const checkoutUrl = data.checkout_url ?? data.url;
+      if (response.ok && checkoutUrl) {
+        window.location.href = checkoutUrl;
         return;
       }
 
@@ -156,7 +177,7 @@ export default function UpgradeModal({
     } catch {
       setStatus("error");
     }
-  }, []);
+  }, [lang, openAuthModal, ready, user]);
 
   if (!mounted) return null;
 

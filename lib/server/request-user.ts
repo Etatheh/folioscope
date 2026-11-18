@@ -1,21 +1,11 @@
 import { cookies } from "next/headers";
+import type { User } from "@supabase/supabase-js";
 
-import { highestTier, isProTier } from "@/lib/access";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSessionUser, type AuthUser } from "./auth-service";
 import { COOKIE_NAME } from "./auth";
 import { readSupabaseEnv } from "./env";
-import { pgSelect } from "./rest";
-
-function isAdminEmail(email: string): boolean {
-  const raw = process.env.ADMIN_EMAILS?.trim();
-  if (!raw) return false;
-  return new Set(
-    raw
-      .split(",")
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean)
-  ).has(email.toLowerCase());
-}
+import { authUserFromSupabaseUser } from "./supabase-user";
 
 /** Verify a Supabase access token sent by the browser client. */
 async function getBearerUser(
@@ -40,60 +30,26 @@ async function getBearerUser(
     });
     if (!response.ok) return null;
 
-    const data = (await response.json()) as {
-      id?: string;
-      email?: string;
-      user_metadata?: Record<string, unknown>;
-      app_metadata?: Record<string, unknown>;
-    };
+    const data = (await response.json()) as User;
     if (!data.id || !data.email) return null;
 
-    const meta = data.user_metadata ?? {};
-    const appMeta = data.app_metadata ?? {};
-    const admin =
-      isAdminEmail(data.email) ||
-      appMeta.role === "admin" ||
-      meta.role === "admin" ||
-      meta.is_admin === true;
-    const pro = meta.plan === "pro" || appMeta.plan === "pro";
-    const nickname =
-      (typeof meta.full_name === "string" && meta.full_name.trim()) ||
-      (typeof meta.name === "string" && meta.name.trim()) ||
-      data.email.split("@")[0] ||
-      "User";
-    const baseTier = admin ? "admin" : pro ? "pro" : "free";
+    return { user: await authUserFromSupabaseUser(data), token };
+  } catch {
+    return null;
+  }
+}
 
-    // `profiles.tier` is the paid tier shown by Account Settings. Merge it with
-    // the auth metadata so API routes see exactly the same tier as the UI.
-    let profileTier: string | null = null;
-    if (env?.secretKey) {
-      try {
-        const rows = await pgSelect<{ tier: string }>(
-          env,
-          "profiles",
-          `id=eq.${encodeURIComponent(data.id)}&select=tier`
-        );
-        profileTier = rows[0]?.tier ?? null;
-      } catch {
-        // profiles is optional; auth metadata remains the fallback.
-      }
-    }
-
-    const tier = highestTier(baseTier, profileTier);
-    const isAdmin = tier === "admin";
-
-    return {
-      user: {
-        id: data.id,
-        email: data.email,
-        nickname,
-        plan: isProTier(tier) ? "pro" : "free",
-        tier,
-        createdAt: new Date().toISOString(),
-        isAdmin,
-      },
-      token,
-    };
+/** Supabase SSR cookies written by the browser client or /auth/callback. */
+async function getSupabaseCookieUser(): Promise<AuthUser | null> {
+  try {
+    const supabase = await getSupabaseServerClient();
+    if (!supabase) return null;
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error || !user) return null;
+    return await authUserFromSupabaseUser(user);
   } catch {
     return null;
   }
@@ -118,7 +74,7 @@ export type RequestSession = {
   token?: string;
 };
 
-/** Supabase bearer token first, then the legacy cookie session. */
+/** Supabase bearer token first, then Supabase SSR cookies, then legacy cookie. */
 export async function resolveRequestUser(
   request: Request
 ): Promise<RequestSession | null> {
@@ -126,6 +82,12 @@ export async function resolveRequestUser(
   if (bearer) {
     return { user: bearer.user, source: "supabase", token: bearer.token };
   }
+
+  const supabaseCookieUser = await getSupabaseCookieUser();
+  if (supabaseCookieUser) {
+    return { user: supabaseCookieUser, source: "supabase" };
+  }
+
   const cookieUser = await getCookieUser();
   if (cookieUser) return { user: cookieUser, source: "cookie" };
   return null;

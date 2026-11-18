@@ -61,7 +61,7 @@ function getAdminEmails(): Set<string> {
   );
 }
 
-function isAdminEmail(email: string): boolean {
+export function isAdminEmail(email: string): boolean {
   return getAdminEmails().has(email.toLowerCase());
 }
 

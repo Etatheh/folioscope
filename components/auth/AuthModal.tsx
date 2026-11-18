@@ -192,9 +192,12 @@ export default function AuthModal({
           setBusy(null);
           return;
         }
+        const next = redirectTo?.trim() || "/dashboard";
         const { error: oauthError } = await supabase.auth.signInWithOAuth({
           provider,
-          options: { redirectTo: window.location.origin },
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          },
         });
         if (oauthError) {
           setError(t.errors.oauth);
@@ -206,7 +209,7 @@ export default function AuthModal({
         setBusy(null);
       }
     },
-    [t]
+    [redirectTo, t]
   );
 
   const handleGoogle = useCallback(() => {

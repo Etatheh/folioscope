@@ -1,6 +1,7 @@
 "use client";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type PublicConfig = { url: string; key: string };
 
@@ -37,22 +38,17 @@ async function fetchConfig(): Promise<PublicConfig | null> {
 /**
  * Lazily create a single browser Supabase client.
  *
- * Returns `null` when the backend is not configured, so every caller can fall
- * back to the legacy email/password + demo session path.
+ * `createBrowserClient` from `@supabase/ssr` persists the auth session in
+ * cookies (not localStorage), so the proxy, Server Components and Route
+ * Handlers see the same login. Returns `null` when the backend is not
+ * configured, so every caller can fall back to the legacy cookie/local path.
  */
 export function getSupabaseClient(): Promise<SupabaseClient | null> {
   if (!clientPromise) {
     clientPromise = fetchConfig()
       .then((config) => {
         if (!config) return null;
-        return createClient(config.url, config.key, {
-          auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true,
-            flowType: "pkce",
-          },
-        });
+        return createBrowserClient(config.url, config.key);
       })
       .catch(() => null);
   }

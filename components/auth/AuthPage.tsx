@@ -14,7 +14,11 @@ function AuthPageInner({ mode }: { mode: AuthModalMode }) {
   const params = useSearchParams();
   const router = useRouter();
   const lang = resolveClientLang(params.get("lang"));
-  const redirect = params.get("redirect") || "/dashboard";
+  const requestedRedirect = params.get("redirect");
+  const redirect =
+    requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
+      ? requestedRedirect
+      : "/dashboard";
   const path = mode === "login" ? "/login" : "/register";
   const toggleQuery = params.get("redirect")
     ? `redirect=${encodeURIComponent(params.get("redirect")!)}`
