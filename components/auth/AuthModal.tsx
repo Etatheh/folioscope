@@ -86,13 +86,13 @@ function mapAuthError(message: string): keyof typeof dict.en.auth.errors {
 export default function AuthModal({
   open,
   onClose,
-  lang,
   initialMode = "login",
   inline = false,
   redirectTo,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Kept for API compatibility; auth UI is English-only. */
   lang: Lang;
   initialMode?: AuthModalMode;
   /** Render the panel inline (used by /login and /register) instead of a portal. */
@@ -100,7 +100,9 @@ export default function AuthModal({
   /** After a successful auth, refresh and navigate here instead of just closing. */
   redirectTo?: string;
 }) {
-  const t = dict[lang].auth;
+  // English-first auth flow. Existing Chinese copy is frozen and not rendered.
+  const authLang: Lang = "en";
+  const t = dict[authLang].auth;
   const router = useRouter();
   const mounted = useIsClient();
   const reduceMotion = useReducedMotion();
@@ -115,7 +117,7 @@ export default function AuthModal({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const doc = view === "auth" ? null : legalDocs[lang][view];
+  const doc = view === "auth" ? null : legalDocs[authLang][view];
 
   const handleClose = useCallback(() => {
     // OAuth redirects are in flight; don't let the dialog disappear mid-flow.
@@ -287,12 +289,12 @@ export default function AuthModal({
         const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
         const body =
           mode === "login"
-            ? { email: cleanEmail, password, lang }
+            ? { email: cleanEmail, password, lang: authLang }
             : {
                 email: cleanEmail,
                 password,
                 nickname: cleanEmail.split("@")[0] || "User",
-                lang,
+                lang: authLang,
               };
         const response = await fetch(endpoint, {
           method: "POST",
@@ -332,7 +334,7 @@ export default function AuthModal({
         setBusy(null);
       }
     },
-    [busy, email, finish, lang, mode, password, redirectTo, t]
+    [busy, email, finish, mode, password, redirectTo, t]
   );
 
   const legalNotice = useMemo(
