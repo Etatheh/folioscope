@@ -5,8 +5,9 @@ import {
   hasComplianceNote,
   normalizeMarketContext,
   normalizeMessages,
-  type ChatMessage,
   type ChatMarketContext,
+  type ChatMessage,
+  type ChatPromptMode,
 } from "@/lib/chat";
 import { completionsUrl, readAiConfig } from "@/lib/server/ai-config";
 import { resolveRequestUser } from "@/lib/server/request-user";
@@ -65,6 +66,10 @@ const SSE_HEADERS: Record<string, string> = {
   Connection: "keep-alive",
   "X-Accel-Buffering": "no",
 };
+
+/** Hidden user turn that kicks off the proactive page diagnosis. */
+const DIAGNOSIS_PROMPT =
+  "Run the instant diagnosis now, following the diagnosis contract. Use only the live page data above and do not ask what I want.";
 
 function usageHeaders(usage: Usage | null): Record<string, string> {
   if (!usage) return {};
@@ -161,6 +166,7 @@ export async function POST(request: Request) {
     messages?: unknown;
     marketContext?: unknown;
     lang?: unknown;
+    mode?: unknown;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -169,6 +175,7 @@ export async function POST(request: Request) {
   }
 
   const rawLang = body.lang === "zh" ? "zh" : "en";
+  const mode: ChatPromptMode = body.mode === "diagnosis" ? "diagnosis" : "chat";
   const marketContext: ChatMarketContext = normalizeMarketContext(body.marketContext);
   marketContext.asOf = marketContext.asOf ?? Date.now();
   const lang: Lang = marketContext.lang ?? rawLang;
@@ -181,7 +188,10 @@ export async function POST(request: Request) {
   }
 
   const messages: ChatMessage[] = normalizeMessages(body.messages);
-  if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
+  if (
+    mode === "chat" &&
+    (messages.length === 0 || messages[messages.length - 1].role !== "user")
+  ) {
     return jsonError(t.empty, 400, "EMPTY");
   }
 
@@ -204,10 +214,15 @@ export async function POST(request: Request) {
     return jsonError(t.notConfigured, 503, "AI_NOT_CONFIGURED");
   }
 
-  const system = `${buildSystemPrompt(lang)}\n\n=== Live page context ===\n${formatMarketContext(
+  const system = `${buildSystemPrompt(lang, { mode })}\n\n=== Live page context ===\n${formatMarketContext(
     marketContext,
     lang
   )}`;
+
+  const upstreamMessages =
+    mode === "diagnosis"
+      ? [{ role: "user" as const, content: DIAGNOSIS_PROMPT }]
+      : messages;
 
   const upstreamController = new AbortController();
   const timeout = setTimeout(() => upstreamController.abort(), 60_000);
@@ -228,7 +243,7 @@ export async function POST(request: Request) {
         temperature: 0.4,
         max_tokens: 1_000,
         stream: true,
-        messages: [{ role: "system", content: system }, ...messages],
+        messages: [{ role: "system", content: system }, ...upstreamMessages],
       }),
       cache: "no-store",
       signal: upstreamController.signal,

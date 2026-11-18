@@ -8,14 +8,37 @@ import type {
   ChatDcaContext,
   ChatMarketContext,
   ChatMessage,
+  ChatSimulatorContext,
 } from "@/lib/chat";
-import { useAiDca } from "@/lib/ai-context-store";
+import { useAiDca, useAiSimulator } from "@/lib/ai-context-store";
 import { useSession } from "@/lib/use-session";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import MarkdownText from "./MarkdownText";
 
 type UiMessage = ChatMessage & { id: string };
+
+type RequestMode = "chat" | "diagnosis";
+
+/** One-tap prompts pinned above the composer; new UI copy is English-only. */
+const QUICK_ACTIONS: { label: string; prompt: string }[] = [
+  {
+    label: "📉 Cut Risk",
+    prompt:
+      "How can I cut risk in my current setup without abandoning the plan? Use the live page numbers.",
+  },
+  {
+    label: "⚖️ Optimize Split",
+    prompt:
+      "How should I optimize my allocation split based on the current setup? Use the live page numbers.",
+  },
+  {
+    label: "📊 Compare Benchmarks",
+    prompt:
+      "Compare my current setup with its benchmarks and explain the gap using the live page numbers.",
+  },
+];
+
 
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -56,6 +79,7 @@ export default function AiAssistantDrawer({
   const { user, ready } = useSession();
   const { openAuthModal } = useAuthModal();
   const storedDca = useAiDca();
+  const storedSimulator = useAiSimulator();
   const reduceMotion = useReducedMotion();
 
   const [open, setOpen] = useState(false);
@@ -70,21 +94,52 @@ export default function AiAssistantDrawer({
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Streaming plumbing: batch tokens to one paint per frame (≈60fps) instead
+  // of re-rendering Markdown for every upstream chunk.
+  const streamingRef = useRef(false);
+  const pinnedRef = useRef(true);
+  const lastScrollTopRef = useRef(0);
+  const diagnosisStartedRef = useRef(false);
+  const runIdRef = useRef(0);
+  const answerRef = useRef("");
+
+  const markStreaming = useCallback((value: boolean) => {
+    streamingRef.current = value;
+    setStreaming(value);
+  }, []);
+
   const context = useMemo<ChatMarketContext>(() => {
-    const dca: ChatDcaContext | null =
+    const simulator: ChatSimulatorContext | null =
       marketContext.page === "dashboard"
+        ? storedSimulator ?? marketContext.simulator ?? null
+        : marketContext.simulator ?? null;
+    // Prefer the live simulator snapshot over the legacy default DCA plan so
+    // the diagnosis never mixes two unrelated backtests.
+    const dca: ChatDcaContext | null = simulator
+      ? null
+      : marketContext.page === "dashboard"
         ? storedDca ?? marketContext.dca ?? null
         : marketContext.dca ?? null;
-    return { ...marketContext, dca };
-  }, [marketContext, storedDca]);
+    return { ...marketContext, dca, simulator };
+  }, [marketContext, storedDca, storedSimulator]);
 
   useEffect(() => {
     const element = listRef.current;
-    if (element) element.scrollTop = element.scrollHeight;
-  }, [messages, streaming, open]);
+    if (!element || !pinnedRef.current) return;
+    element.scrollTo({
+      top: element.scrollHeight,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  }, [messages, streaming, open, reduceMotion]);
 
   useEffect(() => {
     if (!open) return;
+    pinnedRef.current = true;
+    const element = listRef.current;
+    if (element) {
+      element.scrollTop = element.scrollHeight;
+      lastScrollTopRef.current = element.scrollTop;
+    }
     const timer = window.setTimeout(() => inputRef.current?.focus(), 180);
     return () => window.clearTimeout(timer);
   }, [open]);
@@ -102,47 +157,71 @@ export default function AiAssistantDrawer({
   }, [open]);
 
   useEffect(() => {
-    return () => abortRef.current?.abort();
+    return () => {
+      abortRef.current?.abort();
+    };
   }, []);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
-    setStreaming(false);
-  }, []);
+    markStreaming(false);
+  }, [markStreaming]);
 
-  const newChat = useCallback(() => {
-    abortRef.current?.abort();
-    setStreaming(false);
-    setMessages([]);
-    setError(null);
-    setInput("");
-  }, []);
-
-  const send = useCallback(
-    async (raw: string) => {
+  const runRequest = useCallback(
+    async (mode: RequestMode, raw = "") => {
       const content = raw.trim();
-      if (!content || streaming) return;
+      if (mode === "chat" && !content) return;
+      if (streamingRef.current) return;
       if (!ready) return;
       if (!user) {
         openAuthModal({ mode: "login", lang });
+        if (mode === "diagnosis") setError(t.loginRequired);
         return;
       }
+
+      const runId = runIdRef.current + 1;
+      runIdRef.current = runId;
 
       setError(null);
       const history: ChatMessage[] = messages
         .filter((message) => message.content.trim())
         .map(({ role, content: text }) => ({ role, content: text }));
-      history.push({ role: "user", content });
+      if (mode === "chat") history.push({ role: "user", content });
 
-      const userId = newId();
       const assistantId = newId();
+      const userMessage: UiMessage | null =
+        mode === "chat" ? { id: newId(), role: "user", content } : null;
       setMessages((current) => [
         ...current,
-        { id: userId, role: "user", content },
+        ...(userMessage ? [userMessage] : []),
         { id: assistantId, role: "assistant", content: "" },
       ]);
-      setInput("");
-      setStreaming(true);
+      if (mode === "chat") setInput("");
+      pinnedRef.current = true;
+      answerRef.current = "";
+      markStreaming(true);
+
+      // Coalesce tokens into a single React update per animation frame so the
+      // Markdown tree stays smooth (≈60fps) instead of thrashing per chunk.
+      let frame: number | null = null;
+      const commit = () => {
+        frame = null;
+        if (runIdRef.current !== runId) return;
+        const text = answerRef.current;
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantId ? { ...message, content: text } : message
+          )
+        );
+      };
+
+      const queue = (delta: string) => {
+        if (runIdRef.current !== runId) return;
+        answerRef.current += delta;
+        if (frame === null) {
+          frame = requestAnimationFrame(commit);
+        }
+      };
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -163,6 +242,7 @@ export default function AiAssistantDrawer({
           },
           body: JSON.stringify({
             messages: history,
+            mode,
             marketContext: { ...context, asOf: Date.now() },
             lang,
           }),
@@ -194,7 +274,6 @@ export default function AiAssistantDrawer({
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
-        let answer = "";
 
         const consume = (event: string) => {
           for (const line of event.split("\n")) {
@@ -208,14 +287,7 @@ export default function AiAssistantDrawer({
                 error?: string;
               };
               if (typeof data.delta === "string" && data.delta) {
-                answer += data.delta;
-                setMessages((current) =>
-                  current.map((message) =>
-                    message.id === assistantId
-                      ? { ...message, content: answer }
-                      : message
-                  )
-                );
+                queue(data.delta);
               }
               if (typeof data.error === "string" && data.error) {
                 setError(data.error);
@@ -237,16 +309,70 @@ export default function AiAssistantDrawer({
         buffer += decoder.decode();
         if (buffer.trim()) consume(buffer);
 
-        if (!answer.trim()) setError(t.error);
+        if (!answerRef.current.trim()) setError(t.error);
       } catch {
-        if (!controller.signal.aborted) setError(t.error);
+        if (!controller.signal.aborted && runIdRef.current === runId) {
+          setError(t.error);
+        }
       } finally {
-        setStreaming(false);
-        abortRef.current = null;
+        if (frame !== null) cancelAnimationFrame(frame);
+        // A newer request (refresh) has taken over; never let this run clobber it.
+        if (runIdRef.current === runId) {
+          const finalText = answerRef.current;
+          if (finalText) {
+            setMessages((current) =>
+              current.map((message) =>
+                message.id === assistantId
+                  ? { ...message, content: finalText }
+                  : message
+              )
+            );
+          }
+          markStreaming(false);
+          abortRef.current = null;
+        }
       }
     },
-    [context, lang, messages, openAuthModal, ready, streaming, t, user]
+    [
+      context,
+      lang,
+      markStreaming,
+      messages,
+      openAuthModal,
+      ready,
+      t,
+      user,
+    ]
   );
+
+  const send = useCallback(
+    (raw: string) => {
+      void runRequest("chat", raw);
+    },
+    [runRequest]
+  );
+
+  const refresh = useCallback(() => {
+    abortRef.current?.abort();
+    markStreaming(false);
+    answerRef.current = "";
+    setMessages([]);
+    setError(null);
+    setInput("");
+    // Signed-out users should get the automatic diagnosis right after login.
+    diagnosisStartedRef.current = Boolean(user);
+    void runRequest("diagnosis");
+  }, [markStreaming, runRequest, user]);
+
+  // Proactive diagnosis: the first time the drawer opens for a signed-in user
+  // (or right after the auth modal resolves), stream a read of the live page.
+  useEffect(() => {
+    if (!open || !ready || !user) return;
+    if (messages.length > 0 || diagnosisStartedRef.current) return;
+    diagnosisStartedRef.current = true;
+    pinnedRef.current = true;
+    void runRequest("diagnosis");
+  }, [messages.length, open, ready, runRequest, user]);
 
   const lastAssistantId = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -317,9 +443,9 @@ export default function AiAssistantDrawer({
               <div className="flex shrink-0 items-center gap-0.5">
                 <button
                   type="button"
-                  onClick={newChat}
-                  aria-label={t.newChat}
-                  title={t.newChat}
+                  onClick={refresh}
+                  aria-label="Refresh analysis"
+                  title="Refresh analysis"
                   className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/5 hover:text-white"
                 >
                   <svg
@@ -352,26 +478,62 @@ export default function AiAssistantDrawer({
             <div
               ref={listRef}
               className="relative flex-1 space-y-3 overflow-y-auto px-4 py-4"
-              aria-live="polite"
+              aria-live={streaming ? "off" : "polite"}
+              onScroll={() => {
+                const element = listRef.current;
+                if (!element) return;
+                const top = element.scrollTop;
+                const delta = top - lastScrollTopRef.current;
+                lastScrollTopRef.current = top;
+                // A negative delta means the reader deliberately scrolled up;
+                // stop chasing the stream until they return to the bottom.
+                if (delta < -2) {
+                  pinnedRef.current = false;
+                  return;
+                }
+                if (
+                  element.scrollHeight - top - element.clientHeight <
+                  96
+                ) {
+                  pinnedRef.current = true;
+                }
+              }}
             >
               {messages.length === 0 && (
                 <div className="space-y-3">
                   <div className="rounded-2xl rounded-tl-md border border-white/[0.07] bg-white/[0.04] px-3.5 py-3">
-                    <p className="text-[13px] leading-relaxed text-slate-300">
-                      {t.welcome}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {t.quick.map((question) => (
-                      <button
-                        key={question}
-                        type="button"
-                        onClick={() => void send(question)}
-                        className="rounded-full border border-purple-400/25 bg-gradient-to-r from-blue-500/10 to-purple-500/10 px-3 py-1.5 text-[11px] text-slate-300 transition hover:border-purple-400/50 hover:text-white"
-                      >
-                        {question}
-                      </button>
-                    ))}
+                    {ready && !user ? (
+                      <div className="space-y-2.5">
+                        <p className="text-[13px] leading-relaxed text-slate-300">
+                          {t.loginRequired}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => openAuthModal({ mode: "login", lang })}
+                          className="rounded-full border border-purple-400/30 bg-gradient-to-r from-blue-500/15 to-purple-500/15 px-3 py-1.5 text-[11px] font-medium text-purple-100 transition hover:border-purple-400/60 hover:text-white"
+                        >
+                          Sign in for an instant read
+                        </button>
+                      </div>
+                    ) : !streaming && error ? (
+                      <div className="space-y-2.5">
+                        <p className="text-[13px] leading-relaxed text-slate-400">
+                          The live read did not finish.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={refresh}
+                          className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-slate-200 transition hover:border-purple-400/50 hover:text-white"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="flex items-center gap-2 text-[13px] leading-relaxed text-slate-300">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-purple-400 shadow-[0_0_10px_#a855f7]" />
+                        {t.thinking}
+                      </p>
+                    )}
                   </div>
 
                   {(context.indices.length > 0 ||
@@ -437,7 +599,7 @@ export default function AiAssistantDrawer({
                   <div
                     key={message.id}
                     className={`flex items-start gap-2 ${
-                      isUser ? "justify-end" : "justify-start"
+                      isUser ? "justify-end" : "ai-stream-in justify-start"
                     }`}
                   >
                     {!isUser && (
@@ -446,24 +608,31 @@ export default function AiAssistantDrawer({
                       </span>
                     )}
                     <div
-                      className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 ${
+                      className={`max-w-[86%] break-words rounded-2xl px-3.5 py-2.5 ${
                         isUser
                           ? "rounded-tr-md bg-gradient-to-r from-blue-500/25 to-purple-500/30 text-[13px] leading-relaxed text-white"
-                          : "rounded-tl-md border border-white/[0.07] bg-white/[0.04] text-slate-300"
+                          : `rounded-tl-md border border-white/[0.07] bg-white/[0.04] text-slate-300 ${
+                              isStreamingHere ? "ai-stream-glow" : ""
+                            }`
                       }`}
                     >
                       {isUser ? (
                         <p className="whitespace-pre-wrap">{message.content}</p>
                       ) : message.content ? (
-                        <>
-                          <MarkdownText content={message.content} />
-                          {isStreamingHere && (
-                            <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-purple-300 align-middle" />
-                          )}
-                        </>
+                        <MarkdownText
+                          content={message.content}
+                          trailing={
+                            isStreamingHere ? (
+                              <span
+                                aria-hidden
+                                className="ml-0.5 inline-block h-3.5 w-[3px] animate-pulse rounded-full bg-purple-400 align-[-2px] shadow-[0_0_12px_#a855f7]"
+                              />
+                            ) : null
+                          }
+                        />
                       ) : isStreamingHere ? (
                         <p className="flex items-center gap-1.5 text-[12px] text-slate-500">
-                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-purple-400" />
+                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-purple-400 shadow-[0_0_10px_#a855f7]" />
                           {t.thinking}
                         </p>
                       ) : null}
@@ -483,43 +652,58 @@ export default function AiAssistantDrawer({
             )}
 
             <form
-              className="relative flex items-end gap-2 border-t border-white/10 p-3"
+              className="relative border-t border-white/10 p-3"
               onSubmit={(event) => {
                 event.preventDefault();
                 void send(input);
               }}
             >
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder={t.placeholder}
-                rows={2}
-                className="min-h-[44px] flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-purple-400/50 focus:bg-white/[0.06]"
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    void send(input);
-                  }
-                }}
-              />
-              {streaming ? (
-                <button
-                  type="button"
-                  onClick={stop}
-                  className="whitespace-nowrap rounded-xl border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-200 transition hover:bg-rose-500/20"
-                >
-                  {t.stop}
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={!input.trim()}
-                  className="btn-primary whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {t.send}
-                </button>
-              )}
+              <div className="mb-2 flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {QUICK_ACTIONS.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    disabled={streaming}
+                    onClick={() => send(action.prompt)}
+                    className="shrink-0 whitespace-nowrap rounded-full border border-purple-400/25 bg-gradient-to-r from-blue-500/10 to-purple-500/10 px-3 py-1.5 text-[11px] text-slate-300 transition hover:border-purple-400/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-end gap-2">
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  placeholder={t.placeholder}
+                  rows={2}
+                  className="min-h-[44px] flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-purple-400/50 focus:bg-white/[0.06]"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void send(input);
+                    }
+                  }}
+                />
+                {streaming ? (
+                  <button
+                    type="button"
+                    onClick={stop}
+                    className="whitespace-nowrap rounded-xl border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-200 transition hover:bg-rose-500/20"
+                  >
+                    {t.stop}
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!input.trim()}
+                    className="btn-primary whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {t.send}
+                  </button>
+                )}
+              </div>
             </form>
 
             <p className="relative px-4 pb-3 text-center text-[9.5px] leading-relaxed text-slate-600">

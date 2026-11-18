@@ -1,4 +1,11 @@
-import { createElement, type ReactNode } from "react";
+import {
+  Children,
+  cloneElement,
+  createElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 /**
  * Small, dependency-free Markdown renderer for streamed assistant answers.
@@ -12,6 +19,26 @@ function safeHref(raw: string): string | null {
     return href;
   }
   return null;
+}
+
+/** Append an inline node (e.g. the streaming cursor) to the last block. */
+function appendTrailing(block: ReactNode, trailing: ReactNode): ReactNode {
+  if (!isValidElement(block)) return block;
+  const element = block as ReactElement<{ children?: ReactNode }>;
+
+  if (element.type === "ul" || element.type === "ol") {
+    const items = Children.toArray(element.props.children);
+    const last = items.pop();
+    if (last && isValidElement(last)) {
+      const item = last as ReactElement<{ children?: ReactNode }>;
+      items.push(cloneElement(item, {}, item.props.children, trailing));
+      return cloneElement(element, {}, items);
+    }
+    return element;
+  }
+
+  if (element.type === "hr") return element;
+  return cloneElement(element, {}, element.props.children, trailing);
 }
 
 function renderInline(text: string): ReactNode[] {
@@ -30,7 +57,10 @@ function renderInline(text: string): ReactNode[] {
     const token = match[0];
     if (token.startsWith("**") || token.startsWith("__")) {
       nodes.push(
-        <strong key={`b-${key++}`} className="font-semibold text-white">
+        <strong
+          key={`b-${key++}`}
+          className="font-semibold text-purple-200 drop-shadow-[0_0_6px_rgba(168,85,247,0.45)]"
+        >
           {token.slice(2, -2)}
         </strong>
       );
@@ -76,7 +106,13 @@ function renderInline(text: string): ReactNode[] {
   return nodes;
 }
 
-export default function MarkdownText({ content }: { content: string }) {
+export default function MarkdownText({
+  content,
+  trailing,
+}: {
+  content: string;
+  trailing?: ReactNode;
+}) {
   const lines = content.replace(/\r\n?/g, "\n").split("\n");
   const blocks: ReactNode[] = [];
   let list: { ordered: boolean; items: string[] } | null = null;
@@ -90,7 +126,7 @@ export default function MarkdownText({ content }: { content: string }) {
         Tag,
         {
           key: `l-${key++}`,
-          className: `my-1.5 space-y-1 pl-4 text-[12.5px] leading-relaxed text-slate-300 ${
+          className: `ai-block-in my-1.5 space-y-1 pl-4 text-[12.5px] leading-relaxed text-slate-300 ${
             list.ordered ? "list-decimal" : "list-disc"
           } marker:text-purple-400/70`,
         },
@@ -121,8 +157,8 @@ export default function MarkdownText({ content }: { content: string }) {
             key: `h-${key++}`,
             className:
               level <= 2
-                ? "mt-2 text-[13.5px] font-semibold text-white"
-                : "mt-1.5 text-[12.5px] font-semibold text-slate-200",
+                ? "ai-block-in mt-2 text-[13.5px] font-semibold text-white"
+                : "ai-block-in mt-1.5 text-[12.5px] font-semibold text-slate-200",
           },
           renderInline(heading[2])
         )
@@ -152,7 +188,7 @@ export default function MarkdownText({ content }: { content: string }) {
       blocks.push(
         <blockquote
           key={`q-${key++}`}
-          className="my-1.5 border-l-2 border-amber-300/40 py-0.5 pl-2.5 text-[11.5px] leading-relaxed text-amber-100/75"
+          className="ai-block-in my-1.5 border-l-2 border-amber-300/40 py-0.5 pl-2.5 text-[11.5px] leading-relaxed text-amber-100/75"
         >
           {renderInline(quote[1])}
         </blockquote>
@@ -168,13 +204,20 @@ export default function MarkdownText({ content }: { content: string }) {
 
     flushList();
     blocks.push(
-      <p key={`p-${key++}`} className="text-[13px] leading-relaxed text-slate-300">
+      <p
+        key={`p-${key++}`}
+        className="ai-block-in break-words text-[13px] leading-relaxed text-slate-300 [text-wrap:pretty]"
+      >
         {renderInline(line)}
       </p>
     );
   }
 
   flushList();
+
+  if (trailing && blocks.length > 0) {
+    blocks[blocks.length - 1] = appendTrailing(blocks[blocks.length - 1], trailing);
+  }
 
   if (blocks.length === 0) return null;
   return <div className="space-y-1.5">{blocks}</div>;

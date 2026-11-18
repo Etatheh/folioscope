@@ -29,6 +29,27 @@ export type ChatDcaContext = {
   benchmark?: string;
 };
 
+export type ChatSimulatorHolding = {
+  symbol: string;
+  weight: number;
+};
+
+export type ChatSimulatorContext = {
+  mode: "lump" | "dca";
+  period: string;
+  months: number;
+  capital: number;
+  contribution?: number;
+  frequency?: "weekly" | "biweekly" | "monthly";
+  holdings: ChatSimulatorHolding[];
+  invested?: number;
+  finalValue?: number;
+  totalReturn?: number;
+  maxDrawdown?: number;
+  cagr?: number | null;
+  benchmark?: string;
+};
+
 export type ChatFocusedContext = {
   symbol: string;
   name: string;
@@ -58,6 +79,7 @@ export type ChatMarketContext = {
   lang?: Lang;
   indices: ChatIndexContext[];
   dca?: ChatDcaContext | null;
+  simulator?: ChatSimulatorContext | null;
   focused?: ChatFocusedContext | null;
 };
 
@@ -160,6 +182,47 @@ export function normalizeMarketContext(raw: unknown): ChatMarketContext {
     }
   }
 
+  let simulator: ChatSimulatorContext | null = null;
+  if (input.simulator && typeof input.simulator === "object") {
+    const value = input.simulator as Record<string, unknown>;
+    const capital = finite(value.capital);
+    const months = finite(value.months);
+    if (capital !== null && months !== null) {
+      const holdings: ChatSimulatorHolding[] = [];
+      if (Array.isArray(value.holdings)) {
+        for (const item of value.holdings.slice(0, 16)) {
+          if (!item || typeof item !== "object") continue;
+          const holding = item as Record<string, unknown>;
+          const symbol = safeText(holding.symbol, 16);
+          const weight = finite(holding.weight);
+          if (!symbol || weight === null) continue;
+          holdings.push({ symbol, weight: Math.max(0, Math.min(100, weight)) });
+        }
+      }
+      const frequency =
+        value.frequency === "weekly" ||
+        value.frequency === "biweekly" ||
+        value.frequency === "monthly"
+          ? value.frequency
+          : undefined;
+      simulator = {
+        mode: value.mode === "dca" ? "dca" : "lump",
+        period: safeText(value.period, 24) || `${Math.round(months)}M`,
+        months: Math.max(1, Math.min(240, Math.round(months))),
+        capital: Math.max(0, Math.min(1_000_000_000, capital)),
+        contribution: optionalNumber(value.contribution) ?? undefined,
+        frequency,
+        holdings,
+        invested: optionalNumber(value.invested) ?? undefined,
+        finalValue: optionalNumber(value.finalValue) ?? undefined,
+        totalReturn: optionalNumber(value.totalReturn) ?? undefined,
+        maxDrawdown: optionalNumber(value.maxDrawdown) ?? undefined,
+        cagr: optionalNumber(value.cagr),
+        benchmark: safeText(value.benchmark, 40) || undefined,
+      };
+    }
+  }
+
   let focused: ChatFocusedContext | null = null;
   if (input.focused && typeof input.focused === "object") {
     const value = input.focused as Record<string, unknown>;
@@ -200,6 +263,7 @@ export function normalizeMarketContext(raw: unknown): ChatMarketContext {
     lang: input.lang === "zh" ? "zh" : input.lang === "en" ? "en" : undefined,
     indices,
     dca,
+    simulator,
     focused,
   };
 }
@@ -281,6 +345,49 @@ export function formatMarketContext(context: ChatMarketContext, lang: Lang): str
     }
   }
 
+  if (context.simulator) {
+    const s = context.simulator;
+    lines.push(`\n[Current portfolio backtest]`);
+    lines.push(`- Mode: ${s.mode === "dca" ? "DCA" : "Lump sum"}`);
+    lines.push(`- Period: ${s.period} (${s.months} months)`);
+    lines.push(`- Starting capital: $${nf(s.capital, 0)}`);
+    if (s.mode === "dca" && typeof s.contribution === "number") {
+      lines.push(
+        `- Contribution: $${nf(s.contribution, 0)} ${s.frequency ?? "monthly"}`
+      );
+    }
+    if (s.holdings.length) {
+      lines.push(
+        `- Holdings: ${s.holdings
+          .map((holding) => `${holding.symbol} ${nf(holding.weight, 1)}%`)
+          .join(", ")}`
+      );
+    }
+    if (typeof s.invested === "number") {
+      lines.push(`- Invested: $${nf(s.invested, 0)}`);
+    }
+    if (typeof s.finalValue === "number") {
+      lines.push(`- Final value: $${nf(s.finalValue, 0)}`);
+    }
+    if (typeof s.totalReturn === "number") {
+      lines.push(`- Total return: ${pct(s.totalReturn * 100)}`);
+    }
+    if (typeof s.maxDrawdown === "number") {
+      lines.push(`- Max drawdown: -${nf(s.maxDrawdown * 100)}%`);
+    }
+    if (typeof s.cagr === "number") {
+      lines.push(`- CAGR: ${pct(s.cagr * 100)}`);
+    }
+    if (s.benchmark) {
+      lines.push(`- Benchmark: ${s.benchmark}`);
+    }
+    lines.push(
+      s.mode === "dca" && typeof s.invested !== "number"
+        ? "- Backtest results: not available in the current sync"
+        : "- Backtest results: as computed by the live simulator"
+    );
+  }
+
   if (context.focused) {
     const q = context.focused;
     const cur = q.currency ?? "";
@@ -329,10 +436,32 @@ export function formatMarketContext(context: ChatMarketContext, lang: Lang): str
   return lines.join("\n").slice(0, 6_000);
 }
 
+export type ChatPromptMode = "chat" | "diagnosis";
+
+/**
+ * Extra contract for the proactive "instant diagnosis" that runs when the
+ * drawer opens or the refresh action is tapped. It replaces the old generic
+ * welcome menu with a short, data-grounded read of the current page.
+ */
+const DIAGNOSIS_CONTRACT = [
+  "=== INSTANT DIAGNOSIS MODE ===",
+  "The panel just opened or was refreshed. Do not ask the user what they want, do not offer a menu, and never list example questions.",
+  "Immediately diagnose the live page setup using only the data above. Keep the whole answer under 150 words with short paragraphs.",
+  "Use exactly these three bold section labels, each on its own line, in this order:",
+  "**Key Takeaway** — one sentence verdict on the current setup or data.",
+  "**Risk / Concentration Check** — one specific insight grounded strictly in the live page numbers. Never invent, estimate or infer locked, missing or unavailable outputs; if a figure is unavailable, state that it is unavailable.",
+  "**Next Action** — one concrete adjustment the user can make now, or one focused question to explore next.",
+  "No preamble, no tables, no closing summary. Follow the reply language already specified above.",
+].join("\n");
+
 /** The FolioScope AI persona and answer contract. */
-export function buildSystemPrompt(lang: Lang): string {
+export function buildSystemPrompt(
+  lang: Lang,
+  options: { mode?: ChatPromptMode } = {}
+): string {
+  let prompt: string;
   if (lang === "zh") {
-    return [
+    prompt = [
       "你名为 “FolioScope AI”，是一位专业、客观的美股与资产配置分析助手，内嵌在 FolioScope 行情看板中。",
       "请结合下方提供的实时页面数据（美股指数、估值、当前查看标的、定投回测方案）回答用户问题。",
       "要求：使用简洁、结构化的 Markdown 要点（可用 **加粗** 和列表），先给结论，再给依据；不要编造数据，缺失时明确说明。",
@@ -340,16 +469,20 @@ export function buildSystemPrompt(lang: Lang): string {
       "用简体中文回答。",
       `在回答末尾单独一行附上简短合规提示，格式为：“> ${COMPLIANCE_NOTE.zh}”。`,
     ].join("\n");
+  } else {
+    prompt = [
+      'You are "FolioScope AI", a professional and objective US equities and asset-allocation analysis assistant embedded in the FolioScope market dashboard.',
+      "Combine the live page data below (US indices, valuations, focused instrument, current DCA backtest plan) with the user's question.",
+      "Use concise, structured Markdown with **bold** labels and bullet lists. Lead with the conclusion, then the evidence. Never invent missing data; say so explicitly.",
+      "Do not give personalised investment advice, buy/sell instructions or return promises.",
+      "Reply in English.",
+      `End with a separate final line in this exact form: "> ${COMPLIANCE_NOTE.en}"`,
+    ].join("\n");
   }
 
-  return [
-    'You are "FolioScope AI", a professional and objective US equities and asset-allocation analysis assistant embedded in the FolioScope market dashboard.',
-    "Combine the live page data below (US indices, valuations, focused instrument, current DCA backtest plan) with the user's question.",
-    "Use concise, structured Markdown with **bold** labels and bullet lists. Lead with the conclusion, then the evidence. Never invent missing data; say so explicitly.",
-    "Do not give personalised investment advice, buy/sell instructions or return promises.",
-    "Reply in English.",
-    `End with a separate final line in this exact form: "> ${COMPLIANCE_NOTE.en}"`,
-  ].join("\n");
+  return options.mode === "diagnosis"
+    ? `${prompt}\n\n${DIAGNOSIS_CONTRACT}`
+    : prompt;
 }
 
 export function hasComplianceNote(text: string, lang: Lang): boolean {
