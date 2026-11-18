@@ -11,9 +11,14 @@ import {
   getUsMarketSnapshot,
   fetchQuoteBySymbol,
   fetchUsKlines,
+  computeTechnicals,
   type Candle,
   type UsQuote,
 } from "./us-stocks";
+
+// Daily history is fetched deep enough to warm up MA20 / BOLL(20) and to build
+// weekly/monthly aggregates for the detail-page chart tabs.
+const DETAIL_BAR_LIMIT = 900;
 
 export type InstrumentMarket = "us" | "cn" | "asia" | "europe";
 
@@ -90,17 +95,24 @@ export async function getInstrumentDetail(symbol: string): Promise<InstrumentDet
   let bars: Candle[] = [];
   try {
     if (market === "us") {
-      bars = await fetchUsKlines(normalized);
+      bars = await fetchUsKlines(normalized, DETAIL_BAR_LIMIT);
     } else {
       const secid =
         CN_KLINE_SECID[normalized] ??
         INDEX_KLINE_SECID[normalized] ??
         ASIA_KLINE_SECID[normalized] ??
         EUROPE_KLINE_SECID[normalized];
-      if (secid) bars = await fetchKlinesSecid(normalized, secid);
+      if (secid) bars = await fetchKlinesSecid(normalized, secid, DETAIL_BAR_LIMIT);
     }
   } catch {
     // leave empty; the chart area shows an empty state
+  }
+
+  // ETFs and indices legitimately have no P/E or market cap, but they still
+  // have daily bars. Derive MA/RSI/MACD here so a missing valuation can never
+  // turn the technical block into "indicators unavailable".
+  if (bars.length >= 5 && !quote.tech) {
+    quote = { ...quote, tech: computeTechnicals(bars) };
   }
 
   const currency =

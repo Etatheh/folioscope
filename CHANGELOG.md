@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-11-18 - 股票详情页图表恢复：5D/日/周/月、指标切换、HUD 与 ETF 指标修复（feat / fix）
+
+1. **日期与版本主题**：2026-11-18 — 将此前写在 `106f5cf`、但未合并到当前 `main` 的股票详情页图表升级恢复到当前基线：四周期切换、MA/BOLL 叠加、VOL/RSI/MACD 副图、固定 HUD、十字光标与触摸浏览，并保留 ETF 技术指标修复。
+2. **核心改动内容**：
+   - **周期**：`5D | Daily | Weekly | Monthly`；5D 使用东方财富 trends2 的 5 日 1 分钟数据（服务端重采样 15 分钟），按隔夜跳空识别交易日，绘制价格 + VWAP、4 条交易日分隔线、5 日前收盘基准线、左价格/右涨跌幅轴与成交量；Daily/Weekly/Monthly 使用现有 K 线组件，900 根日线聚合成周/月。
+   - **ETF 修复**：`getInstrumentDetail` 拉取 900 根日线，若 quote 无技术指标则 `computeTechnicals` 补齐；QQQ/SOXL 等无 P/E、无市值时顶部显示 `—`，但 MA/RSI/MACD 不再 unavailable。
+   - **指标**：主图 MA(5/10/20) 与 BOLL(20,2) 开关；VOL 区顶部 VOL/RSI/MACD 标签，RSI(14)、MACD(12,26,9) 共用原副图高度；5D 同样支持副图。
+   - **HUD/十字光标**：固定 HUD 展示日期/时间、O/H/L/C、涨跌幅、Vol 与 5D 均价，默认最新 K 线；横纵淡色虚线、右侧价格/涨跌幅 pill、底部日期 pill；绑定鼠标/触摸事件，松手恢复默认。
+   - **验证结果**：`tsc --noEmit`、本次涉及文件 ESLint 通过；`/api/markets/intraday?symbol=QQQ` 返回 5 个交易日；QQQ 页面显示 MA5/RSI14/MACD 且无 `Technical indicators unavailable`；Chrome 实测 5D、Daily、Weekly、Monthly、BOLL、RSI 切换正常。
+3. **涉及的核心文件路径**：`components/PriceChart.tsx`、`components/chart/indicators.ts`（新增）、`lib/intraday.ts`（新增）、`app/api/markets/intraday/route.ts`（新增）、`lib/instruments.ts`、`app/dashboard/markets/[symbol]/page.tsx`、`lib/i18n.ts`（仅英文标题/副标题）、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：
+   - 保留详情页暗黑 K 线视觉：`#34d399` / `#fb7185` 蜡烛、MA `#60a5fa`/`#a78bfa`/`#fbbf24`、圆角卡片与既有右侧价格轴。
+   - 5D 主价格线使用靛蓝/天蓝渐变 + 微弱面积填充，VWAP 琥珀黄；不要改成普通双线面积图。
+   - `/api/markets/intraday` 必须与详情页权限一致：14 只精选与 `INDEX_SYMBOLS` 公开，其余 Pro/Admin。
+   - ETF/指数即使无 P/E、无市值，也必须根据日线计算技术指标；新增图表控件按 English-first 只使用英文，既有中文文案不改。
+
+---
+
 ## 2026-11-18 - Pricing FAQ 市场数据来源披露文案调整（copy / pricing）
 
 1. **日期与版本主题**：2026-11-18 — 更新 `/pricing` 页 FAQ 第二条「Where does the market data come from?」的回答文案，改为通用第三方数据源披露与免责声明表述，不再点名具体供应商。

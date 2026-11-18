@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
 import AiAssistantDrawer from "@/components/ai/AiAssistantDrawer";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import LangToggle from "@/components/LangToggle";
@@ -18,13 +17,11 @@ import {
   fmtPrice,
   fmtVolume,
 } from "@/components/market-ui";
-import { buildChartSeries } from "@/lib/us-stocks";
 import type { ChatMarketContext } from "@/lib/chat";
 import { getInstrumentDetail } from "@/lib/instruments";
 import { getViewerPlan, isSymbolUnlocked } from "@/lib/access";
 import { isFeaturedSymbol } from "@/lib/watchlist";
-import { getSessionUser } from "@/lib/server/auth-service";
-import { COOKIE_NAME } from "@/lib/server/auth";
+import { getServerViewer } from "@/lib/server/viewer";
 import { dict, parseLang } from "@/lib/i18n";
 
 export async function generateMetadata({
@@ -64,14 +61,7 @@ export default async function MarketDetailPage({
   const tx = dict[lang].detail;
   const tm = dict[lang].markets;
 
-  const store = await cookies();
-  const token = store.get(COOKIE_NAME)?.value;
-  let viewer = null;
-  try {
-    viewer = token ? await getSessionUser(token) : null;
-  } catch {
-    viewer = null;
-  }
+  const viewer = await getServerViewer();
   const plan = getViewerPlan(viewer);
 
   const detail = await getInstrumentDetail(symbol.toUpperCase());
@@ -170,7 +160,6 @@ export default async function MarketDetailPage({
     );
   }
 
-  const series = bars.length >= 2 ? buildChartSeries(bars, 60) : null;
   const valuation = quote.valuation;
 
   const chatContext: ChatMarketContext = {
@@ -340,13 +329,15 @@ export default async function MarketDetailPage({
               <h2 className="font-semibold text-white">{tx.dailyKline}</h2>
               <p className="mt-1 text-xs text-slate-500">{tx.klineSubtitle}</p>
             </div>
-            <span className="rounded-lg border border-purple-400/20 bg-purple-500/5 px-3 py-1.5 text-xs text-slate-400">
-              {tx.daily}
-            </span>
           </div>
           <div className="mt-4">
-            {series ? (
-              <PriceChart series={series} lang={lang} />
+            {bars.length >= 2 ? (
+              <PriceChart
+                bars={bars}
+                symbol={quote.symbol}
+                lang={lang}
+                fallbackPrevClose={quote.prevClose}
+              />
             ) : (
               <p className="rounded-xl border border-white/5 bg-white/[0.02] p-6 text-center text-sm text-slate-500">
                 {tx.noKline}
