@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     q: "Where does the market data come from?",
-    a: "Quotes come from Tencent and Eastmoney public endpoints, index valuations from Danjuan. Data is real-time or delayed public data.",
+    a: "Market quotes, historical prices, and valuation metrics are aggregated from established third-party financial data providers. Depending on the exchange and asset class, quotes may be delayed or reflect end-of-day pricing. All market data is provided strictly for informational and backtesting purposes only and does not constitute financial advice.",
   },
   {
     q: "Can I cancel anytime?",
