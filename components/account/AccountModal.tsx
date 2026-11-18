@@ -19,6 +19,7 @@ import {
 } from "@/lib/access";
 import { dict, type Lang } from "@/lib/i18n";
 import { logout, type SessionUser } from "@/lib/auth";
+import { apiFetch } from "@/lib/client-api";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { showToast } from "@/components/ui/ToastHost";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -124,6 +125,9 @@ export default function AccountModal({
   );
   const [credits, setCredits] = useState<Credits | null>(null);
   const [profileCredits, setProfileCredits] = useState<number | null>(null);
+  const [creemCustomerId, setCreemCustomerId] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [manageBusy, setManageBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -144,7 +148,7 @@ export default function AccountModal({
       try {
         const { data } = await supabase
           .from("profiles")
-          .select("full_name,email,avatar_url,tier,ai_credits")
+          .select("*")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -152,14 +156,24 @@ export default function AccountModal({
           if (typeof data.full_name === "string") setNickname(data.full_name);
           if (typeof data.email === "string") setProfileEmail(data.email);
           if (typeof data.avatar_url === "string") setAvatarUrl(data.avatar_url);
+          const profileTier = data.tier ?? data.plan_tier;
           if (
-            data.tier === "pro" ||
-            data.tier === "free" ||
-            data.tier === "admin"
+            profileTier === "pro" ||
+            profileTier === "free" ||
+            profileTier === "admin"
           ) {
-            setTier((prev) => highestTier(prev, data.tier));
+            setTier((prev) => highestTier(prev, profileTier));
           }
           if (typeof data.ai_credits === "number") setProfileCredits(data.ai_credits);
+          if (
+            typeof data.creem_customer_id === "string" &&
+            data.creem_customer_id.trim()
+          ) {
+            setCreemCustomerId(data.creem_customer_id.trim());
+          }
+          if (typeof data.subscription_status === "string") {
+            setSubscriptionStatus(data.subscription_status);
+          }
         }
       } catch {
         // profiles table unavailable: keep the session values
@@ -312,6 +326,31 @@ export default function AccountModal({
       setProfileError(t.errorProfile);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    if (manageBusy) return;
+    setManageBusy(true);
+    try {
+      const response = await apiFetch("/api/portal", { method: "POST" });
+      const data = (await response.json().catch(() => ({}))) as {
+        ok?: boolean;
+        url?: string;
+      };
+      if (response.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      showToast(
+        response.status === 400
+          ? "No active subscription found."
+          : "Unable to open the billing portal. Please try again."
+      );
+    } catch {
+      showToast("Unable to open the billing portal. Please try again.");
+    } finally {
+      setManageBusy(false);
     }
   };
 
@@ -583,6 +622,24 @@ export default function AccountModal({
               </span>
             )}
           </div>
+
+          {(isPro || creemCustomerId) && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={handleManageSubscription}
+                disabled={manageBusy}
+                className="inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3.5 py-2.5 text-[11px] font-semibold text-emerald-200 transition hover:border-emerald-400/50 hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {manageBusy ? "Opening billing portal…" : "Manage Subscription"}
+              </button>
+              {subscriptionStatus === "canceled" && (
+                <p className="mt-1.5 text-center text-[10px] text-amber-300/80">
+                  Canceled — Pro stays active until the end of the current billing period.
+                </p>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Danger zone */}

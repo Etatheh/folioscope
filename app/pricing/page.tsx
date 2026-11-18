@@ -2,9 +2,7 @@ import Link from "next/link";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import Navbar from "@/components/Navbar";
 import SiteFooter from "@/components/SiteFooter";
-import LegalInlineLinks from "@/components/legal/LegalInlineLinks";
-import UpgradeButton from "@/components/UpgradeButton";
-import { PLANS } from "@/lib/plans";
+import PricingPlans from "@/components/pricing/PricingPlans";
 
 export const metadata = {
   title: "Pricing",
@@ -15,7 +13,7 @@ export const metadata = {
 const faqs = [
   {
     q: "How do I pay for Pro?",
-    a: "Pro subscriptions are processed by Creem, our authorized Merchant of Record. “Upgrade to Pro” opens the hosted checkout; if billing is not configured yet, the button activates a demo Pro preview so you can explore every feature.",
+    a: "Pro subscriptions are processed by Creem, our authorized Merchant of Record. “Upgrade to Pro” opens the secure Creem hosted checkout, where you can pay by card. You are returned to FolioScope once payment completes.",
   },
   {
     q: "Where does the market data come from?",
@@ -48,45 +46,7 @@ export default function PricingPage() {
           </p>
         </div>
 
-        <div className="mt-14 grid gap-5 md:grid-cols-2">
-          {PLANS.map((plan) => (
-            <article
-              key={plan.id}
-              className={`glass rounded-2xl p-8 ${
-                plan.highlight
-                  ? "border-purple-400/40 ring-1 ring-purple-400/20"
-                  : ""
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">{plan.name}</h2>
-                {plan.highlight && (
-                  <span className="rounded-full bg-gradient-to-r from-amber-400/20 to-purple-400/20 px-2.5 py-1 text-[10px] text-amber-300">
-                    Recommended
-                  </span>
-                )}
-              </div>
-              <p className="mt-4 text-3xl font-bold text-white">
-                {plan.price}
-                <span className="text-sm font-normal text-slate-500">
-                  {" "}
-                  {plan.period}
-                </span>
-              </p>
-              <p className="mt-1 text-xs text-slate-500">{plan.tagline}</p>
-              <ul className="mt-6 space-y-2.5 text-sm text-slate-400">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex gap-2">
-                    <span className="text-emerald-400">✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <UpgradeButton planId={plan.id} />
-              <LegalInlineLinks className="mt-3" />
-            </article>
-          ))}
-        </div>
+        <PricingPlans />
 
         <section className="mt-16">
           <h2 className="text-xl font-semibold text-white">FAQ</h2>
