@@ -3,7 +3,7 @@
 import { Children, useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import type { Lang } from "@/lib/i18n";
-import ProductPreview from "./ProductPreview";
+import ProductPreview, { WorkspacePreview } from "./ProductPreview";
 import { Reveal } from "@/components/ui/Reveal";
 import styles from "./landing.module.css";
 
@@ -16,7 +16,7 @@ export function TiltPreview({ lang }: { lang: Lang }) {
   const y = useTransform(scrollYProgress, [0, 1], [32, 0]);
   return <div ref={ref} className={styles.perspective}><Reveal delay={0.68}>
     <motion.div style={reduced ? {} : { rotateX, scale, y, transformOrigin: "center top" }}>
-      <ProductPreview lang={lang} />
+      <WorkspacePreview lang={lang} />
     </motion.div>
   </Reveal></div>;
 }
@@ -97,17 +97,29 @@ export function ResearchStory({ lang }: { lang: Lang }) {
   const steps = zh ? [
     ["从全球视野开始。", "将美股、欧洲和亚太市场汇聚在同一个工作空间，结合技术指标与估值，发现值得深入研究的标的。"],
     ["让历史检验你的想法。", "配置组合权重，比较一次性投入与定投策略。用长达 10 年的历史数据，对照标普 500，理解收益与回撤。"],
-    ["从财报中提炼重点。", "借助 DeepSeek AI 梳理财报、估值与风险，将市场观察转化为更清晰的研究思路。"],
+    ["从财报中提炼重点。", "借助 FolioScope AI 梳理财报、估值与风险，将市场观察转化为更清晰的研究思路。"],
   ] : [
     ["Start with the bigger picture.", "Bring U.S., European and Asia-Pacific markets into one workspace. Read technical indicators and valuations to find what deserves a closer look."],
     ["Put your thesis through time.", "Set your weights. Compare lump sum and DCA strategies across up to 10 years of history, benchmarked against the S&P 500."],
-    ["Find the signal in the filings.", "Explore financial reports, valuations and risks with DeepSeek AI. Turn market observations into a clearer research perspective."],
+    ["Find the signal in the filings.", "Explore financial reports, valuations and risks with FolioScope AI. Turn market observations into a clearer research perspective."],
   ];
   useEffect(() => {
     const nodes = ref.current?.querySelectorAll<HTMLElement>("[data-step]");
     if (!nodes) return;
+    const visible = new Set<HTMLElement>();
     const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) if (entry.isIntersecting) setActive(Number((entry.target as HTMLElement).dataset.step));
+      for (const entry of entries) {
+        const node = entry.target as HTMLElement;
+        if (entry.isIntersecting) visible.add(node); else visible.delete(node);
+      }
+      const closest = [...visible].sort((a, b) => {
+        const distance = (node: HTMLElement) => {
+          const rect = node.getBoundingClientRect();
+          return Math.abs(rect.top + rect.height / 2 - window.innerHeight / 2);
+        };
+        return distance(a) - distance(b);
+      })[0];
+      if (closest) setActive(Number(closest.dataset.step));
     }, { rootMargin: "-35% 0px -40% 0px", threshold: 0 });
     nodes.forEach((node) => observer.observe(node));
     return () => observer.disconnect();

@@ -22,7 +22,7 @@ export const metadata = {
 const features: { icon: IconName; en: [string, string]; zh: [string, string] }[] = [
   { icon: "us", en: ["US markets, front and center", "Real-time US indices and stocks — Dow, Nasdaq, S&P 500 and Nasdaq 100 — with daily candlesticks and technical indicators."], zh: ["美股行情，尽在眼前", "观察道琼斯、纳斯达克、标普 500 与纳斯达克 100 等美股指数和个股，结合日 K 线与技术指标。"] },
   { icon: "backtest", en: ["Backtest your perspective", "Compare portfolio and DCA strategies across up to 10 years of historical daily data, benchmarked against the S&P 500."], zh: ["历史回测与定投模拟", "配置股票与权重，使用长达 10 年的历史日线回测，对照标普 500，比较一次性投入与定投策略。"] },
-  { icon: "ai", en: ["DeepSeek AI research", "Explore financial reports, market summaries and valuation breakdowns with an AI research analyst."], zh: ["DeepSeek AI 财报解读", "借助 AI 获取市场摘要、估值拆解、财报重点与金融研究洞察。"] },
+  { icon: "ai", en: ["FolioScope AI research", "Explore financial reports, market summaries and valuation breakdowns with an AI research analyst."], zh: ["FolioScope AI 财报解读", "借助 AI 获取市场摘要、估值拆解、财报重点与金融研究洞察。"] },
   { icon: "globe", en: ["Multi-market macro view", "Track European and Asia-Pacific indices alongside U.S. equities in one unified workspace."], zh: ["多市场宏观视野", "在统一的工作空间，追踪美股、欧洲和亚太市场指数。"] },
   { icon: "indicators", en: ["Indicators & valuations", "Spot overbought levels and historical valuation extremes at a glance."], zh: ["指标与估值", "直观观察超买水平与历史估值极值。"] },
   { icon: "watchlist", en: ["Cloud Watchlist Sync", "Save custom stock pools and backtest presets in the cloud, synced seamlessly across devices."], zh: ["云端自选同步", "将自选股票池和回测预设保存在云端，跨设备同步研究进度。"] },

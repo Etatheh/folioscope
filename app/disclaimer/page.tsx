@@ -49,8 +49,8 @@ export default function DisclaimerPage() {
       <h2>AI-Generated Content & Market Data Accuracy</h2>
       <p>
         Automated market commentary and financial report summaries on FolioScope
-        are generated using third-party large language models (including
-        DeepSeek) based on publicly available corporate disclosures. Artificial
+        are generated through FolioScope AI using third-party large language
+        models based on publicly available corporate disclosures. Artificial
         intelligence models can misinterpret numerical tables, omit material
         context, or produce inaccurate summaries. Furthermore, market data feeds
         covering U.S., European, and Asia-Pacific equities may be delayed,

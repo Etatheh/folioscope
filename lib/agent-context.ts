@@ -229,7 +229,7 @@ export function localAnalyze(
         "• 技术面扫描：「RSI」「超买」",
         "• 估值：「估值」「PE」",
         "",
-        "想让我更聪明地自由对话？在项目根目录新建 .agent-key 文件，填入 DeepSeek API Key 即可自动切换为 AI 模式。",
+        "想让我更聪明地自由对话？在项目根目录新建 .agent-key 文件，填入 FolioScope AI API Key 即可自动切换为 AI 模式。",
       ].join("\n")
     : [
         "I'm the built-in analyst (no API key needed). I can:",
@@ -238,7 +238,7 @@ export function localAnalyze(
         "• Technical scan: 'RSI' or 'overbought'",
         "• Valuations: 'valuation' or 'PE'",
         "",
-        "Want free-form AI answers? Create a .agent-key file in the project root with your DeepSeek API key.",
+        "Want free-form AI answers? Create a .agent-key file in the project root with your FolioScope AI API key.",
       ].join("\n");
 
   if (!q) return help;

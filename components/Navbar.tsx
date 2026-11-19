@@ -21,7 +21,7 @@ export default function Navbar({ lang = "en" }: { lang?: Lang }) {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 animate-fade-in opacity-0-start">
-      <nav className="glass mx-4 mt-4 rounded-2xl px-6 py-4 md:mx-auto md:max-w-5xl">
+      <nav className="mx-4 mt-4 rounded-2xl border border-white/10 bg-[#0b0d17]/95 px-6 py-4 shadow-xl shadow-black/20 backdrop-blur-md md:mx-auto md:max-w-5xl">
         <div className="flex items-center justify-between gap-4">
 
           <Link

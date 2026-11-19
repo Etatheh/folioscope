@@ -85,7 +85,7 @@ export default function PrivacyPage() {
           global tax compliance.
         </li>
         <li>
-          <strong>DeepSeek:</strong> Processes public financial report text and
+          <strong>FolioScope AI service providers:</strong> Process public financial report text and
           ticker queries via API to generate automated research summaries. We do
           not transmit your personal identity or email address in AI
           summarization prompts.

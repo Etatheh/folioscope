@@ -77,7 +77,7 @@ export default function AgentChat({ lang }: { lang: Lang }) {
             <div>
               <p className="text-sm font-semibold text-white">{t.title}</p>
               <p className="text-[11px] text-slate-500">
-                {mode === "llm" ? "DeepSeek · " : ""}
+                {mode === "llm" ? "FolioScope AI · " : ""}
                 {usage ? t.quota(usage.remaining, usage.limit) : t.subtitle}
               </p>
             </div>

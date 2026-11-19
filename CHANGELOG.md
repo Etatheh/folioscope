@@ -6,6 +6,15 @@
 
 ---
 
+## 2026-11-19 - Hero 工作台全景与 FolioScope AI 文案（style / copy）
+
+1. **日期与版本主题**：2026-11-19 — 首页预览去重，统一 AI 品牌展示。
+2. **核心改动内容**：Hero 改为无 Tab 的组合趋势、指标卡及 AI 摘要全景；下方保留三段式点击与滚动联动；导航栏采用 95% 深色背景、模糊与细边框。用户可见 AI 文案统一为 FolioScope AI，第三方服务披露保留，不改 API 配置。
+3. **涉及的核心文件路径**：`components/landing/`、`components/Navbar.tsx`、`components/AgentChat.tsx`、`lib/agent-context.ts`、`lib/i18n.ts`、`app/page.tsx`、`app/disclaimer/page.tsx`、`app/privacy/page.tsx`、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：保留业务图表、鉴权、支付、路由、模型配置与减少动态效果降级；全景数值明确标注示例；只发布本次页面及文案修改，其他本地业务改动不纳入。
+
+---
+
 ## 2026-11-19 - 首页流式交互与统一入场动效（feat / style）
 
 1. **日期与版本主题**：2026-11-19 — FolioScope 首页升级为暗色金融 SaaS 流式界面，统一首页与看板视图入场节奏。

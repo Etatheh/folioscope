@@ -12,6 +12,18 @@
 .previewTop { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid #ffffff09; font-size: .875rem; }
 .demoLabel { color: #64748b; font-size: .75rem; text-align: right; }
 .previewBody { display: flex; }
+.workspaceSidebar { display: flex; flex-direction: column; width: 10rem; flex-shrink: 0; padding: 2rem 1rem; border-right: 1px solid #ffffff09; }
+.workspaceSidebar > span { padding: .8rem; color: #64748b; font-size: .875rem; }
+.workspaceSidebar .workspaceSelected { color: #ddd6fe; background: #a78bfa12; border-radius: .5rem; }
+.workspaceContent { flex: 1; min-width: 0; padding: 1.75rem; }
+.workspaceHeading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.75rem; }
+.workspaceGrid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 1.25rem; }
+.workspaceChart { min-width: 0; padding: 1.25rem; border: 1px solid #ffffff09; border-radius: .75rem; background: #05070d33; }
+.workspaceLegend { display: flex; gap: 1rem; margin-top: 1rem; color: #64748b; font-size: .75rem; }
+.workspaceLegend span { display: inline-flex; align-items: center; gap: .5rem; }
+.workspaceLegend i { display: inline-block; width: .4rem; height: .4rem; border-radius: 50%; }
+.workspaceMetrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #ffffff09; }
+.workspaceReport { padding: 1.25rem; border: 1px solid #a78bfa20; border-radius: .75rem; background: linear-gradient(150deg, #a78bfa09, transparent); }
 .previewSidebar { width: 12rem; flex-shrink: 0; display: flex; flex-direction: column; padding: 2rem 1.25rem; border-right: 1px solid #ffffff09; }
 .previewSidebar button { text-align: left; padding: .8rem; color: #94a3b8; font-size: .875rem; border-radius: .5rem; }
 .previewSidebar .sideActive { background: #a78bfa12; color: #ddd6fe; }
@@ -50,11 +62,19 @@
 .compact .demoPanel { min-height: 26rem; }
 .principles { display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap; padding: 1.5rem; color: #64748b; font-size: .875rem; }
 @media (max-width: 900px) {
+  .workspaceSidebar { display: none; }
   .feature { flex-basis: calc((100% - 20px) / 2); }
   .story { gap: 2rem; grid-template-columns: .9fr 1.1fr; }
   .previewSidebar { width: 10rem; }
 }
 @media (max-width: 640px) {
+  .workspaceContent { padding: 1rem; }
+  .workspaceHeading { align-items: flex-start; }
+  .workspaceHeading > span { display: none; }
+  .workspaceGrid { grid-template-columns: minmax(0, 1fr); }
+  .workspaceChart { padding: 1rem; }
+  .workspaceMetrics { gap: .5rem; }
+  .workspaceMetrics p:last-child { font-size: 1rem; }
   .hero { padding-top: 9rem; }
   .section { padding-top: 4rem; padding-bottom: 4rem; }
   .previewSidebar { display: none; }
