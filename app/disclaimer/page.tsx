@@ -15,7 +15,7 @@ export default function DisclaimerPage() {
         FolioScope (
         <a href={SITE_URL}>{SITE_URL}</a>) is a
         quantitative data visualization and historical portfolio backtesting
-        software platform operated by Yibo Gui. All market charts, historical
+        software platform operated by FolioScope. All market charts, historical
         price series, Dollar-Cost Averaging (DCA) simulations, portfolio
         allocation metrics, and automated financial summaries provided on
         FolioScope are strictly for informational, educational, and personal

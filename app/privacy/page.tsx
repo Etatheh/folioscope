@@ -12,8 +12,8 @@ export default function PrivacyPage() {
     <LegalPage title="Privacy Policy">
       <h2>1. Overview</h2>
       <p>
-        FolioScope (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;),
-        operated by Yibo Gui at{" "}
+        FolioScope (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), operated
+        at{" "}
         <a href={SITE_URL}>{SITE_URL}</a>, respects
         your privacy and is committed to protecting your personal data. This
         Privacy Policy explains what information we collect, how we use it, and

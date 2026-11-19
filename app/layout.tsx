@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  authors: [{ name: "Yibo Gui" }],
-  creator: "Yibo Gui",
+  authors: [{ name: "FolioScope" }],
+  creator: "FolioScope",
   openGraph: {
     type: "website",
     siteName: SITE_NAME,

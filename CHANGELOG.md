@@ -6,6 +6,16 @@
 
 ---
 
+## 2026-11-19 - 法律页与站点元数据责任主体统一为 FolioScope（copy / legal）
+
+1. **日期与版本主题**：2026-11-19 — 隐私政策、服务条款、免责声明及站点元数据中的个人主体 “Yibo Gui” 统一替换为 FolioScope。
+2. **核心改动内容**：`/privacy` 的运营主体表述改为 `operated at <SITE_URL>`；`/terms` 删除接受条款中的个人运营者短语、知识产权归属改为 FolioScope、责任限制删除重复主语；`/disclaimer` 运营主体改为 FolioScope；根布局 `metadata.authors` / `metadata.creator` 改为 FolioScope。
+3. **涉及的核心文件路径**：`app/privacy/page.tsx`、`app/terms/page.tsx`、`app/disclaimer/page.tsx`、`app/layout.tsx`、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：仅文案与元数据变更；保留法律页布局、玻璃拟态样式、路由与联系邮箱配置；英文文案保持无 CJK 字符；不触碰鉴权、支付、图表与权限逻辑。验证：`npx tsc --noEmit`、`npx next build`。
+
+---
+
+
 ## 2026-11-19 - Hero 工作台全景与 FolioScope AI 文案（style / copy）
 
 1. **日期与版本主题**：2026-11-19 — 首页预览去重，统一 AI 品牌展示。

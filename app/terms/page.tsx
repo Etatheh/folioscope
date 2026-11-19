@@ -13,8 +13,8 @@ export default function TermsPage() {
       <h2>1. Acceptance of Terms</h2>
       <p>
         By accessing or using FolioScope (
-        <a href={SITE_URL}>{SITE_URL}</a>), operated by Yibo Gui, creating an
-        account, or subscribing to a paid plan,
+        <a href={SITE_URL}>{SITE_URL}</a>), creating an account, or subscribing
+        to a paid plan,
         you agree to be bound by these Terms of Service and our Financial &
         Backtesting Disclaimer. If you do not agree to these terms, you must
         discontinue use of the service.
@@ -96,7 +96,7 @@ export default function TermsPage() {
       <p>
         All software code, user interface designs, proprietary visualization
         layouts, and branding associated with FolioScope are the exclusive
-        property of Yibo Gui. Underlying market prices and corporate filings
+        property of FolioScope. Underlying market prices and corporate filings
         remain the property of their respective exchanges and data providers.
       </p>
 
@@ -104,8 +104,8 @@ export default function TermsPage() {
       <p>
         FolioScope is provided on an &quot;AS IS&quot; and &quot;AS
         AVAILABLE&quot; basis without warranties of any kind, either express or
-        implied. To the maximum extent permitted by applicable law, Yibo Gui and
-        FolioScope shall not be liable for any direct, indirect, incidental,
+        implied. To the maximum extent permitted by applicable law, FolioScope
+        shall not be liable for any direct, indirect, incidental,
         consequential, or financial losses—including trading losses, lost
         profits, or loss of data—arising out of your use of, or inability to use,
         the platform.
