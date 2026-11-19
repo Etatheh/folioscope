@@ -13,13 +13,14 @@ import { SITE_DESCRIPTION } from "@/lib/site";
 import { TiltPreview, FeatureRail, ResearchStory } from "@/components/landing/LandingMotion";
 import { Reveal, StaggerGroup } from "@/components/ui/Reveal";
 import styles from "@/components/landing/landing.module.css";
+import FeatureMicroUI from "@/components/landing/FeatureMicroUI";
 
 export const metadata = {
   title: { absolute: "FolioScope — Quantitative Market Research" },
   description: SITE_DESCRIPTION,
 };
 
-const features: { icon: IconName; en: [string, string]; zh: [string, string] }[] = [
+const featureContent: { icon: IconName; en: [string, string]; zh: [string, string] }[] = [
   { icon: "us", en: ["US markets, front and center", "Real-time US indices and stocks — Dow, Nasdaq, S&P 500 and Nasdaq 100 — with daily candlesticks and technical indicators."], zh: ["美股行情，尽在眼前", "观察道琼斯、纳斯达克、标普 500 与纳斯达克 100 等美股指数和个股，结合日 K 线与技术指标。"] },
   { icon: "backtest", en: ["Backtest your perspective", "Compare portfolio and DCA strategies across up to 10 years of historical daily data, benchmarked against the S&P 500."], zh: ["历史回测与定投模拟", "配置股票与权重，使用长达 10 年的历史日线回测，对照标普 500，比较一次性投入与定投策略。"] },
   { icon: "ai", en: ["FolioScope AI research", "Explore financial reports, market summaries and valuation breakdowns with an AI research analyst."], zh: ["FolioScope AI 财报解读", "借助 AI 获取市场摘要、估值拆解、财报重点与金融研究洞察。"] },
@@ -27,6 +28,8 @@ const features: { icon: IconName; en: [string, string]; zh: [string, string] }[]
   { icon: "indicators", en: ["Indicators & valuations", "Spot overbought levels and historical valuation extremes at a glance."], zh: ["指标与估值", "直观观察超买水平与历史估值极值。"] },
   { icon: "watchlist", en: ["Cloud Watchlist Sync", "Save custom stock pools and backtest presets in the cloud, synced seamlessly across devices."], zh: ["云端自选同步", "将自选股票池和回测预设保存在云端，跨设备同步研究进度。"] },
 ];
+
+const features = ["ai", "globe", "indicators", "backtest", "us", "watchlist"].map(icon => featureContent.find(feature => feature.icon === icon)!);
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {
   const { lang: rawLang } = await searchParams;
@@ -55,10 +58,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
           <Reveal inherit as="p" className="text-sm tracking-widest text-violet-300">{zh ? "你的研究工具箱" : "THE RESEARCH TOOLKIT"}</Reveal>
           <Reveal inherit as="h2" className={styles.sectionTitle}>{zh ? "从市场全景，到每一个细节。" : "The whole market. The finer details."}</Reveal>
           <Reveal inherit>
-          <FeatureRail lang={lang}>{features.map((f, i) => <article key={f.icon} className={styles.feature}>
+          <FeatureRail lang={lang}>{features.map(f => <article key={f.icon} className={`group ${styles.feature}`}>
             <span className={styles.featureIcon}><Icon name={f.icon} className="h-6 w-6" /></span>
-            <div className={styles.featureArt} aria-hidden="true">{[35, 55, 43, 72, 60, 88, 77, 100].map((height, j) => <span key={j} style={{ height: `${Math.max(20, height - (i % 3) * (j % 2) * 12)}%` }} />)}</div>
-            <h3 className="text-xl font-semibold tracking-tight text-white">{f[lang][0]}</h3>
+            <FeatureMicroUI kind={f.icon} />
+            <h3 className="min-h-14 text-xl leading-7 font-semibold tracking-tight text-white">{f[lang][0]}</h3>
             <p className="mt-3 text-base leading-7 text-slate-400">{f[lang][1]}</p>
           </article>)}</FeatureRail>
           </Reveal>
