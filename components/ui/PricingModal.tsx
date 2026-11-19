@@ -41,7 +41,7 @@ const CYCLE_COPY: Record<
   BillingCycle,
   { price: string; period: string; label: string; note: string }
 > = {
-  monthly: { price: "$9", period: "/ month", label: "Monthly", note: "$9/mo" },
+  monthly: { price: "$9.90", period: "/ month", label: "Monthly", note: "$9.90/mo" },
   yearly: {
     price: "$79",
     period: "/ year",

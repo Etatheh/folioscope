@@ -29,7 +29,7 @@ export const PLANS: Plan[] = [
   {
     id: "pro",
     name: "Pro",
-    price: "$9",
+    price: "$9.90",
     period: "/ month",
     tagline: "Full-market search, multi-market data & AI reports",
     highlight: true,
@@ -45,4 +45,4 @@ export const PLANS: Plan[] = [
   },
 ];
 
-export const PRO_PRICE = "$9/month";
+export const PRO_PRICE = "$9.90/month";

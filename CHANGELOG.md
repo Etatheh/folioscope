@@ -6,6 +6,15 @@
 
 ---
 
+## 2026-11-19 - 首页流式交互与统一入场动效（feat / style）
+
+1. **日期与版本主题**：2026-11-19 — FolioScope 首页升级为暗色金融 SaaS 流式界面，统一首页与看板视图入场节奏。
+2. **核心改动内容**：新增 3D 展平产品预览、原生 Scroll Snap 功能轨道（触控、鼠标拖拽、按钮和键盘）、Sticky 研究演示；通用 Reveal / StaggerGroup 使用 SSR 隐藏初态、0.24s 延迟、0.8s 缓动与 0.11s 错落；示例趋势使用 33 点单调三次贝塞尔、克制渐变填充、SVG 裁切渐显与终点呼吸光点，Tab 切换重播。保留预览中的 Pro 月价 $9.90，并同步套餐源与弹窗显示。
+3. **涉及的核心文件路径**：`app/page.tsx`、`app/dashboard/page.tsx`（仅外层入场容器）、`components/dashboard/DashboardShell.tsx`、`components/landing/`、`components/ui/Reveal.tsx`、`components/ui/reveal.module.css`、`lib/plans.ts`、`components/ui/PricingModal.tsx`（仅月价显示）、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：保留 /dashboard、/register、/pricing 和既有鉴权、OAuth、Creem 请求流程；仅预览图表使用示例数据，不替换业务图表、不改数据请求或权限；保留语言 cookie、原生滚动、prefers-reduced-motion 降级，入场后清除 filter / transform，避免影响粘性布局及固定浮层。本次不发布工作区其他登录、支付、模拟器或本地调试修改。验证：独立发布目录的生产构建（含 TypeScript）、本次涉及文件 ESLint 通过；此前已完成首页中英文、预览 Tab 与曲线动画浏览器验证。
+
+---
+
 ## 2026-11-18 - 股票详情页图表恢复：5D/日/周/月、指标切换、HUD 与 ETF 指标修复（feat / fix）
 
 1. **日期与版本主题**：2026-11-18 — 将此前写在 `106f5cf`、但未合并到当前 `main` 的股票详情页图表升级恢复到当前基线：四周期切换、MA/BOLL 叠加、VOL/RSI/MACD 副图、固定 HUD、十字光标与触摸浏览，并保留 ETF 技术指标修复。

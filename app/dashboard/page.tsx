@@ -28,6 +28,7 @@ import { parseDashboardView } from "@/lib/dashboard-views";
 import { getServerViewer } from "@/lib/server/viewer";
 import { dict, parseLang } from "@/lib/i18n";
 import { LANG_COOKIE } from "@/lib/lang-pref";
+import { Reveal } from "@/components/ui/Reveal";
 
 export const metadata = {
   title: "Dashboard",
@@ -165,6 +166,7 @@ export default async function DashboardPage({
   return (
     <>
       <DashboardShell lang={lang} plan={plan} view={view}>
+        <Reveal key={`${lang}-${view}-${watchlistTab}`} scroll={false} delay={0.57}>
         {view === "all" && (
           <GlobalMarketsOverview
             lang={lang}
@@ -227,6 +229,7 @@ export default async function DashboardPage({
         )}
 
         {view === "ai" && <AiAnalysisPanel lang={lang} plan={plan} />}
+        </Reveal>
       </DashboardShell>
 
       <AiAssistantDrawer lang={lang} marketContext={chatContext} />
