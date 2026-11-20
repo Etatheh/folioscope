@@ -16,8 +16,10 @@ export const fmtCap = (usd: number, prefix = "$") =>
     ? `${prefix}${(usd / 1e12).toFixed(2)}T`
     : `${prefix}${(usd / 1e9).toFixed(0)}B`;
 
-export const fmtHands = (v: number) =>
-  v >= 1e8 ? `${(v / 1e8).toFixed(2)}亿手` : v >= 1e4 ? `${(v / 1e4).toFixed(2)}万手` : `${v}手`;
+export const fmtHands = (v: number, lang: Lang = "en") =>
+  lang === "zh"
+    ? (v >= 1e8 ? `${(v / 1e8).toFixed(2)}亿手` : v >= 1e4 ? `${(v / 1e4).toFixed(2)}万手` : `${v}手`)
+    : `${v.toLocaleString("en-US")} lots`;
 
 export const fmtVolume = (v: number) =>
   v >= 1e9
@@ -83,7 +85,7 @@ export function MaValue({
   label,
   value,
   price,
-  lang = "zh",
+  lang = "en",
 }: {
   label: string;
   value: number | null;
@@ -102,7 +104,7 @@ export function MaValue({
   );
 }
 
-export function RsiValue({ value, lang = "zh" }: { value: number | null; lang?: Lang }) {
+export function RsiValue({ value, lang = "en" }: { value: number | null; lang?: Lang }) {
   const t = dict[lang].markets;
   if (value === null) {
     return <span className="text-slate-600">RSI14 —</span>;
@@ -118,7 +120,7 @@ export function RsiValue({ value, lang = "zh" }: { value: number | null; lang?: 
   );
 }
 
-export function MacdValue({ tech, lang = "zh" }: { tech: Technicals; lang?: Lang }) {
+export function MacdValue({ tech, lang = "en" }: { tech: Technicals; lang?: Lang }) {
   const t = dict[lang].markets;
   if (tech.macd === null) {
     return <span className="text-slate-600">MACD —</span>;
@@ -147,23 +149,4 @@ export function MacdValue({ tech, lang = "zh" }: { tech: Technicals; lang?: Lang
       )}
     </span>
   );
-}
-
-export function ValuationChip({
-  percentile,
-  lang = "zh",
-}: {
-  percentile: number | null;
-  lang?: Lang;
-}) {
-  const t = dict[lang].markets;
-  if (percentile === null) return null;
-  const cls =
-    percentile < 0.3
-      ? "bg-emerald-400/10 text-emerald-400"
-      : percentile < 0.7
-        ? "bg-sky-400/10 text-sky-400"
-        : "bg-rose-400/10 text-rose-400";
-  const label = percentile < 0.3 ? t.cheap : percentile < 0.7 ? t.fair : t.rich;
-  return <span className={`rounded-full px-2 py-0.5 text-[10px] ${cls}`}>{label}</span>;
 }

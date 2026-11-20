@@ -278,7 +278,7 @@ function AxisPill({
 export default function PriceChart({
   bars,
   symbol,
-  lang = "zh",
+  lang = "en",
   fallbackPrevClose = 0,
 }: {
   bars: Candle[];

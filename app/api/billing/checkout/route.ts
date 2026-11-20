@@ -1,3 +1,4 @@
+import { getRequestLang } from "@/lib/server/lang";
 import { cookies } from "next/headers";
 
 import { isProTier } from "@/lib/access";
@@ -22,6 +23,7 @@ export async function GET() {
  *                      in-app demo upgrade so the Pro UI stays testable
  */
 export async function POST() {
+  const lang = await getRequestLang();
   const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
 
@@ -33,14 +35,14 @@ export async function POST() {
   }
 
   if (!user) {
-    return Response.json({ ok: false, error: "请先登录" }, { status: 401 });
+    return Response.json({ ok: false, error: lang === "zh" ? "请先登录" : "Please log in to continue." }, { status: 401 });
   }
   if (isProTier(user.tier)) {
     return Response.json({ ok: true, alreadyPro: true });
   }
   if (!isBillingConfigured()) {
     return Response.json(
-      { ok: false, configured: false, demo: true, error: "支付尚未配置" },
+      { ok: false, configured: false, demo: true, error: lang === "zh" ? "支付尚未配置" : "Billing is not configured." },
       { status: 503 }
     );
   }
@@ -48,7 +50,7 @@ export async function POST() {
   const url = buildCheckoutUrl({ email: user.email, userId: user.id });
   if (!url) {
     return Response.json(
-      { ok: false, configured: false, demo: true, error: "结算链接无效" },
+      { ok: false, configured: false, demo: true, error: lang === "zh" ? "结算链接无效" : "The checkout link is unavailable." },
       { status: 503 }
     );
   }

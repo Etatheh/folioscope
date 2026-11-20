@@ -9,13 +9,13 @@ export const metadata = {
 
 export default function DisclaimerPage() {
   return (
-    <LegalPage title="Financial & Backtesting Disclaimer">
+    <LegalPage id="disclaimer" title="Financial & Backtesting Disclaimer">
       <h2>For Informational and Educational Purposes Only</h2>
       <p>
         FolioScope (
         <a href={SITE_URL}>{SITE_URL}</a>) is a
         quantitative data visualization and historical portfolio backtesting
-        software platform operated by Yibo Gui. All market charts, historical
+        software platform operated by FolioScope. All market charts, historical
         price series, Dollar-Cost Averaging (DCA) simulations, portfolio
         allocation metrics, and automated financial summaries provided on
         FolioScope are strictly for informational, educational, and personal
@@ -49,8 +49,8 @@ export default function DisclaimerPage() {
       <h2>AI-Generated Content & Market Data Accuracy</h2>
       <p>
         Automated market commentary and financial report summaries on FolioScope
-        are generated using third-party large language models (including
-        DeepSeek) based on publicly available corporate disclosures. Artificial
+        are generated through FolioScope AI using third-party large language
+        models based on publicly available corporate disclosures. Artificial
         intelligence models can misinterpret numerical tables, omit material
         context, or produce inaccurate summaries. Furthermore, market data feeds
         covering U.S., European, and Asia-Pacific equities may be delayed,

@@ -9,11 +9,11 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy Policy">
+    <LegalPage id="privacy" title="Privacy Policy">
       <h2>1. Overview</h2>
       <p>
-        FolioScope (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;),
-        operated by Yibo Gui at{" "}
+        FolioScope (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), operated
+        at{" "}
         <a href={SITE_URL}>{SITE_URL}</a>, respects
         your privacy and is committed to protecting your personal data. This
         Privacy Policy explains what information we collect, how we use it, and
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
           global tax compliance.
         </li>
         <li>
-          <strong>DeepSeek:</strong> Processes public financial report text and
+          <strong>FolioScope AI service providers:</strong> Process public financial report text and
           ticker queries via API to generate automated research summaries. We do
           not transmit your personal identity or email address in AI
           summarization prompts.

@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/components/LanguageProvider";
+import LangToggle from "@/components/LangToggle";
 import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,6 +11,7 @@ import SiteFooter from "@/components/SiteFooter";
 import AuthModal, { type AuthModalMode } from "./AuthModal";
 
 function AuthPageInner({ mode }: { mode: AuthModalMode }) {
+  const lang = useLanguage();
   const params = useSearchParams();
   const router = useRouter();
   const requestedRedirect = params.get("redirect");
@@ -26,15 +29,16 @@ function AuthPageInner({ mode }: { mode: AuthModalMode }) {
           href="/"
           className="text-sm font-semibold tracking-tight text-white transition hover:text-purple-200"
         >
-          InDepth
+          FolioScope
         </Link>
+        <div className="ml-auto"><LangToggle lang={lang} /></div>
       </header>
 
       <main className="relative z-10 flex flex-1 items-center justify-center py-10">
         <AuthModal
           open
           inline
-          lang="en"
+          lang={lang}
           initialMode={mode}
           redirectTo={redirect}
           onClose={() => router.push("/")}

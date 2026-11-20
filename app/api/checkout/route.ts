@@ -1,5 +1,5 @@
+import { getRequestLang } from "@/lib/server/lang";
 import {
-  getAppUrl,
   getCreemApiBase,
   getCreemApiKey,
   getProductId,
@@ -7,10 +7,12 @@ import {
   isYearlyConfigured,
   type BillingCycle,
 } from "@/lib/creem";
+import { CREEM_SUCCESS_URL } from "@/lib/site";
 import { resolveRequestUser } from "@/lib/server/request-user";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 20;
 
 type CheckoutBody = {
   billingCycle?: unknown;
@@ -54,10 +56,11 @@ export async function GET() {
  * 503 { demo: true }       → keys missing (client may fall back to demo)
  */
 export async function POST(request: Request) {
+  const lang = await getRequestLang();
   const session = await resolveRequestUser(request);
   if (!session) {
     return Response.json(
-      { ok: false, error: "请先登录", code: "UNAUTHORIZED" },
+      { ok: false, error: lang === "zh" ? "请先登录" : "Please log in to continue.", code: "UNAUTHORIZED" },
       { status: 401, headers: { "Cache-Control": "no-store" } }
     );
   }
@@ -93,7 +96,7 @@ export async function POST(request: Request) {
     product_id: productId,
     request_id: `${user.id}_${Date.now()}`,
     customer: { email: user.email },
-    success_url: `${getAppUrl(request)}/dashboard?checkout=success`,
+    success_url: CREEM_SUCCESS_URL,
     metadata: { user_id: user.id },
   };
 
@@ -106,6 +109,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify(payload),
       cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
     });
 
     const data = (await response

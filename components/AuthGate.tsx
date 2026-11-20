@@ -6,7 +6,7 @@ import { useSession } from "@/lib/use-session";
 
 export default function AuthGate({
   children,
-  lang = "zh",
+  lang = "en",
 }: {
   children: React.ReactNode;
   lang?: "zh" | "en";

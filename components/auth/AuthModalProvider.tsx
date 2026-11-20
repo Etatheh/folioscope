@@ -22,12 +22,6 @@ type AuthModalContextValue = {
 const AuthModalContext = createContext<AuthModalContextValue | null>(null);
 const NOOP: AuthModalContextValue = { openAuthModal: () => {} };
 
-/** Read `?lang=` directly so the modal follows the page's current language. */
-function queryLang(): Lang | undefined {
-  if (typeof window === "undefined") return undefined;
-  const value = new URLSearchParams(window.location.search).get("lang");
-  return value === "zh" || value === "en" ? value : undefined;
-}
 
 /**
  * Mounts one AuthModal for the whole app and exposes `openAuthModal()` to any
@@ -47,7 +41,7 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
     setState((current) => ({
       open: true,
       mode: opts?.mode ?? "login",
-      lang: opts?.lang ?? queryLang() ?? resolveClientLang(),
+      lang: opts?.lang ?? resolveClientLang(),
       nonce: current.nonce + 1,
     }));
   }, []);

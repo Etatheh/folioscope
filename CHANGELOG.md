@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-11-20 - English-first i18n and shared subscription plans
+
+1. **日期与版本主题**：2026-11-20 — 默认英文、套餐配置统一及合规页面导航修复。
+2. **核心改动内容**：移除主观估值徽章；统一 Free/Pro 价格、权益及额度来源；法律页面新增双语返回按钮；关闭浏览器语言嗅探，主动切换时保存 cookie/localStorage；修复英文界面、错误提示和 AI 输出的中文漏出，补充法律页中文内容。
+3. **涉及的核心文件路径**：`config/plans.ts`、`lib/lang-pref.ts`、`lib/localized-text.ts`、`components/LanguageProvider.tsx`、`components/legal/`、套餐及看板组件、AI/API 路由、`scripts/check-i18n.cjs`、`scripts/verify-i18n.cjs`。
+4. **架构与设计约定（Do Not Break）**：保留暗色玻璃风格、中文词典、服务端付费校验及 admin 权限；英文为默认，仅保存的主动选择启用中文。TypeScript、ESLint、生产构建、中文浏览器环境下无痕页面与双向切换验证通过；本地开发账号云端自选的既有 UUID 问题未修改。
+
+---
+
+## 2026-11-19 - Hero 工作台全景与 FolioScope AI 文案（style / copy）
+
+1. **日期与版本主题**：2026-11-19 — 首页预览去重，统一 AI 品牌展示。
+2. **核心改动内容**：Hero 改为无 Tab 的组合趋势、指标卡及 AI 摘要全景；下方保留三段式点击与滚动联动；导航栏采用 95% 深色背景、模糊与细边框。用户可见 AI 文案统一为 FolioScope AI，第三方服务披露保留，不改 API 配置。
+3. **涉及的核心文件路径**：`components/landing/`、`components/Navbar.tsx`、`components/AgentChat.tsx`、`lib/agent-context.ts`、`lib/i18n.ts`、`app/page.tsx`、`app/disclaimer/page.tsx`、`app/privacy/page.tsx`、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：保留业务图表、鉴权、支付、路由、模型配置与减少动态效果降级；全景数值明确标注示例；只发布本次页面及文案修改，其他本地业务改动不纳入。
+
+---
+
+## 2026-11-19 - 首页流式交互与统一入场动效（feat / style）
+
+1. **日期与版本主题**：2026-11-19 — FolioScope 首页升级为暗色金融 SaaS 流式界面，统一首页与看板视图入场节奏。
+2. **核心改动内容**：新增 3D 展平产品预览、原生 Scroll Snap 功能轨道（触控、鼠标拖拽、按钮和键盘）、Sticky 研究演示；通用 Reveal / StaggerGroup 使用 SSR 隐藏初态、0.24s 延迟、0.8s 缓动与 0.11s 错落；示例趋势使用 33 点单调三次贝塞尔、克制渐变填充、SVG 裁切渐显与终点呼吸光点，Tab 切换重播。保留预览中的 Pro 月价 $9.90，并同步套餐源与弹窗显示。
+3. **涉及的核心文件路径**：`app/page.tsx`、`app/dashboard/page.tsx`（仅外层入场容器）、`components/dashboard/DashboardShell.tsx`、`components/landing/`、`components/ui/Reveal.tsx`、`components/ui/reveal.module.css`、`lib/plans.ts`、`components/ui/PricingModal.tsx`（仅月价显示）、`CHANGELOG.md`。
+4. **架构与设计约定（Do Not Break）**：保留 /dashboard、/register、/pricing 和既有鉴权、OAuth、Creem 请求流程；仅预览图表使用示例数据，不替换业务图表、不改数据请求或权限；保留语言 cookie、原生滚动、prefers-reduced-motion 降级，入场后清除 filter / transform，避免影响粘性布局及固定浮层。本次不发布工作区其他登录、支付、模拟器或本地调试修改。验证：独立发布目录的生产构建（含 TypeScript）、本次涉及文件 ESLint 通过；此前已完成首页中英文、预览 Tab 与曲线动画浏览器验证。
+
+---
+
 ## 2026-11-18 - 股票详情页图表恢复：5D/日/周/月、指标切换、HUD 与 ETF 指标修复（feat / fix）
 
 1. **日期与版本主题**：2026-11-18 — 将此前写在 `106f5cf`、但未合并到当前 `main` 的股票详情页图表升级恢复到当前基线：四周期切换、MA/BOLL 叠加、VOL/RSI/MACD 副图、固定 HUD、十字光标与触摸浏览，并保留 ETF 技术指标修复。

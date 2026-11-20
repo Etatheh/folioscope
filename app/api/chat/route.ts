@@ -1,3 +1,4 @@
+import { containsCjk } from "@/lib/localized-text";
 import {
   COMPLIANCE_NOTE,
   buildSystemPrompt,
@@ -178,7 +179,8 @@ export async function POST(request: Request) {
   const mode: ChatPromptMode = body.mode === "diagnosis" ? "diagnosis" : "chat";
   const marketContext: ChatMarketContext = normalizeMarketContext(body.marketContext);
   marketContext.asOf = marketContext.asOf ?? Date.now();
-  const lang: Lang = marketContext.lang ?? rawLang;
+  const lang: Lang = rawLang;
+  marketContext.lang = lang;
   const t = MSG[lang];
 
   const session = await resolveRequestUser(request);
@@ -276,6 +278,7 @@ export async function POST(request: Request) {
       const text =
         json.choices?.[0]?.message?.content ?? json.choices?.[0]?.text ?? "";
       if (!text.trim()) return jsonError(t.emptyReply, 502, "EMPTY_REPLY");
+      if (lang === "en" && containsCjk(text)) return jsonError(t.upstream, 502, "LANGUAGE_MISMATCH");
       if (usage) {
         try {
           await incrementUsage(user.id);
@@ -314,6 +317,7 @@ export async function POST(request: Request) {
         if (!data || data === "[DONE]") return;
         const delta = parseDelta(data);
         if (delta) {
+          if (lang === "en" && containsCjk(delta)) throw new Error("LANGUAGE_MISMATCH");
           answer += delta;
           emit({ delta });
         }

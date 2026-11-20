@@ -487,7 +487,7 @@ export function buildSystemPrompt(
       "Combine the live page data below (US indices, valuations, focused instrument, current DCA backtest plan) with the user's question.",
       "Use concise, structured Markdown with **bold** labels and bullet lists. Lead with the conclusion, then the evidence. Never invent missing data; say so explicitly.",
       "Do not give personalised investment advice, buy/sell instructions or return promises.",
-      "Reply in English.",
+      "Reply exclusively in English, including instrument names. Do not include Chinese characters, even if the question or source data contains them.",
       `End with a separate final line in this exact form: "> ${COMPLIANCE_NOTE.en}"`,
     ].join("\n");
   }

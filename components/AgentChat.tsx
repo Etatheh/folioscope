@@ -1,4 +1,5 @@
 "use client";
+import { localizedError } from "@/lib/localized-text";
 
 import { useEffect, useRef, useState } from "react";
 import { dict, type Lang } from "@/lib/i18n";
@@ -44,7 +45,7 @@ export default function AgentChat({ lang }: { lang: Lang }) {
       };
       if (data.usage) setUsage(data.usage);
       if (!res.ok || !data.ok) {
-        setMessages([...next, { role: "assistant", content: data.error ?? t.error }]);
+        setMessages([...next, { role: "assistant", content: localizedError(data.error, lang, t.error) }]);
         return;
       }
       setMode(data.mode ?? null);
@@ -77,7 +78,7 @@ export default function AgentChat({ lang }: { lang: Lang }) {
             <div>
               <p className="text-sm font-semibold text-white">{t.title}</p>
               <p className="text-[11px] text-slate-500">
-                {mode === "llm" ? "DeepSeek · " : ""}
+                {mode === "llm" ? "FolioScope AI · " : ""}
                 {usage ? t.quota(usage.remaining, usage.limit) : t.subtitle}
               </p>
             </div>

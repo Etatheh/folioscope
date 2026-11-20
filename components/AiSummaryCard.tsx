@@ -1,4 +1,5 @@
 "use client";
+import { localizedError } from "@/lib/localized-text";
 
 import { useState } from "react";
 
@@ -56,7 +57,7 @@ export default function AiSummaryCard({
       const data = (await response.json()) as AgentResponse;
       if (data.usage) setUsage(data.usage);
       if (!response.ok || !data.ok || !data.reply) {
-        setError(data.error ?? t.error);
+        setError(localizedError(data.error, lang, t.error));
         return;
       }
       setSummary(data.reply);

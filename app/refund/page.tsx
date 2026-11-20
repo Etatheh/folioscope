@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function RefundPage() {
   return (
-    <LegalPage title="Refund Policy">
+    <LegalPage id="refund" title="Refund Policy">
       <h2>1. 7-Day First-Time Purchase Guarantee</h2>
       <p>
         We want you to be confident in the research tools provided by

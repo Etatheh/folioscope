@@ -1,3 +1,4 @@
+import { getRequestLang } from "@/lib/server/lang";
 import { getCreemApiBase, getCreemApiKey } from "@/lib/creem";
 import { readSupabaseEnv } from "@/lib/server/env";
 import { pgSelect } from "@/lib/server/rest";
@@ -5,6 +6,7 @@ import { resolveRequestUser } from "@/lib/server/request-user";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 20;
 
 type PortalResponse = {
   customer_portal_link?: string;
@@ -52,10 +54,11 @@ async function loadCustomerId(
  * 502              → Creem rejected the request
  */
 export async function POST(request: Request) {
+  const lang = await getRequestLang();
   const session = await resolveRequestUser(request);
   if (!session) {
     return Response.json(
-      { ok: false, error: "请先登录", code: "UNAUTHORIZED" },
+      { ok: false, error: lang === "zh" ? "请先登录" : "Please log in to continue.", code: "UNAUTHORIZED" },
       { status: 401, headers: { "Cache-Control": "no-store" } }
     );
   }
@@ -100,6 +103,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({ customer_id: customerId }),
       cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
     });
 
     const data = (await response

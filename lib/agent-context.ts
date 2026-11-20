@@ -1,3 +1,4 @@
+import { localizedName } from "./localized-text";
 // Market context + built-in analyst for the embedded agent.
 // Works with no API key: answers are derived from the live snapshots.
 
@@ -41,7 +42,7 @@ export function buildMarketContext(bundle: MarketBundle, lang: Lang): string {
     const add = (q: UsQuote, cur: string) => {
       const tech = q.tech;
       const parts = [
-        `${q.name}(${q.symbol})`,
+        `${localizedName(q, lang)}(${q.symbol})`,
         `${cur}${nf(q.price)}`,
         `${q.change >= 0 ? "+" : ""}${nf(q.changePct)}%`,
       ];
@@ -50,12 +51,12 @@ export function buildMarketContext(bundle: MarketBundle, lang: Lang): string {
         if (tech.ma20 !== null) parts.push(`MA20 ${nf(tech.ma20)}`);
         if (tech.rsi14 !== null) parts.push(`RSI14 ${nf(tech.rsi14, 1)}`);
         if (tech.macd !== null) parts.push(`MACD ${nf(tech.macd)}`);
-        if (tech.macdCross) parts.push(tech.macdCross === "golden" ? "金叉" : "死叉");
+        if (tech.macdCross) parts.push(tech.macdCross === "golden" ? (lang === "zh" ? "金叉" : "Golden cross") : (lang === "zh" ? "死叉" : "Death cross"));
       }
       if (q.valuation) {
         parts.push(`PE ${nf(q.valuation.pe)}`);
         if (q.valuation.pePercentile !== null) {
-          parts.push(`PE分位 ${nf(q.valuation.pePercentile * 100, 0)}%`);
+          parts.push(`${lang === "zh" ? "PE分位" : "PE percentile"} ${nf(q.valuation.pePercentile * 100, 0)}%`);
         }
       }
       lines.push(parts.join(" | "));
@@ -91,7 +92,7 @@ function describeEntry(entry: Entry, lang: Lang): string {
   const zh = lang === "zh";
   const lines: string[] = [];
   lines.push(
-    `【${q.name} ${q.symbol}】${cur}${nf(q.price)}  ${q.change >= 0 ? "+" : ""}${nf(q.change)} (${q.change >= 0 ? "+" : ""}${nf(q.changePct)}%)`
+    `【${localizedName(q, lang)} ${q.symbol}】${cur}${nf(q.price)}  ${q.change >= 0 ? "+" : ""}${nf(q.change)} (${q.change >= 0 ? "+" : ""}${nf(q.changePct)}%)`
   );
   lines.push(
     zh
@@ -122,7 +123,7 @@ function describeEntry(entry: Entry, lang: Lang): string {
           ? zh ? "（近期死叉）" : " (death cross)"
           : "";
     lines.push(
-      `技术: RSI14 ${rsi === null ? "-" : nf(rsi, 1)} (${rsiLabel})  MACD ${tech.macd === null ? "-" : nf(tech.macd)}${cross}`
+      `${zh ? "技术" : "Technicals"}: RSI14 ${rsi === null ? "-" : nf(rsi, 1)} (${rsiLabel})  MACD ${tech.macd === null ? "-" : nf(tech.macd)}${cross}`
     );
   } else {
     lines.push(zh ? "技术指标: 暂无历史数据" : "Technicals: no history available");
@@ -130,7 +131,7 @@ function describeEntry(entry: Entry, lang: Lang): string {
   if (q.valuation) {
     lines.push(
       zh
-        ? `估值: PE ${nf(q.valuation.pe)}  PB ${q.valuation.pb === null ? "-" : nf(q.valuation.pb)}  PE分位 ${q.valuation.pePercentile === null ? "-" : `${nf(q.valuation.pePercentile * 100, 0)}%`}`
+        ? `估值: PE ${nf(q.valuation.pe)}  PB ${q.valuation.pb === null ? "-" : nf(q.valuation.pb)}  ${zh ? "PE分位" : "PE percentile"} ${q.valuation.pePercentile === null ? "-" : `${nf(q.valuation.pePercentile * 100, 0)}%`}`
         : `Valuation: PE ${nf(q.valuation.pe)}  PB ${q.valuation.pb === null ? "-" : nf(q.valuation.pb)}  PE pctl ${q.valuation.pePercentile === null ? "-" : `${nf(q.valuation.pePercentile * 100, 0)}%`}`
     );
   }
@@ -144,7 +145,7 @@ function overview(bundle: MarketBundle, lang: Lang): string {
     snap.indices
       .map(
         (q) =>
-          `${q.name} ${nf(q.price)} (${q.change >= 0 ? "+" : ""}${nf(q.changePct)}%)`
+          `${localizedName(q, lang)} ${nf(q.price)} (${q.change >= 0 ? "+" : ""}${nf(q.changePct)}%)`
       )
       .join("  ");
   lines.push(zh ? "📊 市场概览" : "📊 Market overview");
@@ -161,13 +162,13 @@ function overview(bundle: MarketBundle, lang: Lang): string {
     const bottom = stocks.slice(-3).reverse();
     lines.push(
       zh
-        ? `\n美股领涨: ${top.map((q) => `${q.name} +${nf(q.changePct)}%`).join(" / ")}`
-        : `\nTop gainers: ${top.map((q) => `${q.name} +${nf(q.changePct)}%`).join(" / ")}`
+        ? `\n美股领涨: ${top.map((q) => `${localizedName(q, lang)} +${nf(q.changePct)}%`).join(" / ")}`
+        : `\nTop gainers: ${top.map((q) => `${localizedName(q, lang)} +${nf(q.changePct)}%`).join(" / ")}`
     );
     lines.push(
       zh
-        ? `美股领跌: ${bottom.map((q) => `${q.name} ${nf(q.changePct)}%`).join(" / ")}`
-        : `Top losers: ${bottom.map((q) => `${q.name} ${nf(q.changePct)}%`).join(" / ")}`
+        ? `美股领跌: ${bottom.map((q) => `${localizedName(q, lang)} ${nf(q.changePct)}%`).join(" / ")}`
+        : `Top losers: ${bottom.map((q) => `${localizedName(q, lang)} ${nf(q.changePct)}%`).join(" / ")}`
     );
   }
   return lines.join("\n");
@@ -187,9 +188,9 @@ function valuationSummary(bundle: MarketBundle, lang: Lang): string {
     targets
       .map((q) => {
         if (q.valuation) {
-          return `${q.name}: PE ${nf(q.valuation.pe)}  PB ${q.valuation.pb === null ? "-" : nf(q.valuation.pb)}  PE分位 ${q.valuation.pePercentile === null ? "-" : `${nf(q.valuation.pePercentile * 100, 0)}%`}`;
+          return `${localizedName(q, lang)}: PE ${nf(q.valuation.pe)}  PB ${q.valuation.pb === null ? "-" : nf(q.valuation.pb)}  ${zh ? "PE分位" : "PE percentile"} ${q.valuation.pePercentile === null ? "-" : `${nf(q.valuation.pePercentile * 100, 0)}%`}`;
         }
-        return `${q.name}: PE ${nf(q.pe ?? 0)}`;
+        return `${localizedName(q, lang)}: PE ${nf(q.pe ?? 0)}`;
       })
       .join("\n")
   );
@@ -203,13 +204,13 @@ function rsiScreener(bundle: MarketBundle, lang: Lang): string {
   const lines: string[] = [zh ? "🧭 RSI 扫描" : "🧭 RSI scan"];
   lines.push(
     zh
-      ? `超买（RSI≥70）: ${hot.length ? hot.map((e) => `${e.quote.name} ${nf(e.quote.tech!.rsi14!)}`).join(" / ") : "无"}`
-      : `Overbought (RSI≥70): ${hot.length ? hot.map((e) => `${e.quote.name} ${nf(e.quote.tech!.rsi14!)}`).join(" / ") : "none"}`
+      ? `超买（RSI≥70）: ${hot.length ? hot.map((e) => `${localizedName(e.quote, lang)} ${nf(e.quote.tech!.rsi14!)}`).join(" / ") : "无"}`
+      : `Overbought (RSI≥70): ${hot.length ? hot.map((e) => `${localizedName(e.quote, lang)} ${nf(e.quote.tech!.rsi14!)}`).join(" / ") : "none"}`
   );
   lines.push(
     zh
-      ? `超卖（RSI≤30）: ${cold.length ? cold.map((e) => `${e.quote.name} ${nf(e.quote.tech!.rsi14!)}`).join(" / ") : "无"}`
-      : `Oversold (RSI≤30): ${cold.length ? cold.map((e) => `${e.quote.name} ${nf(e.quote.tech!.rsi14!)}`).join(" / ") : "none"}`
+      ? `超卖（RSI≤30）: ${cold.length ? cold.map((e) => `${localizedName(e.quote, lang)} ${nf(e.quote.tech!.rsi14!)}`).join(" / ") : "无"}`
+      : `Oversold (RSI≤30): ${cold.length ? cold.map((e) => `${localizedName(e.quote, lang)} ${nf(e.quote.tech!.rsi14!)}`).join(" / ") : "none"}`
   );
   return lines.join("\n");
 }
@@ -229,7 +230,7 @@ export function localAnalyze(
         "• 技术面扫描：「RSI」「超买」",
         "• 估值：「估值」「PE」",
         "",
-        "想让我更聪明地自由对话？在项目根目录新建 .agent-key 文件，填入 DeepSeek API Key 即可自动切换为 AI 模式。",
+        "想让我更聪明地自由对话？在项目根目录新建 .agent-key 文件，填入 FolioScope AI API Key 即可自动切换为 AI 模式。",
       ].join("\n")
     : [
         "I'm the built-in analyst (no API key needed). I can:",
@@ -238,7 +239,7 @@ export function localAnalyze(
         "• Technical scan: 'RSI' or 'overbought'",
         "• Valuations: 'valuation' or 'PE'",
         "",
-        "Want free-form AI answers? Create a .agent-key file in the project root with your DeepSeek API key.",
+        "Want free-form AI answers? Create a .agent-key file in the project root with your FolioScope AI API key.",
       ].join("\n");
 
   if (!q) return help;

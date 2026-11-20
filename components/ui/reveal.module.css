@@ -1,0 +1,6 @@
+.item { transform-origin: center; }
+
+/* Applies to server HTML immediately, before React reads the media query. */
+@media (prefers-reduced-motion: reduce) {
+  .item { opacity: 1 !important; transform: none !important; filter: none !important; }
+}

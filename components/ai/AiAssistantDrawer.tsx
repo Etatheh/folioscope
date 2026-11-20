@@ -1,4 +1,5 @@
 "use client";
+import { localizedError } from "@/lib/localized-text";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -266,7 +267,7 @@ export default function AiAssistantDrawer({
           const data = (await response.json().catch(() => ({}))) as {
             error?: string;
           };
-          setError(data.error || t.error);
+          setError(localizedError(data.error, lang, t.error));
           setMessages((current) => current.filter((m) => m.id !== assistantId));
           return;
         }
@@ -290,7 +291,7 @@ export default function AiAssistantDrawer({
                 queue(data.delta);
               }
               if (typeof data.error === "string" && data.error) {
-                setError(data.error);
+                setError(localizedError(data.error, lang, t.error));
               }
             } catch {
               // ignore malformed keep-alive fragments
@@ -512,20 +513,20 @@ export default function AiAssistantDrawer({
                           onClick={() => openAuthModal({ mode: "login", lang })}
                           className="rounded-full border border-purple-400/30 bg-gradient-to-r from-blue-500/15 to-purple-500/15 px-3 py-1.5 text-[11px] font-medium text-purple-100 transition hover:border-purple-400/60 hover:text-white"
                         >
-                          Sign in for an instant read
+                          {lang === "zh" ? "登录后立即查看" : "Sign in for an instant read"}
                         </button>
                       </div>
                     ) : !streaming && error ? (
                       <div className="space-y-2.5">
                         <p className="text-[13px] leading-relaxed text-slate-400">
-                          The live read did not finish.
+                          {lang === "zh" ? "实时分析未能完成。" : "The live read did not finish."}
                         </p>
                         <button
                           type="button"
                           onClick={refresh}
                           className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-slate-200 transition hover:border-purple-400/50 hover:text-white"
                         >
-                          Try again
+                          {lang === "zh" ? "重试" : "Try again"}
                         </button>
                       </div>
                     ) : (

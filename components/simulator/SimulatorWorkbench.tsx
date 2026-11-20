@@ -20,6 +20,7 @@ import type { SimulationData } from "@/lib/us-stocks";
 import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
 import { dict, type Lang } from "@/lib/i18n";
 import { setAiSimulator } from "@/lib/ai-context-store";
+import { PLANS_CONFIG } from "@/config/plans";
 import { useViewerPlan } from "@/lib/use-profile";
 import {
   BACKTEST_ADD_EVENT,
@@ -138,7 +139,10 @@ export default function SimulatorWorkbench({
     Object.fromEntries(initialSelected.map((symbol) => [symbol, 10]))
   );
 
-  const maxMonths = Math.max(1, Math.floor(data.dates.length / 21));
+  const maxMonths = Math.min(
+    PLANS_CONFIG[hasFullAccess ? "pro" : "free"].limits.backtestMonths,
+    Math.max(1, Math.floor(data.dates.length / 21))
+  );
   // 10Y is Pro-only. Keep a safe display state even if the plan changes while
   // the page is open or the server sends an unexpected period.
   const safePeriod: PeriodKey =
@@ -260,7 +264,7 @@ export default function SimulatorWorkbench({
         tertiary: undefined,
         mode: "value" as const,
         legendPrimary: t.legendPortfolio,
-        legendSecondary: t.legendBenchmark,
+        legendSecondary: mergedData.benchmark.symbol === "SPY" ? `${t.legendBenchmark} (SPY)` : t.legendBenchmark,
         legendTertiary: undefined,
       };
     }
@@ -272,10 +276,10 @@ export default function SimulatorWorkbench({
       tertiary: result.curve.map((point) => point.invested),
       mode: "value" as const,
       legendPrimary: t.legendValue,
-      legendSecondary: t.legendBenchmark,
+      legendSecondary: mergedData.benchmark.symbol === "SPY" ? `${t.legendBenchmark} (SPY)` : t.legendBenchmark,
       legendTertiary: "Principal",
     };
-  }, [result, mode, t.legendPortfolio, t.legendBenchmark, t.legendValue]);
+  }, [result, mode, t.legendPortfolio, t.legendBenchmark, t.legendValue, mergedData.benchmark.symbol]);
 
   const invested = useAnimatedNumber(result?.invested ?? 0);
   const finalValue = useAnimatedNumber(result?.finalValue ?? 0);

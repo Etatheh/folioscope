@@ -1,3 +1,5 @@
+"use client";
+import { useLanguage } from "./LanguageProvider";
 import Link from "next/link";
 
 import {
@@ -8,6 +10,9 @@ import {
 } from "@/lib/site";
 
 export default function SiteFooter({ compact = false }: { compact?: boolean }) {
+  const lang = useLanguage();
+  const zh = lang === "zh";
+  const labels: Record<string, string> = { "/terms": "服务条款", "/privacy": "隐私政策", "/refund": "退款政策", "/disclaimer": "免责声明" };
   return (
     <footer
       className={`relative z-10 border-t border-purple-500/10 ${
@@ -26,17 +31,17 @@ export default function SiteFooter({ compact = false }: { compact?: boolean }) {
                 href={link.href}
                 className="transition hover:text-white"
               >
-                {link.label}
+                {zh ? labels[link.href] : link.label}
               </Link>
             ))}
           </nav>
 
           <p className="max-w-3xl text-[11px] leading-relaxed text-slate-500">
-            {SITE_DISCLAIMER}
+            {zh ? "FolioScope 是教育与量化研究工具。数据、回测和 AI 摘要仅供信息参考，不构成投资建议。" : SITE_DISCLAIMER}
           </p>
 
           <p className="text-[11px] text-slate-600">
-            © {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
+            © {new Date().getFullYear()} {SITE_NAME}. {zh ? "保留所有权利。" : "All rights reserved."}
             {" · "}
             <a
               href={SITE_URL}

@@ -1,3 +1,5 @@
+"use client";
+import { useLanguage } from "@/components/LanguageProvider";
 import Link from "next/link";
 
 const SUBSCRIPTION_LEGAL_LINKS = [
@@ -7,6 +9,8 @@ const SUBSCRIPTION_LEGAL_LINKS = [
 ] as const;
 
 export default function LegalInlineLinks({ className = "" }: { className?: string }) {
+  const lang = useLanguage();
+  const labels = { "/terms": "条款", "/privacy": "隐私", "/refund": "退款" };
   return (
     <div
       className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] text-slate-500 ${className}`}
@@ -17,7 +21,7 @@ export default function LegalInlineLinks({ className = "" }: { className?: strin
           href={link.href}
           className="transition hover:text-slate-300"
         >
-          {link.label}
+          {lang === "zh" ? labels[link.href] : link.label}
         </Link>
       ))}
     </div>

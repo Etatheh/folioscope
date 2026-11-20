@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { resolveClientLang } from "@/lib/lang-pref";
 import { apiFetch } from "@/lib/client-api";
 import { showToast } from "@/components/ui/ToastHost";
 
@@ -33,8 +34,9 @@ export default function CheckoutReturn() {
     let attempts = 0;
     let timer: number | undefined;
 
+    const zh = resolveClientLang() === "zh";
     // ToastHost is mounted before this component, so the listener exists.
-    showToast("Payment successful — activating your Pro plan…");
+    showToast(zh ? "支付成功，正在激活 Pro 套餐…" : "Payment successful — activating your Pro plan…");
 
     const check = async () => {
       attempts += 1;
@@ -59,7 +61,7 @@ export default function CheckoutReturn() {
         timer = window.setTimeout(check, POLL_INTERVAL_MS);
       } else {
         showToast(
-          "Payment received. Pro will unlock as soon as the webhook finishes."
+          zh ? "已收到付款，支付通知处理完成后将自动解锁 Pro。" : "Payment received. Pro will unlock as soon as the webhook finishes."
         );
       }
     };

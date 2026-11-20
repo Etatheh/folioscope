@@ -1,11 +1,12 @@
 "use client";
 
+import type { Lang } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { isAdminTier, isProTier } from "@/lib/access";
 import { apiFetch } from "@/lib/client-api";
-import { PLANS, type PlanId } from "@/lib/plans";
+import { PLANS_CONFIG, getBillingCopy, getPlanFeatures } from "@/config/plans";
 import { useProfile } from "@/lib/use-profile";
 import { useSession } from "@/lib/use-session";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
@@ -29,24 +30,13 @@ type CheckoutResponse = {
   demo?: boolean;
 };
 
-const CYCLE_COPY: Record<
-  BillingCycle,
-  { price: string; period: string; label: string; note?: string }
-> = {
-  monthly: { price: "$9", period: "/ month", label: "Monthly", note: "$9/mo" },
-  yearly: {
-    price: "$79",
-    period: "/ year",
-    label: "Yearly",
-    note: "$79/yr · Save 34%",
-  },
+const CYCLE_COPY = {
+  monthly: getBillingCopy("pro", "monthly"),
+  yearly: getBillingCopy("pro", "yearly"),
 };
 
-function plan(id: PlanId) {
-  return PLANS.find((item) => item.id === id) ?? PLANS[0];
-}
-
-export default function PricingPlans() {
+export default function PricingPlans({ lang = "en" }: { lang?: Lang }) {
+  const zh = lang === "zh";
   const { user, ready } = useSession();
   const { profile } = useProfile();
   const { openAuthModal } = useAuthModal();
@@ -70,15 +60,16 @@ export default function PricingPlans() {
   }, []);
 
   const yearlyAvailable = config?.yearly === true;
-  const pro = plan("pro");
-  const free = plan("free");
-  const copy = CYCLE_COPY[cycle];
+  const pro = PLANS_CONFIG.pro;
+  const free = PLANS_CONFIG.free;
+  const effectiveCycle = yearlyAvailable ? cycle : "monthly";
+  const copy = getBillingCopy("pro", effectiveCycle, lang);
   const isPro = isProTier(profile?.tier);
 
   const handleUpgrade = async () => {
     if (!ready) return;
     if (!user) {
-      openAuthModal({ mode: "login", lang: "en" });
+      openAuthModal({ mode: "login", lang });
       return;
     }
 
@@ -87,7 +78,7 @@ export default function PricingPlans() {
       const response = await apiFetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ billingCycle: cycle }),
+        body: JSON.stringify({ billingCycle: effectiveCycle }),
       });
       const data = (await response
         .json()
@@ -119,15 +110,15 @@ export default function PricingPlans() {
           <h2 className="text-lg font-semibold text-white">{free.name}</h2>
         </div>
         <p className="mt-4 text-3xl font-bold text-white">
-          {free.price}
+          {getBillingCopy("free", effectiveCycle, lang).price}
           <span className="text-sm font-normal text-slate-500">
             {" "}
-            {free.period}
+            {getBillingCopy("free", effectiveCycle).period}
           </span>
         </p>
-        <p className="mt-1 text-xs text-slate-500">{free.tagline}</p>
+        <p className="mt-1 text-xs text-slate-500">{free.tagline[lang]}</p>
         <ul className="mt-6 space-y-2.5 text-sm text-slate-400">
-          {free.features.map((feature) => (
+          {getPlanFeatures("free", lang).map((feature) => (
             <li key={feature} className="flex gap-2">
               <span className="text-emerald-400">✓</span>
               {feature}
@@ -138,7 +129,7 @@ export default function PricingPlans() {
           href="/register"
           className="btn-secondary mt-8 block rounded-full py-3 text-center text-sm font-medium text-white"
         >
-          Start for free
+          {zh ? "免费开始" : "Start for free"}
         </Link>
         <LegalInlineLinks className="mt-3" />
       </article>
@@ -148,7 +139,7 @@ export default function PricingPlans() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">{pro.name}</h2>
           <span className="rounded-full bg-gradient-to-r from-amber-400/20 to-purple-400/20 px-2.5 py-1 text-[10px] text-amber-300">
-            Recommended
+            {zh ? "推荐" : "Recommended"}
           </span>
         </div>
 
@@ -196,9 +187,9 @@ export default function PricingPlans() {
             {copy.period}
           </span>
         </p>
-        <p className="mt-1 text-xs text-slate-500">{pro.tagline}</p>
+        <p className="mt-1 text-xs text-slate-500">{pro.tagline[lang]}</p>
         <ul className="mt-6 space-y-2.5 text-sm text-slate-400">
-          {pro.features.map((feature) => (
+          {getPlanFeatures("pro", lang).map((feature) => (
             <li key={feature} className="flex gap-2">
               <span className="text-emerald-400">✓</span>
               {feature}
@@ -211,8 +202,8 @@ export default function PricingPlans() {
         ) : isPro ? (
           <span className="mt-8 block rounded-full bg-emerald-400/10 py-3 text-center text-sm text-emerald-400">
             {isAdminTier(profile?.tier)
-              ? "Developer access · all unlocked"
-              : "Pro active ✓"}
+              ? (zh ? "开发者权限 · 全部已解锁" : "Developer access · all unlocked")
+              : (zh ? "Pro 已开通 ✓" : "Pro active ✓")}
           </span>
         ) : (
           <button
@@ -222,16 +213,16 @@ export default function PricingPlans() {
             className="btn-primary mt-8 block w-full rounded-full py-3 text-center text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {status === "busy"
-              ? "Opening checkout…"
+              ? (zh ? "正在打开结算…" : "Opening checkout…")
               : user
-                ? "Upgrade to Pro"
-                : "Sign in to upgrade"}
+                ? (zh ? "升级 Pro" : "Upgrade to Pro")
+                : (zh ? "登录后升级" : "Sign in to upgrade")}
           </button>
         )}
 
         {status === "error" && (
           <p role="alert" className="mt-2 text-center text-[11px] text-rose-300">
-            Checkout is unavailable right now. Please try again.
+            {zh ? "暂时无法结算，请稍后重试。" : "Checkout is unavailable right now. Please try again."}
           </p>
         )}
 

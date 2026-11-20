@@ -1,3 +1,4 @@
+import { localizedName } from "@/lib/localized-text";
 import Link from "next/link";
 
 import type { Lang } from "@/lib/i18n";
@@ -16,7 +17,7 @@ import FavoriteButton from "./FavoriteButton";
 
 function names(quote: UsQuote, lang: Lang) {
   if (lang === "zh") return { primary: quote.name, secondary: quote.nameEn };
-  return { primary: quote.nameEn || quote.name, secondary: null as string | null };
+  return { primary: localizedName(quote, "en"), secondary: null as string | null };
 }
 
 function RangeBar({ quote }: { quote: UsQuote }) {

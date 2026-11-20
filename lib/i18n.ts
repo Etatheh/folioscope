@@ -87,10 +87,7 @@ const zh = {
     peShort: "PE",
     pbShort: "PB",
     percentile: "分位",
-    percentileTip: "当前PE处于历史分位，数值越低估值越便宜",
-    cheap: "低估",
-    fair: "适中",
-    rich: "高估",
+    percentileTip: "当前 PE 在其历史观测值中的百分位数",
     goldenCross: "金叉",
     deathCross: "死叉",
     rsiOverbought: "超买",
@@ -364,20 +361,12 @@ const zh = {
     modal: {
       title: "升级到 Pro",
       subtitle: "解锁 5 年定投回测、每日 AI 摘要与更高的 AI 额度。",
-      price: "$9",
       period: "/ 月",
       cancel: "随时可取消 · 通过 Creem 安全结算",
       compare: "权益对比",
       feature: "功能",
       free: "免费版",
       pro: "Pro",
-      rows: [
-        { label: "每个市场可看股票", free: "4 只", pro: "全部" },
-        { label: "定投回测周期", free: "1 个月", pro: "5 年" },
-        { label: "AI 市场摘要", free: "—", pro: "每日生成" },
-        { label: "AI 助手额度", free: "5 次/天", pro: "200 次/天" },
-        { label: "云端自选股", free: "14 只精选", pro: "全市场" },
-      ],
       cta: "使用 Creem 升级",
       ctaBusy: "正在前往结算…",
       ctaDemo: "立即开通 Pro（演示）",
@@ -409,7 +398,7 @@ const zh = {
     button: "AI 财报分析",
     badge: "PRO",
     title: "AI 个股财报深度分析",
-    subtitle: "Yahoo Finance 财报数据 · DeepSeek 中英双语研报",
+    subtitle: "Yahoo Finance 财报数据 · FolioScope AI 中英双语研报",
     loading: "正在抓取最新财报并生成研报…",
     cached: "24 小时缓存",
     generated: "生成于",
@@ -535,9 +524,6 @@ type Dict = {
     pbShort: string;
     percentile: string;
     percentileTip: string;
-    cheap: string;
-    fair: string;
-    rich: string;
     goldenCross: string;
     deathCross: string;
     rsiOverbought: string;
@@ -809,14 +795,12 @@ type Dict = {
     modal: {
       title: string;
       subtitle: string;
-      price: string;
       period: string;
       cancel: string;
       compare: string;
       feature: string;
       free: string;
       pro: string;
-      rows: { label: string; free: string; pro: string }[];
       cta: string;
       ctaBusy: string;
       ctaDemo: string;
@@ -956,9 +940,9 @@ const en: Dict = {
     pick: "Pick a symbol",
   },
   boards: {
-    cn: { title: "A-Shares", titleEn: "A股行情" },
-    europe: { title: "Europe", titleEn: "欧洲市场" },
-    asia: { title: "Asia-Pacific", titleEn: "亚太市场" },
+    cn: { title: "A-Shares", titleEn: "A-Shares" },
+    europe: { title: "Europe", titleEn: "European markets" },
+    asia: { title: "Asia-Pacific", titleEn: "Asia-Pacific markets" },
   },
   settings: "Settings",
   backToSite: "Back to website",
@@ -990,10 +974,7 @@ const en: Dict = {
     peShort: "PE",
     pbShort: "PB",
     percentile: "Pctl",
-    percentileTip: "Current P/E vs its own history; lower means cheaper",
-    cheap: "Cheap",
-    fair: "Fair",
-    rich: "Rich",
+    percentileTip: "Current P/E percentile relative to its own historical observations",
     goldenCross: "Golden cross",
     deathCross: "Death cross",
     rsiOverbought: "Overbought",
@@ -1275,20 +1256,12 @@ const en: Dict = {
       title: "Upgrade to Pro",
       subtitle:
         "Unlock the 5-year DCA backtest, a daily AI summary and a larger AI budget.",
-      price: "$9",
       period: "/ month",
       cancel: "Cancel anytime · secure checkout by Creem",
       compare: "What you get",
       feature: "Feature",
       free: "Free",
       pro: "Pro",
-      rows: [
-        { label: "Stocks per market", free: "4", pro: "All" },
-        { label: "DCA backtest range", free: "1 month", pro: "5 years" },
-        { label: "AI market summary", free: "—", pro: "Daily" },
-        { label: "AI assistant quota", free: "5 / day", pro: "200 / day" },
-        { label: "Cloud watchlist", free: "14 names", pro: "Whole market" },
-      ],
       cta: "Continue with Creem",
       ctaBusy: "Opening checkout…",
       ctaDemo: "Activate Pro now (demo)",
@@ -1320,7 +1293,7 @@ const en: Dict = {
     button: "AI Earnings Analysis",
     badge: "PRO",
     title: "AI Fundamental Earnings Report",
-    subtitle: "Yahoo Finance fundamentals · DeepSeek-powered research",
+    subtitle: "Yahoo Finance fundamentals · FolioScope AI-powered research",
     loading: "Fetching the latest fundamentals and drafting the report…",
     cached: "24h cache",
     generated: "Generated",
@@ -1357,7 +1330,7 @@ const en: Dict = {
     noEps: "No EPS comparison data",
     disclaimer:
       "AI-generated content based on public Yahoo Finance fundamentals. For reference only — not investment advice.",
-    langZh: "中文",
+    langZh: "ZH",
     langEn: "EN",
   },
   dca: {

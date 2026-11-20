@@ -1,3 +1,5 @@
+import { PLANS_CONFIG } from "@/config/plans";
+
 // Server-side daily quota for the AI assistant.
 // Storage: Supabase when configured (needed on serverless deployments),
 // local SQLite in development without Supabase.
@@ -6,7 +8,10 @@ import { pgInsert, pgSelect, pgUpdate } from "./rest";
 import { readSupabaseEnv } from "./env";
 import { getDb } from "./db";
 
-export const DAILY_LIMITS = { free: 5, pro: 200 } as const;
+export const DAILY_LIMITS = {
+  free: PLANS_CONFIG.free.limits.aiQuestionsPerDay,
+  pro: PLANS_CONFIG.pro.limits.aiQuestionsPerDay,
+} as const;
 
 export type Usage = { used: number; limit: number; remaining: number };
 

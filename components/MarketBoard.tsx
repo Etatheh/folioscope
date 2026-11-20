@@ -8,8 +8,8 @@ import {
 import { IndexCard, StockCard, UnlockCta } from "./market-cards";
 import StaggerGrid from "./ui/StaggerGrid";
 
-function fmtTime(ms: number) {
-  return new Intl.DateTimeFormat("zh-CN", {
+function fmtTime(ms: number, lang: Lang) {
+  return new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", {
     timeZone: "Asia/Shanghai",
     month: "2-digit",
     day: "2-digit",
@@ -69,7 +69,7 @@ export default function MarketBoard({
           <p className="mt-1 text-xs text-slate-500">
             {demo
               ? t.demoNote
-              : `${t.updated} ${fmtTime(fetchedAt)}`}{" "}
+              : `${t.updated} ${fmtTime(fetchedAt, lang)}`}{" "}
             · {t.disclaimer}
           </p>
         </div>

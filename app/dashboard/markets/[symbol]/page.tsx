@@ -1,3 +1,5 @@
+import { localizedName } from "@/lib/localized-text";
+import { getRequestLang } from "@/lib/server/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -11,7 +13,6 @@ import {
   MaValue,
   MacdValue,
   RsiValue,
-  ValuationChip,
   fmtCap,
   fmtHands,
   fmtPrice,
@@ -22,7 +23,7 @@ import { getInstrumentDetail } from "@/lib/instruments";
 import { getViewerPlan, isSymbolUnlocked } from "@/lib/access";
 import { isFeaturedSymbol } from "@/lib/watchlist";
 import { getServerViewer } from "@/lib/server/viewer";
-import { dict, parseLang } from "@/lib/i18n";
+import { dict } from "@/lib/i18n";
 
 export async function generateMetadata({
   params,
@@ -56,8 +57,8 @@ export default async function MarketDetailPage({
   } catch {
     // keep the raw segment when it is not valid percent-encoding
   }
-  const { lang: rawLang } = await searchParams;
-  const lang = parseLang(rawLang);
+  await searchParams;
+  const lang = await getRequestLang();
   const tx = dict[lang].detail;
   const tm = dict[lang].markets;
 
@@ -168,7 +169,7 @@ export default async function MarketDetailPage({
     indices: [],
     focused: {
       symbol: quote.symbol,
-      name: lang === "zh" ? quote.name : quote.nameEn || quote.name,
+      name: lang === "zh" ? quote.name : localizedName(quote, "en"),
       price: quote.price,
       changePct: quote.changePct,
       currency,
@@ -225,7 +226,7 @@ export default async function MarketDetailPage({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-white">
-                {lang === "zh" ? quote.name : quote.nameEn || quote.name}
+                {lang === "zh" ? quote.name : localizedName(quote, "en")}
                 {lang === "zh" && (
                   <span className="ml-2 text-base font-normal text-slate-500">
                     {quote.nameEn}
@@ -303,9 +304,7 @@ export default async function MarketDetailPage({
                     {(valuation.pePercentile * 100).toFixed(0)}%
                   </span>
                 </span>
-              )}
-              <ValuationChip percentile={valuation.pePercentile} lang={lang} />
-            </div>
+              )}            </div>
           )}
 
           {quote.tech ? (

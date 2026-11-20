@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "./LanguageProvider";
+import LangToggle from "./LangToggle";
 import { useState } from "react";
 import Link from "next/link";
 import UserMenu from "./UserMenu";
@@ -8,20 +10,21 @@ import { useAuthModal } from "./auth/AuthModalProvider";
 import { useSession } from "@/lib/use-session";
 import type { Lang } from "@/lib/i18n";
 
-const navLinks = [
-  { label: "Features", href: "/#features" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Dashboard", href: "/dashboard" },
-];
-
-export default function Navbar({ lang = "en" }: { lang?: Lang }) {
+export default function Navbar({ lang: requestedLang }: { lang?: Lang }) {
+  const savedLang = useLanguage();
+  const lang = requestedLang ?? savedLang;
+  const navLinks = [
+    { label: lang === "zh" ? "功能" : "Features", href: "/#features" },
+    { label: lang === "zh" ? "价格" : "Pricing", href: "/pricing" },
+    { label: lang === "zh" ? "看板" : "Dashboard", href: "/dashboard" },
+  ];
   const [open, setOpen] = useState(false);
   const { user, ready } = useSession();
   const { openAuthModal } = useAuthModal();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 animate-fade-in opacity-0-start">
-      <nav className="glass mx-4 mt-4 rounded-2xl px-6 py-4 md:mx-auto md:max-w-5xl">
+      <nav className="mx-4 mt-4 rounded-2xl border border-white/10 bg-[#0b0d17]/95 px-6 py-4 shadow-xl shadow-black/20 backdrop-blur-md md:mx-auto md:max-w-5xl">
         <div className="flex items-center justify-between gap-4">
 
           <Link
@@ -63,22 +66,23 @@ export default function Navbar({ lang = "en" }: { lang?: Lang }) {
           </ul>
 
           <div className="hidden items-center gap-3 md:flex">
+            <LangToggle lang={lang} />
             <WatchlistNavButton lang={lang} />
             {ready && !user && (
               <>
                 <button
                   type="button"
-                  onClick={() => openAuthModal({ mode: "login" })}
+                  onClick={() => openAuthModal({ mode: "login", lang })}
                   className="whitespace-nowrap text-sm text-slate-400 transition hover:text-white"
                 >
-                  Log in
+                  {lang === "zh" ? "登录" : "Log in"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => openAuthModal({ mode: "signup" })}
+                  onClick={() => openAuthModal({ mode: "signup", lang })}
                   className="btn-primary whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium text-white"
                 >
-                  Get started
+                  {lang === "zh" ? "免费开始" : "Get started"}
                 </button>
               </>
             )}
@@ -89,7 +93,7 @@ export default function Navbar({ lang = "en" }: { lang?: Lang }) {
             <WatchlistNavButton lang={lang} />
             <button
               type="button"
-              aria-label="Toggle menu"
+              aria-label={lang === "zh" ? "切换菜单" : "Toggle menu"}
               aria-expanded={open}
               onClick={() => setOpen(!open)}
               className="flex h-10 w-10 items-center justify-center rounded-lg border border-purple-500/20 text-slate-300 transition-colors hover:border-purple-500/40 hover:text-white"
@@ -134,21 +138,21 @@ export default function Navbar({ lang = "en" }: { lang?: Lang }) {
                   type="button"
                   onClick={() => {
                     setOpen(false);
-                    openAuthModal({ mode: "login" });
+                    openAuthModal({ mode: "login", lang });
                   }}
                   className="block w-full whitespace-nowrap rounded-full border border-white/10 px-5 py-2.5 text-center text-sm font-medium text-slate-300 transition hover:border-purple-400/30 hover:text-white"
                 >
-                  Log in
+                  {lang === "zh" ? "登录" : "Log in"}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setOpen(false);
-                    openAuthModal({ mode: "signup" });
+                    openAuthModal({ mode: "signup", lang });
                   }}
                   className="block w-full btn-primary whitespace-nowrap rounded-full px-5 py-2.5 text-center text-sm font-medium text-white"
                 >
-                  Get started
+                  {lang === "zh" ? "免费开始" : "Get started"}
                 </button>
               </li>
             )}

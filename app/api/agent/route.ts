@@ -1,3 +1,4 @@
+import { containsCjk } from "@/lib/localized-text";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -14,6 +15,7 @@ import { resolveRequestUser } from "@/lib/server/request-user";
 import { getUsage, incrementUsage } from "@/lib/server/quota";
 
 export const runtime = "nodejs";
+export const maxDuration = 35;
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type Lang = "zh" | "en";
@@ -61,7 +63,7 @@ function buildSystemPrompt(lang: Lang): string {
   if (lang === "zh") {
     return [...common, "请用简体中文回答，可适当使用换行分段。"].join("\n");
   }
-  return [...common, "Reply in English."].join("\n");
+  return [...common, "Reply exclusively in English, including instrument names. Do not include Chinese characters, even if the question or source data contains them."].join("\n");
 }
 
 async function generateReply(
@@ -107,6 +109,7 @@ async function generateReply(
     };
     const reply = json.choices?.[0]?.message?.content?.trim();
     if (!reply) throw new Error("empty llm reply");
+    if (lang === "en" && containsCjk(reply)) throw new Error("LANGUAGE_MISMATCH");
     return { mode: "llm", reply };
   } catch {
     // Degrade gracefully to the built-in analyst when the LLM call fails.
@@ -167,11 +170,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const bundle: MarketBundle = {
-    us: await getUsMarketSnapshot(),
-    cn: await getCnMarketSnapshot(),
-    asia: await getAsiaMarketSnapshot(),
-  };
+  // Each provider has its own timeout/fallback. Keep the legacy endpoint from
+  // turning a provider outage into an unhandled 500 as well.
+  const [us, cn, asia] = await Promise.all([
+    getUsMarketSnapshot(),
+    getCnMarketSnapshot(),
+    getAsiaMarketSnapshot(),
+  ]);
+  const bundle: MarketBundle = { us, cn, asia };
 
   const { mode, reply } = await generateReply(bundle, messages, lang);
   const used = unlimited ? null : await incrementUsage(user.id);

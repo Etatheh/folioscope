@@ -1,3 +1,4 @@
+import { getRequestLang } from "@/lib/server/lang";
 import { cookies } from "next/headers";
 
 import {
@@ -17,10 +18,11 @@ export const runtime = "nodejs";
  * development. Any non-admin caller gets 403.
  */
 export async function POST() {
+  const lang = await getRequestLang();
   const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
   if (!token) {
-    return Response.json({ ok: false, error: "未登录" }, { status: 401 });
+    return Response.json({ ok: false, error: lang === "zh" ? "未登录" : "You are not signed in." }, { status: 401 });
   }
 
   // Verify session and check admin status.
@@ -32,13 +34,13 @@ export async function POST() {
   }
 
   if (!viewer) {
-    return Response.json({ ok: false, error: "会话已过期" }, { status: 401 });
+    return Response.json({ ok: false, error: lang === "zh" ? "会话已过期" : "Your session has expired. Please log in again." }, { status: 401 });
   }
 
   // Only admin (developer) accounts may use the self-service upgrade.
   if (viewer.tier !== "admin") {
     return Response.json(
-      { ok: false, error: "无权限：此接口仅限开发者使用", code: "ADMIN_ONLY" },
+      { ok: false, error: lang === "zh" ? "无权限：此接口仅限开发者使用" : "This action is available to developers only.", code: "ADMIN_ONLY" },
       { status: 403 }
     );
   }
@@ -46,11 +48,11 @@ export async function POST() {
   try {
     const user = await upgradeBySession(token);
     if (!user) {
-      return Response.json({ ok: false, error: "升级失败" }, { status: 500 });
+      return Response.json({ ok: false, error: lang === "zh" ? "升级失败" : "Unable to activate Pro. Please try again." }, { status: 500 });
     }
     return Response.json({ ok: true, user });
   } catch (error) {
     console.error("[auth/upgrade]", error);
-    return Response.json({ ok: false, error: "升级失败" }, { status: 500 });
+    return Response.json({ ok: false, error: lang === "zh" ? "升级失败" : "Unable to activate Pro. Please try again." }, { status: 500 });
   }
 }

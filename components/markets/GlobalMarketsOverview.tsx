@@ -3,8 +3,8 @@ import type { UsMarketSnapshot } from "@/lib/us-stocks";
 import { IndexCard } from "@/components/market-cards";
 import StaggerGrid from "@/components/ui/StaggerGrid";
 
-function fmtTime(ms: number) {
-  return new Intl.DateTimeFormat("zh-CN", {
+function fmtTime(ms: number, lang: Lang) {
+  return new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", {
     timeZone: "Asia/Shanghai",
     month: "2-digit",
     day: "2-digit",
@@ -41,7 +41,7 @@ function RegionCard({
           <p className="mt-1 text-xs text-slate-500">
             {snapshot.demo
               ? t.demoNote
-              : `${t.updated} ${fmtTime(snapshot.fetchedAt)}`}{" "}
+              : `${t.updated} ${fmtTime(snapshot.fetchedAt, lang)}`}{" "}
             · {t.disclaimer}
           </p>
         </div>

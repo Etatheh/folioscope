@@ -1,3 +1,4 @@
+import { getRequestLang } from "@/lib/server/lang";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import Navbar from "@/components/Navbar";
 import SiteFooter from "@/components/SiteFooter";
@@ -9,7 +10,8 @@ export const metadata = {
   description: "Learning notes, coding logs, investment thinking, and personal reflections.",
 };
 
-export default function JourneyPage() {
+export default async function JourneyPage() {
+  const lang = await getRequestLang();
   const posts = getJourneyPosts();
   const latestPost = posts[0];
 
@@ -27,8 +29,7 @@ export default function JourneyPage() {
             A quiet archive for becoming.
           </h1>
           <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-400">
-            学习、开发、投资和随想都放在这里。像 Notion 一样清晰，像 Linear 一样克制，
-            像 Apple 页面一样保留呼吸感。
+            {lang === "zh" ? "学习、开发、投资和随想都放在这里。像 Notion 一样清晰，像 Linear 一样克制，像 Apple 页面一样保留呼吸感。" : "A space for learning, building, investing, and reflection. Clear structure, quiet design, and room to think."}
           </p>
           <Link
             href="/"

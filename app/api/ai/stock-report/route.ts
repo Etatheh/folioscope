@@ -1,3 +1,4 @@
+import { containsCjk } from "@/lib/localized-text";
 import YahooFinance from "yahoo-finance2";
 import type { QuoteSummaryResult } from "yahoo-finance2/modules/quoteSummary";
 
@@ -167,7 +168,7 @@ const SYSTEM_PROMPT = `You are a senior equity research analyst writing a fundam
 Rules:
 - Use ONLY the Yahoo Finance data provided. Never invent or extrapolate figures.
 - If a metric is missing, explicitly say "数据缺失 / data unavailable" instead of guessing.
-- Write in both Simplified Chinese (zh) and English (en). The two versions must carry the same meaning.
+- Write in both Simplified Chinese (zh) and English (en). The two versions must carry the same meaning. English fields must contain only English text and English instrument names, with no Chinese characters.
 - Return STRICT JSON only, with no markdown, no code fences and no extra text.
 - JSON shape:
 {
@@ -296,8 +297,8 @@ function localizedText(value: unknown): BilingualText | null {
   const record = value as Record<string, unknown>;
   const zh = text(record.zh);
   const en = text(record.en);
-  if (!zh && !en) return null;
-  return { zh: zh || en, en: en || zh };
+  if (!zh || !en || containsCjk(en)) return null;
+  return { zh, en };
 }
 
 function localizedList(value: unknown): BilingualList | null {
@@ -312,8 +313,8 @@ function localizedList(value: unknown): BilingualList | null {
   };
   const zh = pick(record.zh);
   const en = pick(record.en);
-  if (zh.length === 0 && en.length === 0) return null;
-  return { zh: zh.length > 0 ? zh : en, en: en.length > 0 ? en : zh };
+  if (zh.length === 0 || en.length === 0 || en.some(containsCjk)) return null;
+  return { zh, en };
 }
 
 function normalizeReport(raw: string): StockReport {
@@ -357,7 +358,7 @@ async function handleStockReport(
 
   // 1) 24-hour cache hit: return immediately without touching Yahoo or the LLM.
   const cached = await readStockReportCache(symbol);
-  if (cached) {
+  if (cached && !containsCjk(JSON.stringify([cached.report.summary.en, cached.report.highlights.en, cached.report.valuation.en, cached.report.risks.en, cached.report.verdict.en]))) {
     const response: StockReportResult & { ok: true; cached: true } = {
       ok: true,
       cached: true,

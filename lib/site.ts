@@ -1,5 +1,11 @@
 export const SITE_NAME = "FolioScope";
 export const SITE_URL = "https://folioscope.live";
+/**
+ * OAuth providers and hosted checkout returns must always target the canonical
+ * production origin. Preview origins are intentionally never accepted here.
+ */
+export const OAUTH_CALLBACK_URL = `${SITE_URL}/auth/callback`;
+export const CREEM_SUCCESS_URL = `${SITE_URL}/dashboard?checkout=success`;
 export const CONTACT_EMAIL = "etatheh@hotmail.com";
 
 export const SITE_DESCRIPTION =

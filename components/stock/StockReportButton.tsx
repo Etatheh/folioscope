@@ -1,4 +1,5 @@
 "use client";
+import { localizedError } from "@/lib/localized-text";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
@@ -523,7 +524,7 @@ export default function StockReportButton({
           response.status === 401
             ? t.unauthorized
             : payload && payload.ok === false
-              ? payload.error
+              ? localizedError(payload.error, lang, t.error)
               : t.error
         );
         return;

@@ -1,3 +1,5 @@
+import { PLANS_CONFIG } from "@/config/plans";
+
 // Multi-period dollar-cost-averaging backtest data for the Pro card.
 //
 // The card lets the user pick the DCA target (S&P 500 or Nasdaq 100) and
@@ -30,7 +32,7 @@ export type DcaDataset = {
 };
 
 /** Full history kept server-side so the client can slice any period up to 10y. */
-export const MAX_MONTHS = 120;
+export const MAX_MONTHS = PLANS_CONFIG.pro.limits.indexDcaMonths;
 /** Shortest period the multi-period engine can meaningfully display. */
 export const MIN_MONTHS = 6;
 

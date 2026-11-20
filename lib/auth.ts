@@ -1,3 +1,4 @@
+import { resolveClientLang } from "./lang-pref";
 // Demo account store (shell auth).
 // No backend yet: users and sessions live in localStorage on this browser only.
 // Password is checked only for presence — do NOT use this for real accounts.
@@ -67,11 +68,11 @@ export type AuthResult = { ok: true; user: SessionUser } | { ok: false; error: s
 
 export function register(email: string, name: string, password: string): AuthResult {
   const e = email.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return { ok: false, error: "请输入有效的邮箱地址" };
-  if (name.trim().length < 2) return { ok: false, error: "昵称至少 2 个字符" };
-  if (password.length < 6) return { ok: false, error: "密码至少 6 位" };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return { ok: false, error: resolveClientLang() === "zh" ? "请输入有效的邮箱地址" : "Please enter a valid email address." };
+  if (name.trim().length < 2) return { ok: false, error: resolveClientLang() === "zh" ? "昵称至少 2 个字符" : "Your name must contain at least 2 characters." };
+  if (password.length < 6) return { ok: false, error: resolveClientLang() === "zh" ? "密码至少 6 位" : "Your password must contain at least 6 characters." };
   const users = readUsers();
-  if (users.some((u) => u.email === e)) return { ok: false, error: "该邮箱已注册，请直接登录" };
+  if (users.some((u) => u.email === e)) return { ok: false, error: resolveClientLang() === "zh" ? "该邮箱已注册，请直接登录" : "This email is already registered. Please log in." };
   const user: SessionUser = {
     email: e,
     name: name.trim(),
@@ -86,10 +87,10 @@ export function register(email: string, name: string, password: string): AuthRes
 
 export function login(email: string, password: string): AuthResult {
   const e = email.trim().toLowerCase();
-  if (!e) return { ok: false, error: "请输入邮箱" };
-  if (!password) return { ok: false, error: "请输入密码" };
+  if (!e) return { ok: false, error: resolveClientLang() === "zh" ? "请输入邮箱" : "Please enter your email address." };
+  if (!password) return { ok: false, error: resolveClientLang() === "zh" ? "请输入密码" : "Please enter your password." };
   const user = readUsers().find((u) => u.email === e);
-  if (!user) return { ok: false, error: "该邮箱尚未注册" };
+  if (!user) return { ok: false, error: resolveClientLang() === "zh" ? "该邮箱尚未注册" : "No account was found for this email address." };
   persistSession(user);
   return { ok: true, user };
 }

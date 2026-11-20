@@ -1,3 +1,5 @@
+import { PLANS_CONFIG } from "@/config/plans";
+
 import type { DcaPoint } from "@/lib/dca";
 
 export type PeriodKey = "m6" | "y1" | "y3" | "y5" | "y10";
@@ -8,8 +10,8 @@ export const PERIODS: Period[] = [
   { key: "m6", months: 6 },
   { key: "y1", months: 12 },
   { key: "y3", months: 36 },
-  { key: "y5", months: 60 },
-  { key: "y10", months: 120, pro: true },
+  { key: "y5", months: PLANS_CONFIG.free.limits.backtestMonths },
+  { key: "y10", months: PLANS_CONFIG.pro.limits.backtestMonths, pro: true },
 ];
 
 export const DEFAULT_PERIOD: PeriodKey = "y5";

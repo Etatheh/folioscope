@@ -174,9 +174,9 @@ export default function WatchlistHub({
           </span>
           <span
             className="rounded-full border border-purple-400/20 bg-purple-500/[0.08] px-2.5 py-1 text-[10px] tabular-nums text-purple-200"
-            title={lang === "zh" ? "免费版自选额度" : "Free watchlist quota"}
+            title={lang === "zh" ? "已保存自选股（无数量上限）" : "Saved watchlist entries (no count cap)"}
           >
-            {count} / {isPro ? "∞" : FEATURED_SYMBOLS.length}
+            {count} / ∞
           </span>
           <ProBadge label={t.proSearchBadge} title={t.proLockedBody} />
         </div>

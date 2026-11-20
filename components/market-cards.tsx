@@ -1,3 +1,4 @@
+import { localizedName } from "@/lib/localized-text";
 import Link from "next/link";
 import type { UsQuote } from "@/lib/us-stocks";
 import type { ViewerPlan } from "@/lib/access";
@@ -11,7 +12,6 @@ import {
   MacdValue,
   RsiValue,
   Sparkline,
-  ValuationChip,
   fmtCap,
   fmtPrice,
 } from "./market-ui";
@@ -35,7 +35,7 @@ export function UnlockCta({
  */
 function names(quote: UsQuote, lang: Lang) {
   if (lang === "zh") return { primary: quote.name, secondary: quote.nameEn };
-  return { primary: quote.nameEn || quote.name, secondary: null as string | null };
+  return { primary: localizedName(quote, "en"), secondary: null as string | null };
 }
 
 function CardShell({
@@ -155,7 +155,6 @@ export function IndexCard({
               </span>
             )}
           </div>
-          <ValuationChip percentile={valuation.pePercentile} lang={lang} />
         </div>
       )}
       {tech && (

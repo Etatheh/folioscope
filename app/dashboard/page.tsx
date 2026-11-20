@@ -1,4 +1,7 @@
+import { localizedName } from "@/lib/localized-text";
+import { PLANS_CONFIG } from "@/config/plans";
 import { cookies } from "next/headers";
+import { Suspense } from "react";
 
 import AiAnalysisPanel from "@/components/ai/AiAnalysisPanel";
 import AiAssistantDrawer from "@/components/ai/AiAssistantDrawer";
@@ -24,10 +27,13 @@ import { getDcaDataset } from "@/lib/dca";
 import { getCnMarketSnapshot } from "@/lib/cn-markets";
 import { getAsiaMarketSnapshot, ASIA_CURRENCY } from "@/lib/asia-markets";
 import { getEuropeMarketSnapshot } from "@/lib/europe-markets";
-import { parseDashboardView } from "@/lib/dashboard-views";
+import { parseDashboardView, type DashboardView } from "@/lib/dashboard-views";
+import type { ViewerPlan } from "@/lib/access";
+import type { Lang } from "@/lib/i18n";
 import { getServerViewer } from "@/lib/server/viewer";
 import { dict, parseLang } from "@/lib/i18n";
 import { LANG_COOKIE } from "@/lib/lang-pref";
+import { Reveal } from "@/components/ui/Reveal";
 
 export const metadata = {
   title: "Dashboard",
@@ -48,21 +54,41 @@ export default async function DashboardPage({
     view?: string | string[];
   }>;
 }) {
-  const { lang: rawLang, tab: rawTab, view: rawView } = await searchParams;
+  const { tab: rawTab, view: rawView } = await searchParams;
   const store = await cookies();
-  // Honour an explicit ?lang= first, then a remembered cookie choice, else English.
-  const lang = parseLang(rawLang ?? store.get(LANG_COOKIE)?.value);
-  const t = dict[lang];
+  // Only an explicitly saved preference enables Chinese; otherwise use English.
+  const lang = parseLang(store.get(LANG_COOKIE)?.value);
   const view = parseDashboardView(rawView);
   const watchlistTab =
     (Array.isArray(rawTab) ? rawTab[0] : rawTab) === "mine" ? "mine" : "featured";
 
   const viewer = await getServerViewer();
   const plan = getViewerPlan(viewer);
-  const fullAccess = hasFullDashboardAccess(plan);
 
+  return (
+    <DashboardShell lang={lang} plan={plan} view={view}>
+      {view === "simulator" && (
+        <Suspense key={`simulator-${lang}`} fallback={<PanelLoading lang={lang} />}>
+          <SimulatorPanel lang={lang} plan={plan} />
+        </Suspense>
+      )}
+      <Suspense key={`${lang}-${view}-${watchlistTab}`} fallback={view === "simulator" ? null : <PanelLoading lang={lang} />}>
+        <DashboardContent lang={lang} plan={plan} view={view} watchlistTab={watchlistTab} />
+      </Suspense>
+    </DashboardShell>
+  );
+}
+
+function PanelLoading({ lang }: { lang: Lang }) {
+  return <div role="status" className="glass rounded-2xl p-6 text-sm text-slate-400">{lang === "zh" ? "正在加载面板数据…" : "Loading panel data…"}</div>;
+}
+
+async function DashboardContent({ lang, plan, view, watchlistTab }: {
+  lang: Lang; plan: ViewerPlan; view: DashboardView; watchlistTab: "mine" | "featured";
+}) {
+  const t = dict[lang];
   const showCn = lang === "zh";
-  const [usData, dcaData, watchlistQuotes, europeData, asiaData, cnData, simData] =
+  const [usData, dcaData, watchlistQuotes, europeData, asiaData, cnData] =
     await Promise.all([
       getUsMarketSnapshot(),
       getDcaDataset(),
@@ -76,10 +102,6 @@ export default async function DashboardPage({
         ? getAsiaMarketSnapshot()
         : Promise.resolve(null),
       showCn && view === "all" ? getCnMarketSnapshot() : Promise.resolve(null),
-      // Pro gets the full history (Custom + 10Y). Free is capped at ~5 years.
-      view === "simulator"
-        ? getSimulationData(fullAccess ? 3200 : 1300)
-        : Promise.resolve(null),
     ]);
 
   const europe = europeData ?? emptySnapshot();
@@ -92,26 +114,6 @@ export default async function DashboardPage({
     ...usData,
     stocks: watchlistQuotes.length > 0 ? watchlistQuotes : usData.stocks,
   };
-
-  // Free / anonymous viewers get the complete 14-name curated pool in the
-  // simulator; Pro keeps the full dataset plus on-demand search additions.
-  let sim: Awaited<ReturnType<typeof getSimulationData>> | null = null;
-  if (simData) {
-    const allowedSymbols = new Set<string>(
-      fullAccess ? Object.keys(simData.series) : FEATURED_SYMBOLS
-    );
-    sim = {
-      ...simData,
-      series: Object.fromEntries(
-        Object.entries(simData.series).filter(([symbol]) =>
-          allowedSymbols.has(symbol)
-        )
-      ),
-    };
-  }
-  const simDefaults = fullAccess
-    ? ["AAPL", "MSFT", "NVDA", "AMZN", "JPM"]
-    : ["AAPL", "MSFT", "NVDA", "GOOGL"];
 
   // Live context for FolioScope AI. The simulator publishes its own live DCA
   // plan; these values match the fallback plan for first paint.
@@ -132,7 +134,7 @@ export default async function DashboardPage({
     lang,
     indices: contextQuotes.map((quote) => ({
       symbol: quote.symbol,
-      name: lang === "zh" ? quote.name : quote.nameEn || quote.name,
+      name: lang === "zh" ? quote.name : localizedName(quote, "en"),
       price: quote.price,
       changePct: quote.changePct,
       pe: quote.valuation?.pe ?? quote.pe ?? null,
@@ -164,7 +166,7 @@ export default async function DashboardPage({
 
   return (
     <>
-      <DashboardShell lang={lang} plan={plan} view={view}>
+      <Reveal key={`${lang}-${view}-${watchlistTab}`} scroll={false} delay={0.57}>
         {view === "all" && (
           <GlobalMarketsOverview
             lang={lang}
@@ -217,19 +219,34 @@ export default async function DashboardPage({
           </section>
         )}
 
-        {view === "simulator" && sim && (
-          <SimulatorWorkbench
-            lang={lang}
-            plan={plan}
-            data={sim}
-            defaults={simDefaults}
-          />
-        )}
-
         {view === "ai" && <AiAnalysisPanel lang={lang} plan={plan} />}
-      </DashboardShell>
+      </Reveal>
 
       <AiAssistantDrawer lang={lang} marketContext={chatContext} />
     </>
+  );
+}
+
+async function SimulatorPanel({ lang, plan }: { lang: Lang; plan: ViewerPlan }) {
+  const fullAccess = hasFullDashboardAccess(plan);
+  const simData = await getSimulationData(PLANS_CONFIG[fullAccess ? "pro" : "free"].limits.historyBars);
+  const allowedSymbols = new Set<string>(fullAccess ? Object.keys(simData.series) : FEATURED_SYMBOLS);
+  const sim = {
+    ...simData,
+    series: Object.fromEntries(Object.entries(simData.series).filter(([symbol]) => allowedSymbols.has(symbol))),
+  };
+  const defaults = fullAccess ? ["AAPL", "MSFT", "NVDA", "AMZN", "JPM"] : ["AAPL", "MSFT", "NVDA", "GOOGL"];
+  return (
+    <Reveal key={`simulator-${lang}`} scroll={false} delay={0.57}>
+      {Object.keys(sim.series).length === 0 && (
+        <div role="status" className="glass mb-4 rounded-2xl p-5 text-sm text-amber-200">
+          {lang === "zh" ? "历史行情暂时不可用，请稍后重试。" : "Historical market data is temporarily unavailable. Please try again."}{" "}
+          <a className="underline" href={`/dashboard?lang=${lang}&view=simulator`}>
+            {lang === "zh" ? "重新加载" : "Reload"}
+          </a>
+        </div>
+      )}
+      <SimulatorWorkbench lang={lang} plan={plan} data={sim} defaults={defaults} />
+    </Reveal>
   );
 }

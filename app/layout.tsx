@@ -1,3 +1,5 @@
+import { LanguageProvider } from "@/components/LanguageProvider";
+import { getRequestLang } from "@/lib/server/lang";
 import type { Metadata } from "next";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
 import ToastHost from "@/components/ui/ToastHost";
@@ -18,8 +20,8 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  authors: [{ name: "Yibo Gui" }],
-  creator: "Yibo Gui",
+  authors: [{ name: "FolioScope" }],
+  creator: "FolioScope",
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
@@ -34,19 +36,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lang = await getRequestLang();
   return (
-    <html lang="en" className="h-full scroll-smooth antialiased" data-scroll-behavior="smooth">
+    <html lang={lang} className="h-full scroll-smooth antialiased" data-scroll-behavior="smooth">
       <body className="min-h-full overflow-x-hidden text-slate-100">
+        <LanguageProvider lang={lang}>
         <AuthModalProvider>
           <WatchlistProvider>{children}</WatchlistProvider>
         </AuthModalProvider>
         <ToastHost />
         <CheckoutReturn />
+        </LanguageProvider>
       </body>
     </html>
   );

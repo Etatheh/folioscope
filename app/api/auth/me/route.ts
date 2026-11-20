@@ -1,3 +1,4 @@
+import { getRequestLang } from "@/lib/server/lang";
 import { cookies } from "next/headers";
 
 import { resolveRequestUser } from "@/lib/server/request-user";
@@ -11,6 +12,7 @@ export const runtime = "nodejs";
  * same paid-access rule: `tier === "pro" || tier === "admin"`.
  */
 export async function GET(request: Request) {
+  const lang = await getRequestLang();
   const store = await cookies();
 
   try {
@@ -18,7 +20,7 @@ export async function GET(request: Request) {
     const user = session?.user ?? null;
     if (!user) {
       store.delete(COOKIE_NAME);
-      return Response.json({ ok: false, error: "未登录" }, { status: 401 });
+      return Response.json({ ok: false, error: lang === "zh" ? "未登录" : "You are not signed in." }, { status: 401 });
     }
 
     const tier =
@@ -26,6 +28,6 @@ export async function GET(request: Request) {
     return Response.json({ ok: true, user: { ...user, tier } });
   } catch (error) {
     console.error("[auth/me]", error);
-    return Response.json({ ok: false, error: "读取会话失败" }, { status: 500 });
+    return Response.json({ ok: false, error: lang === "zh" ? "读取会话失败" : "Unable to load your session. Please try again." }, { status: 500 });
   }
 }

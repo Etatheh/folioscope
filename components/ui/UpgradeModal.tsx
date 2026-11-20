@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/client-api";
 import { dict, type Lang } from "@/lib/i18n";
 import { useProfile } from "@/lib/use-profile";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import { getBillingCopy, getComparisonRows } from "@/config/plans";
 import ProBadge from "./ProBadge";
 
 type UpgradeStatus = "idle" | "busy" | "done" | "error";
@@ -242,8 +243,8 @@ export default function UpgradeModal({
       </div>
 
       <div className="relative mt-5 flex items-end gap-2 border-y border-white/10 py-4">
-        <span className="text-3xl font-semibold tracking-tight text-white">{t.price}</span>
-        <span className="pb-1 text-xs text-slate-500">{t.period}</span>
+        <span className="text-3xl font-semibold tracking-tight text-white">{getBillingCopy("pro", "monthly", lang).price}</span>
+        <span className="pb-1 text-xs text-slate-500">{getBillingCopy("pro", "monthly", lang).period}</span>
         {isProTier(profile?.tier) && (
           <span className="ml-auto rounded-full bg-emerald-400/10 px-2.5 py-1 text-[10px] text-emerald-300">
             {isAdminTier(profile?.tier)
@@ -272,7 +273,7 @@ export default function UpgradeModal({
             </tr>
           </thead>
           <tbody>
-            {t.rows.map((row) => (
+            {getComparisonRows(lang).map((row) => (
               <tr key={row.label} className="align-middle">
                 <th scope="row" className="rounded-l-lg bg-white/[0.03] py-1.5 pl-2.5 pr-2 text-left font-normal text-slate-300">
                   {row.label}

@@ -1,3 +1,5 @@
+import { FREE_MARKET_SYMBOLS } from "@/config/plans";
+
 // Viewer access control: anonymous visitors and Free users see a small slice
 // of each market; Pro unlocks everything. Indices stay visible for everyone.
 
@@ -61,18 +63,9 @@ export function hasFullDashboardAccess(plan: ViewerPlan): boolean {
   return isProTier(plan);
 }
 
-export const FREE_STOCK_COUNT = 4;
+export const FREE_STOCK_COUNT = FREE_MARKET_SYMBOLS.us.length;
 
-export const FREE_STOCK_SYMBOLS: Record<
-  "us" | "cn" | "asia" | "europe",
-  string[]
-> = {
-  us: ["AAPL", "MSFT", "NVDA", "GOOGL"],
-  cn: ["600519", "300750", "002594", "688981"],
-  asia: ["7203", "6758", "9984", "7974"],
-  // Europe is an index-only board, so there are no individual free stocks.
-  europe: [],
-};
+export const FREE_STOCK_SYMBOLS = FREE_MARKET_SYMBOLS;
 
 export const INDEX_SYMBOLS = new Set([
   "DJI",
