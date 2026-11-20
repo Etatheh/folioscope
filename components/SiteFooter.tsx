@@ -3,6 +3,7 @@ import { useLanguage } from "./LanguageProvider";
 import Link from "next/link";
 
 import {
+  CONTACT_EMAIL,
   LEGAL_LINKS,
   SITE_DISCLAIMER,
   SITE_NAME,
@@ -50,6 +51,10 @@ export default function SiteFooter({ compact = false }: { compact?: boolean }) {
               target="_blank"
             >
               folioscope.live
+            </a>
+            {" · "}
+            <a href={`mailto:${CONTACT_EMAIL}`} className="transition hover:text-slate-400">
+              Contact: {CONTACT_EMAIL}
             </a>
           </p>
         </div>
