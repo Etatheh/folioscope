@@ -11,6 +11,7 @@ import UserMenu from "@/components/UserMenu";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import ProUpgradeButton from "@/components/ui/ProUpgradeButton";
 import { Icon } from "@/components/ui/Icon";
+import { Reveal, StaggerGroup } from "@/components/ui/Reveal";
 import WatchlistNavButton from "@/components/watchlist/WatchlistNavButton";
 import { useWatchlist } from "@/components/watchlist/WatchlistProvider";
 import { hasFullDashboardAccess, type ViewerPlan } from "@/lib/access";
@@ -455,19 +456,19 @@ export default function DashboardShell({
               </svg>
             </button>
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[10px] font-medium uppercase tracking-[0.2em] text-purple-400">
+            <StaggerGroup key={`${view}-${lang}`} scroll={false} className="min-w-0 flex-1">
+              <Reveal inherit as="p" className="truncate text-[10px] font-medium uppercase tracking-[0.2em] text-purple-400">
                 {dict[lang].eyebrow}
-              </p>
-              <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              </Reveal>
+              <Reveal inherit as="h1" className="mt-1 truncate text-xl font-semibold tracking-tight text-white sm:text-2xl">
                 {viewCopy.title}
-              </h1>
-              <p className="mt-0.5 hidden truncate text-xs text-slate-500 sm:block">
+              </Reveal>
+              <Reveal inherit as="p" className="mt-0.5 hidden truncate text-xs text-slate-500 sm:block">
                 {viewCopy.subtitle}
-              </p>
-            </div>
+              </Reveal>
+            </StaggerGroup>
 
-            <div className="flex w-full shrink-0 items-center justify-end gap-1.5 sm:w-auto sm:gap-2">
+            <Reveal key={`actions-${view}-${lang}`} scroll={false} delay={0.57} className="flex w-full shrink-0 items-center justify-end gap-1.5 sm:w-auto sm:gap-2">
               <LangToggle
                 lang={lang}
                 path="/dashboard"
@@ -475,7 +476,7 @@ export default function DashboardShell({
               />
               <WatchlistNavButton lang={lang} />
               <UserMenu lang={lang} />
-            </div>
+            </Reveal>
           </div>
         </header>
 
