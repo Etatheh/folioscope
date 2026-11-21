@@ -69,6 +69,11 @@ export default function TermsPage() {
           database security policies, or interfere with the operation of our
           infrastructure.
         </li>
+        <li>
+          Use the AI assistant, market summary tools, or any automated generation
+          features to submit, generate, or distribute NSFW, sexually explicit,
+          hateful, harassing, illegal, or abusive prompts and content.
+        </li>
       </ul>
 
       <h2>5. Billing, Merchant of Record &amp; Subscriptions</h2>
