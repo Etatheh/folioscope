@@ -5,6 +5,7 @@
 // demo snapshot so the UI never breaks; technicals then show as unavailable.
 
 import { fetchKlinesSecid } from "./klines";
+import { fetchYahooHistory } from "./yahoo-history";
 import { SYMBOL_NAMES } from "./watchlist";
 
 export type Candle = {
@@ -183,8 +184,7 @@ function parseSinaRecord(fields: string[], item: WatchItem): UsQuote | null {
   };
 }
 
-async function fetchLiveSnapshot(): Promise<UsMarketSnapshot> {
-  const all = [...INDICES, ...STOCKS];
+async function fetchSinaQuotes(all: WatchItem[]): Promise<UsQuote[]> {
   const list = all.map((item) => sinaCode(item.symbol)).join(",");
   const response = await fetch(`${SINA_ENDPOINT}${list}`, {
     headers: SINA_HEADERS,
@@ -203,11 +203,25 @@ async function fetchLiveSnapshot(): Promise<UsMarketSnapshot> {
     const fields = records.get(sinaCode(item.symbol));
     return fields ? parseSinaRecord(fields, item) : null;
   };
+  return all.map(resolve).filter((q): q is UsQuote => q !== null);
+}
+
+export async function fetchStockDetailQuote(symbol: string): Promise<UsQuote | null> {
+  const item = [...STOCKS, ...FEATURED_ITEMS].find(item => item.symbol === symbol);
+  if (!item) return null;
+  const cached = cache?.data.stocks.find(quote => quote.symbol === symbol);
+  if (cached && cache && Date.now() - cache.at < QUOTE_TTL_MS && !cache.data.demo) return cached;
+  const [quote] = await fetchSinaQuotes([item]).catch(() => []);
+  return quote ?? fetchQuoteBySymbol(symbol);
+}
+
+async function fetchLiveSnapshot(): Promise<UsMarketSnapshot> {
+  const quotes = await fetchSinaQuotes([...INDICES, ...STOCKS]);
   const snapshot: UsMarketSnapshot = {
     demo: false,
     fetchedAt: Date.now(),
-    indices: INDICES.map(resolve).filter((q): q is UsQuote => q !== null),
-    stocks: STOCKS.map(resolve).filter((q): q is UsQuote => q !== null),
+    indices: quotes.filter(q => q.symbol in SINA_INDICES),
+    stocks: quotes.filter(q => !(q.symbol in SINA_INDICES)),
   };
   if (snapshot.stocks.length === 0) {
     throw new Error("sina quote payload contained no usable records");
@@ -479,12 +493,18 @@ export async function fetchUsKlines(
   symbol: string,
   limit = 320
 ): Promise<Candle[]> {
+  const yahooSymbol = symbol === "INX" ? "^GSPC" : symbol === "NDX" ? "^NDX" : symbol === "IXIC" ? "^IXIC" : symbol === "DJI" ? "^DJI" : symbol.replace(".", "-");
+  if (process.env.MARKET_DATA_PROXY) return fetchYahooHistory(yahooSymbol, limit);
   let secid: string | null = US_KLINE_SECID[symbol] ?? null;
   if (!secid) {
     secid = await resolveUsSecid(symbol);
   }
   if (!secid) throw new Error(`no kline secid for ${symbol}`);
-  return fetchKlinesSecid(symbol, secid, limit);
+  try {
+    return await fetchKlinesSecid(symbol, secid, limit);
+  } catch {
+    return fetchYahooHistory(yahooSymbol, limit);
+  }
 }
 
 function emaSeries(values: number[], period: number): (number | null)[] {
@@ -823,17 +843,58 @@ export type SimulationData = {
   benchmark: { symbol: string; name: string; closes: number[] };
 };
 
+// Keep successful benchmark responses briefly across simulator requests.
+const benchmarkCache = new Map<number, { at: number; symbol: string; bars: Candle[] }>();
+
+async function fetchBenchmark(window: number, spyBars: Candle[] | null) {
+  const cached = benchmarkCache.get(window);
+  if (cached && Date.now() - cached.at < 5 * 60_000) return cached;
+  let bars: Candle[] = [];
+  let symbol = "INX";
+  try {
+    bars = await fetchUsKlines("INX", window);
+  } catch {
+    // Yahoo's chart endpoint uses a ticker in the URL path, which must be encoded.
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent("^GSPC")}?range=20y&interval=1d`;
+      const response = await fetch(url, { signal: AbortSignal.timeout(8000), cache: "no-store" });
+      if (!response.ok) throw new Error(`benchmark response ${response.status}`);
+      const json = await response.json();
+      const result = json.chart?.result?.[0];
+      const timestamps: number[] = result?.timestamp ?? [];
+      const closes: (number | null)[] = result?.indicators?.quote?.[0]?.close ?? [];
+      const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+      bars = timestamps.flatMap((timestamp, i) => {
+        const close = closes[i];
+        if (typeof close !== "number" || !Number.isFinite(close) || close <= 0) return [];
+        const parts = formatter.formatToParts(new Date(timestamp * 1000));
+        const part = (type: string) => parts.find((item) => item.type === type)?.value;
+        return [{ date: `${part("year")}-${part("month")}-${part("day")}`, open: close, high: close, low: close, close, volume: 0 }];
+      }).slice(-window);
+      symbol = "^GSPC";
+    } catch {
+      bars = [];
+    }
+  }
+  if (bars.length === 0 && spyBars?.length) {
+    bars = spyBars;
+    symbol = "SPY";
+  }
+  const entry = { at: Date.now(), symbol, bars };
+  if (bars.length > 0) benchmarkCache.set(window, entry);
+  return entry;
+}
+
 export async function getSimulationData(
   window = 1300
 ): Promise<SimulationData> {
   // Include the complete featured pool so FREE users can backtest all 14 names.
   // Pro users additionally keep COST/JPM and can add any U.S. ticker on demand.
-  const symbols = [
+  const symbols = [...new Set([
     ...STOCKS.map((item) => item.symbol),
     ...FEATURED_ITEMS.map((item) => item.symbol),
-  ];
-  const benchSymbol = "INX";
-  const all = [...symbols, benchSymbol];
+  ])];
+  const all = symbols;
 
   const barsList = await mapWithConcurrency(all, 6, async (symbol) => {
     try {
@@ -843,10 +904,13 @@ export async function getSimulationData(
     }
   });
 
+  const benchmark = await fetchBenchmark(Math.max(window, 320), barsList[all.indexOf("SPY")] ?? null);
+  const dateKey = (date: string) => date.slice(0, 10);
+
   const union = new Set<string>();
   for (const bars of barsList) {
     if (!bars) continue;
-    for (const bar of bars) union.add(bar.date);
+    for (const bar of bars) union.add(dateKey(bar.date));
   }
   const dates = [...union].sort().slice(-window);
 
@@ -854,7 +918,7 @@ export async function getSimulationData(
   barsList.forEach((bars, idx) => {
     const symbol = all[idx];
     if (!bars) return;
-    const map = new Map(bars.map((bar) => [bar.date, bar.close]));
+    const map = new Map(bars.map((bar) => [dateKey(bar.date), bar.close]));
     let last = NaN;
     const closes = dates.map((date) => {
       const close = map.get(date);
@@ -864,9 +928,8 @@ export async function getSimulationData(
     series[symbol] = closes;
   });
 
-  const benchmarkBars = barsList[all.length - 1];
   const benchMap = new Map(
-    (benchmarkBars ?? []).map((bar) => [bar.date, bar.close])
+    benchmark.bars.map((bar) => [dateKey(bar.date), bar.close])
   );
   let benchLast = NaN;
   const benchmarkCloses = dates.map((date) => {
@@ -879,8 +942,8 @@ export async function getSimulationData(
     dates,
     series,
     benchmark: {
-      symbol: benchSymbol,
-      name: "S&P 500",
+      symbol: benchmark.symbol,
+      name: benchmark.symbol === "SPY" ? "S&P 500 (SPY)" : "S&P 500",
       closes: benchmarkCloses,
     },
   };

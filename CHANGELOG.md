@@ -6,6 +6,15 @@
 
 ---
 
+## 2026-11-26 - Markets 看板与完整价格图
+
+1. **日期与版本主题**：2026-11-26 — 优化美股行情浏览与图表详情。
+2. **核心改动内容**：紧凑行情卡片、走势周期、市场涨跌分布及快捷操作。股票和指数共用完整价格图，详情使用真实历史 OHLCV。
+3. **涉及的核心文件路径**：`components/UsStockPanel.tsx`、`components/markets/`、`components/PriceChart.tsx`、`lib/instruments.ts`、`lib/yahoo-history.ts`。
+4. **架构与设计约定（Do Not Break）**：小图保留峰谷并平滑插值，完整图使用圆角折线，均线默认关闭。详情返回美股标签，免登录预览仅在开发环境启用。
+
+---
+
 ## 2026-11-20 - English-first i18n and shared subscription plans
 
 1. **日期与版本主题**：2026-11-20 — 默认英文、套餐配置统一及合规页面导航修复。

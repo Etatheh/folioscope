@@ -33,6 +33,12 @@ export function dashboardViewHref(
 /** Market parent + its four sub-views. */
 export const MARKET_VIEWS = ["all", "us", "europe", "asia"] as const;
 
+export function usInstrumentHref(symbol: string, lang: "en" | "zh", preview: boolean) {
+  return preview
+    ? `/markets-preview?symbol=${encodeURIComponent(symbol)}`
+    : `/dashboard/markets/${encodeURIComponent(symbol)}?lang=${lang}&from=us`;
+}
+
 export function isMarketView(view: DashboardView): boolean {
   return (MARKET_VIEWS as readonly string[]).includes(view);
 }

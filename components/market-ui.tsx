@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { Technicals, UsQuote } from "@/lib/us-stocks";
 import { dict, type Lang } from "@/lib/i18n";
 import AnimatedNumber from "./ui/AnimatedNumber";
@@ -45,34 +46,65 @@ export function ChangeChip({ quote }: { quote: UsQuote }) {
   );
 }
 
-export function Sparkline({ points }: { points: number[] }) {
+function monotonePath(ys: number[], step: number) {
+  // Tangents are measured per sample on this evenly spaced time axis.
+  const tangents = ys.map((y, i) => {
+    if (i === 0) return ys[1] - y;
+    if (i === ys.length - 1) return y - ys[i - 1];
+    const before = y - ys[i - 1];
+    const after = ys[i + 1] - y;
+    // Level off at extrema and plateaus. Else limit the tangent to the gentler slope.
+    return Math.sign(before) === Math.sign(after)
+      ? Math.sign(after) * Math.min(Math.abs(before), Math.abs(after))
+      : 0;
+  });
+  let path = `M0 ${ys[0]}`;
+  for (let i = 1; i < ys.length; i++) {
+    const control1 = `${(i - 2 / 3) * step} ${ys[i - 1] + tangents[i - 1] / 3}`;
+    const control2 = `${(i - 1 / 3) * step} ${ys[i] - tangents[i] / 3}`;
+    path += ` C${control1} ${control2} ${i * step} ${ys[i]}`;
+  }
+  return path;
+}
+
+export function Sparkline({ points, change, height }: { points: number[]; change?: number; height?: number }) {
+  const gradientId = useId();
+  const expanded = change !== undefined;
   if (points.length < 2) return null;
   const min = Math.min(...points);
   const max = Math.max(...points);
   const span = max - min || 1;
-  const w = 64;
-  const h = 24;
+  const w = expanded ? 240 : 64;
+  const h = height ?? (expanded ? 32 : 24);
   const step = w / (points.length - 1);
-  const path = points
-    .map((p, i) => {
-      const x = (i * step).toFixed(2);
-      const y = (h - 2 - ((p - min) / span) * (h - 5)).toFixed(2);
-      return `${i === 0 ? "M" : "L"}${x} ${y}`;
-    })
-    .join(" ");
-  const up = points[points.length - 1] >= points[0];
+  const path = monotonePath(points.map(p => h - 2 - ((p - min) / span) * (h - 5)), step);
+  const up = change === undefined ? points[points.length - 1] >= points[0] : change >= 0;
+  const color = up ? "#34D399" : "#F87171";
   return (
     <svg
-      width={w}
+      width={expanded ? "100%" : w}
       height={h}
       viewBox={`0 0 ${w} ${h}`}
-      className="shrink-0"
+      preserveAspectRatio="none"
+      className={expanded ? "my-2 block" : "shrink-0"}
       aria-hidden="true"
     >
+      {expanded && (
+        <>
+          <defs>
+            <linearGradient id={gradientId} x2="0" y2="1">
+              <stop stopColor={color} stopOpacity={height ? 0.2 : 0.18} />
+              <stop offset="1" stopColor={color} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={`${path} L${w} ${h} L0 ${h} Z`} fill={`url(#${gradientId})`} />
+        </>
+      )}
       <path
+        vectorEffect="non-scaling-stroke"
         d={path}
         fill="none"
-        stroke={up ? "#34d399" : "#fb7185"}
+        stroke={color}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

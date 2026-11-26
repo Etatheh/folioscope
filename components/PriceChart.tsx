@@ -66,7 +66,7 @@ const CHART_TEXT = {
 const MA_CONFIG = [
   { key: "ma5" as const, label: "MA5", color: "#60a5fa" },
   { key: "ma10" as const, label: "MA10", color: "#a78bfa" },
-  { key: "ma20" as const, label: "MA20", color: "#fbbf24" },
+  { key: "ma20" as const, label: "MA20", color: "#c5ac7c" },
 ];
 
 const BOLL_COLOR = "#f472b6";
@@ -212,11 +212,11 @@ function SubTabs({
               height={SUB_TAB_H - 2}
               rx={3}
               fill={
-                selected ? "rgba(168,85,247,0.22)" : "rgba(255,255,255,0.025)"
+                selected ? "rgba(56,189,248,0.22)" : "rgba(255,255,255,0.025)"
               }
               stroke={
                 selected
-                  ? "rgba(192,132,252,0.4)"
+                  ? "rgba(148,190,255,0.4)"
                   : "rgba(255,255,255,0.05)"
               }
               strokeWidth={0.8}
@@ -258,8 +258,8 @@ function AxisPill({
         width={width}
         height={16}
         rx={3}
-        fill="#111827"
-        stroke={tone === "pct" ? "#a78bfa" : "#6366f1"}
+        fill="rgba(11,17,32,.88)"
+        stroke={tone === "pct" ? "#467194" : "#36506c"}
         strokeOpacity={0.65}
       />
       <text
@@ -288,7 +288,8 @@ export default function PriceChart({
 }) {
   const tx = dict[lang].detail;
   const [period, setPeriod] = useState<Period>("daily");
-  const [showMa, setShowMa] = useState(true);
+  const [mode, setMode] = useState<"Line" | "Candle">("Line");
+  const [showMa, setShowMa] = useState(false);
   const [showBoll, setShowBoll] = useState(false);
   const [subChart, setSubChart] = useState<SubChart>("vol");
   const [hover, setHover] = useState<HoverState>(null);
@@ -550,8 +551,8 @@ export default function PriceChart({
             width={68}
             height={22}
             rx={11}
-            fill="rgba(168,85,247,0.12)"
-            stroke="rgba(192,132,252,0.35)"
+            fill="rgba(56,189,248,0.12)"
+            stroke="rgba(148,190,255,0.35)"
           />
           <text
             x={W / 2}
@@ -588,8 +589,9 @@ export default function PriceChart({
 
     const closes = points.map((point) => point.close);
     const vwaps = points.map((point) => point.vwap);
-    const rawMin = Math.min(...closes, ...vwaps, baseline);
-    const rawMax = Math.max(...closes, ...vwaps, baseline);
+    const prevClose = fallbackPrevClose || points.at(-1)?.prevClose || baseline;
+    const rawMin = Math.min(...(mode === "Candle" ? points.map(point => point.low) : closes), ...vwaps, baseline, prevClose);
+    const rawMax = Math.max(...(mode === "Candle" ? points.map(point => point.high) : closes), ...vwaps, baseline, prevClose);
     const pad = (rawMax - rawMin) * 0.06 || Math.max(0.01, rawMax * 0.001);
     const min = rawMin - pad;
     const max = rawMax + pad;
@@ -669,12 +671,12 @@ export default function PriceChart({
       >
         <defs>
           <linearGradient id="intraday-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#818cf8" stopOpacity="0.26" />
-            <stop offset="100%" stopColor="#818cf8" stopOpacity="0" />
+            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
           </linearGradient>
           <linearGradient id="intraday-line" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#38bdf8" />
-            <stop offset="100%" stopColor="#818cf8" />
+            <stop offset="100%" stopColor="#38bdf8" />
           </linearGradient>
         </defs>
 
@@ -685,7 +687,7 @@ export default function PriceChart({
               x2={plotRight}
               y1={priceY(price)}
               y2={priceY(price)}
-              stroke="rgba(148,163,184,0.10)"
+              stroke="rgba(148,190,255,0.04)"
             />
             <text
               x={4}
@@ -726,11 +728,17 @@ export default function PriceChart({
           x2={plotRight}
           y1={baselineY}
           y2={baselineY}
-          stroke="#fbbf24"
-          strokeOpacity="0.42"
+          stroke="rgba(148,190,255,.18)"
+          strokeWidth="1"
           strokeDasharray="5 4"
         />
 
+        {mode === "Line" && prevClose > 0 && (
+          <g>
+            <path d={`M${plotLeft} ${priceY(prevClose)}H${plotRight}`} stroke="rgba(148,190,255,.18)" strokeDasharray="3 4" />
+            <AxisPill x={plotRight} y={priceY(prevClose) - 8} width={53} text="Prev close" />
+          </g>
+        )}
         {sessionPoints.map((session, sessionIndex) => {
           if (session.length === 0) return null;
           const priceD = session
@@ -757,11 +765,18 @@ export default function PriceChart({
 
           return (
             <g key={`session-line-${sessionIndex}`}>
+              {mode === "Candle" ? session.map(point => {
+                const color = point.close >= point.open ? "#34d399" : "#fb7185";
+                return <g key={point.x} stroke={color}>
+                  <line x1={point.x} x2={point.x} y1={priceY(point.high)} y2={priceY(point.low)} />
+                  <line x1={point.x} x2={point.x} y1={priceY(point.open)} y2={priceY(point.close)} strokeLinecap="round" strokeWidth={Math.max(1, sessionWidth / session.length * 0.55)} />
+                </g>;
+              }) : <>
               <path d={areaD} fill="url(#intraday-area)" />
               <path
                 d={priceD}
                 fill="none"
-                stroke="#818cf8"
+                stroke="#38bdf8"
                 strokeWidth="5"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -775,6 +790,7 @@ export default function PriceChart({
                 strokeLinejoin="round"
                 strokeLinecap="round"
               />
+              </>}
               <path
                 d={avgD}
                 fill="none"
@@ -833,13 +849,14 @@ export default function PriceChart({
               x2={plotRight}
               y1={rsiY(50)}
               y2={rsiY(50)}
-              stroke="rgba(148,163,184,0.10)"
+              stroke="rgba(148,190,255,0.04)"
             />
             <path
               d={linePath(intradayRsi, xAt, rsiY)}
               fill="none"
               stroke="#c084fc"
               strokeWidth="1.4"
+              opacity="0.6"
               strokeLinejoin="round"
             />
             <text
@@ -937,7 +954,7 @@ export default function PriceChart({
           x2={plotRight}
           y1={VOL_BOTTOM}
           y2={VOL_BOTTOM}
-          stroke="rgba(148,163,184,0.10)"
+          stroke="rgba(148,190,255,0.04)"
         />
 
         {sessionCenters.map((center) => (
@@ -981,7 +998,7 @@ export default function PriceChart({
               cx={hovered.x}
               cy={priceY(hovered.close)}
               r="3.5"
-              fill={hovered.close >= hovered.prevClose ? "#34d399" : "#fb7185"}
+              fill="#fff" style={{ filter: "drop-shadow(0 0 3px #38bdf8)" }}
               stroke="#030712"
               strokeWidth="1.5"
             />
@@ -1054,6 +1071,11 @@ export default function PriceChart({
       min = 0;
       max = 1;
     }
+    const previousClose = fallbackPrevClose > 0 ? fallbackPrevClose : bars.at(-2)?.close;
+    if (mode === "Line" && previousClose !== undefined) {
+      min = Math.min(min, previousClose);
+      max = Math.max(max, previousClose);
+    }
     const padding = (max - min) * 0.05 || 1;
     min -= padding;
     max += padding;
@@ -1063,6 +1085,7 @@ export default function PriceChart({
     const volumeY = (volume: number) =>
       VOL_BOTTOM - (volume / (maxVolume || 1)) * (VOL_BOTTOM - SUB_TOP);
 
+    const closePath = linePath(view.map(bar => bar.close), xAt, priceY);
     const gridLevels = [0, 1, 2, 3, 4].map(
       (index) => min + ((max - min) * index) / 4
     );
@@ -1131,7 +1154,7 @@ export default function PriceChart({
               x2={W - PAD_R}
               y1={priceY(price)}
               y2={priceY(price)}
-              stroke="rgba(148,163,184,0.10)"
+              stroke="rgba(148,190,255,0.04)"
             />
             <text
               x={W - PAD_R + 6}
@@ -1149,14 +1172,14 @@ export default function PriceChart({
           x2={W - PAD_R}
           y1={VOL_BOTTOM}
           y2={VOL_BOTTOM}
-          stroke="rgba(148,163,184,0.10)"
+          stroke="rgba(148,190,255,0.04)"
         />
 
         {showBoll && (
           <>
             <path
               d={bandPath(candle.boll.upper, candle.boll.lower, xAt, priceY)}
-              fill="rgba(192,132,252,0.06)"
+              fill="rgba(148,190,255,0.06)"
               stroke="none"
             />
             <path
@@ -1226,13 +1249,14 @@ export default function PriceChart({
               x2={W - PAD_R}
               y1={rsiY(50)}
               y2={rsiY(50)}
-              stroke="rgba(148,163,184,0.10)"
+              stroke="rgba(148,190,255,0.04)"
             />
             <path
               d={linePath(candle.rsi, xAt, rsiY)}
               fill="none"
               stroke="#c084fc"
               strokeWidth="1.4"
+              opacity="0.6"
               strokeLinejoin="round"
             />
             <text
@@ -1316,7 +1340,24 @@ export default function PriceChart({
           </>
         )}
 
-        {view.map((bar, index) => {
+        {mode === "Line" ? (
+          <g>
+            <defs>
+              <linearGradient id="close-area" x2="0" y2="1">
+                <stop stopColor="#38bdf8" stopOpacity=".22" />
+                <stop offset="1" stopColor="#38bdf8" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d={`${closePath} L${xAt(n - 1)} ${H_PRICE} L${xAt(0)} ${H_PRICE} Z`} fill="url(#close-area)" />
+            <path d={closePath} fill="none" stroke="#38bdf8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 2px rgba(56,189,248,.35))" }} />
+            {previousClose !== undefined && (
+              <g>
+                <path d={`M${PAD_L} ${priceY(previousClose)}H${W - PAD_R}`} stroke="rgba(148,190,255,.18)" strokeDasharray="3 4" />
+                <AxisPill x={W - PAD_R} y={priceY(previousClose) - 8} width={53} text="Prev close" />
+              </g>
+            )}
+          </g>
+        ) : view.map((bar, index) => {
           const up = bar.close >= bar.open;
           const width = Math.max(2, Math.min(slot * 0.55, 14));
           const yHigh = priceY(bar.high);
@@ -1363,6 +1404,7 @@ export default function PriceChart({
               fill="none"
               stroke={color}
               strokeWidth="1.4"
+              opacity="0.6"
               strokeLinejoin="round"
             />
           ))}
@@ -1410,7 +1452,7 @@ export default function PriceChart({
               cx={xAt(hover!.index)}
               cy={priceY(hovered.close)}
               r="3.5"
-              fill={hovered.close >= hovered.open ? "#34d399" : "#fb7185"}
+              fill="#fff" style={{ filter: "drop-shadow(0 0 3px #38bdf8)" }}
               stroke="#030712"
               strokeWidth="1.5"
             />
@@ -1438,7 +1480,7 @@ export default function PriceChart({
   };
 
   return (
-    <div className="relative">
+    <div className="relative tabular-nums tracking-[-0.02em]">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div
           role="group"
@@ -1453,7 +1495,7 @@ export default function PriceChart({
               aria-pressed={period === key}
               className={`rounded-md px-2.5 py-1 text-[11px] transition ${
                 period === key
-                  ? "bg-purple-500/20 text-white shadow-[inset_0_0_0_1px_rgba(192,132,252,0.35)]"
+                  ? "bg-sky-500/20 text-white shadow-[inset_0_0_0_1px_rgba(148,190,255,0.35)]"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
@@ -1462,6 +1504,7 @@ export default function PriceChart({
           ))}
         </div>
 
+        <div className="flex flex-wrap items-center gap-2">
         {isIntraday ? (
           <div className="flex flex-wrap items-center gap-2 text-[10px] tabular-nums">
             {intradayModel?.latest && (
@@ -1498,7 +1541,7 @@ export default function PriceChart({
               aria-pressed={showMa}
               className={`rounded-full border px-2.5 py-1 text-[10px] transition ${
                 showMa
-                  ? "border-purple-400/30 bg-purple-500/10 text-purple-200"
+                  ? "border-sky-400/30 bg-sky-500/10 text-sky-200"
                   : "border-white/10 bg-white/[0.02] text-slate-500 hover:text-slate-300"
               }`}
             >
@@ -1510,7 +1553,7 @@ export default function PriceChart({
               aria-pressed={showBoll}
               className={`rounded-full border px-2.5 py-1 text-[10px] transition ${
                 showBoll
-                  ? "border-pink-400/30 bg-pink-500/10 text-pink-200"
+                  ? "border-sky-400/30 bg-sky-500/10 text-sky-200"
                   : "border-white/10 bg-white/[0.02] text-slate-500 hover:text-slate-300"
               }`}
             >
@@ -1518,21 +1561,28 @@ export default function PriceChart({
             </button>
           </div>
         )}
+          <div role="group" aria-label="Chart style" className="flex gap-1 rounded-lg border border-sky-200/10 bg-[#060A14] p-1">
+            {(["Line", "Candle"] as const).map(style => (
+              <button key={style} type="button" aria-pressed={mode === style} onClick={() => setMode(style)}
+                className="rounded-md px-2.5 py-1 text-[11px] text-[#8B9BB4] aria-pressed:bg-[#193149] aria-pressed:text-sky-100">{style}</button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 rounded-lg border border-white/5 bg-white/[0.02] px-2.5 py-1.5 text-[10px] leading-5 tabular-nums sm:flex-nowrap sm:overflow-x-auto sm:text-[11px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {hud ? (
           <>
-            <span className="shrink-0 text-slate-500">{hud.label}</span>
-            <span className="shrink-0 text-slate-600">
+            <span className="shrink-0 whitespace-nowrap text-slate-500">{hud.label}</span>
+            <span className="shrink-0 whitespace-nowrap text-[#8B9BB4]">
               {tx.openC}{" "}
               <span className="text-slate-300">{fmt(hud.open)}</span>
             </span>
-            <span className="shrink-0 text-slate-600">
+            <span className="shrink-0 whitespace-nowrap text-[#8B9BB4]">
               {tx.highC}{" "}
               <span className="text-slate-300">{fmt(hud.high)}</span>
             </span>
-            <span className="shrink-0 text-slate-600">
+            <span className="shrink-0 whitespace-nowrap text-[#8B9BB4]">
               {tx.lowC}{" "}
               <span className="text-slate-300">{fmt(hud.low)}</span>
             </span>
@@ -1552,7 +1602,7 @@ export default function PriceChart({
             >
               {hud.pct === null ? "—" : fmtPct(hud.pct)}
             </span>
-            <span className="shrink-0 text-slate-600">
+            <span className="shrink-0 whitespace-nowrap text-[#8B9BB4]">
               {CHART_TEXT.volume}{" "}
               <span className="text-slate-300">
                 {fmtVolumeCompact(hud.volume)}
@@ -1567,7 +1617,7 @@ export default function PriceChart({
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-500">
         {isIntraday ? (
           <>
-            <LegendLine color="#818cf8" label={CHART_TEXT.price} />
+            <LegendLine color="#38bdf8" label={CHART_TEXT.price} />
             <LegendLine color="#fbbf24" label={CHART_TEXT.avg} />
             {intradayModel && (
               <span className="text-amber-400/80">
@@ -1578,8 +1628,8 @@ export default function PriceChart({
         ) : (
           <>
             {showMa &&
-              MA_CONFIG.map(({ label, color }) => (
-                <LegendLine key={label} color={color} label={label} />
+              MA_CONFIG.map(({ key, label, color }) => (
+                <LegendLine key={label} color={color} label={hover ? `${label} ${candle[key][activeIndex]?.toFixed(2) ?? "—"}` : label} />
               ))}
             {showBoll && (
               <LegendLine
@@ -1593,7 +1643,13 @@ export default function PriceChart({
         )}
       </div>
 
-      <div className="mt-1">
+      <div className="relative mt-1">
+        {hover && hud && (
+          <div className={`pointer-events-none absolute top-2 z-10 rounded-lg border border-sky-200/20 bg-[rgba(11,17,32,.85)] px-3 py-2 text-xs tabular-nums backdrop-blur-[12px] ${activeIndex < activeCount / 2 ? "right-12" : "left-3"}`}>
+            <span className="text-[#8B9BB4]">{hud.label}</span>
+            <span className="ml-2 text-slate-100">{fmt(hud.close)}</span>
+          </div>
+        )}
         {isIntraday ? renderIntraday() : renderCandles()}
       </div>
     </div>

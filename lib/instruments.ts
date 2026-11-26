@@ -7,9 +7,11 @@ import { getAsiaMarketSnapshot, ASIA_KLINE_SECID, ASIA_CURRENCY } from "./asia-m
 import { getEuropeMarketSnapshot, EUROPE_KLINE_SECID } from "./europe-markets";
 import { EUROPE_INDICES, INDEX_KLINE_SECID } from "./index-symbols";
 import { getIndexQuote } from "./index-quotes";
+import { isFeaturedSymbol, SYMBOL_NAMES } from "./watchlist";
 import {
   getUsMarketSnapshot,
   fetchQuoteBySymbol,
+  fetchStockDetailQuote,
   fetchUsKlines,
   computeTechnicals,
   type Candle,
@@ -26,13 +28,45 @@ export type InstrumentDetail = {
   quote: UsQuote;
   bars: Candle[];
   demo: boolean;
+  historical?: boolean;
   market: InstrumentMarket;
   /** currency prefix for prices ("" for index points) */
   currency: string;
 };
 
+async function featuredDetail(symbol: string): Promise<InstrumentDetail | null> {
+  const [live, bars] = await Promise.all([
+    fetchStockDetailQuote(symbol),
+    fetchUsKlines(symbol, DETAIL_BAR_LIMIT).catch((): Candle[] => []),
+  ]);
+  const last = bars.at(-1);
+  const previous = bars.at(-2);
+  if (!live && (!last || !previous)) return null;
+
+  // When only daily history is available, identify the close by date and
+  // leave valuations unavailable. Never mix bundled demo prices with real bars.
+  const quote: UsQuote = live ? { ...live } : {
+    symbol, code: symbol, name: SYMBOL_NAMES[symbol].zh, nameEn: SYMBOL_NAMES[symbol].en,
+    price: last!.close, open: last!.open, high: last!.high, low: last!.low, volume: last!.volume,
+    prevClose: previous!.close, change: last!.close - previous!.close,
+    changePct: (last!.close / previous!.close - 1) * 100, quoteTime: last!.date,
+    pe: null, marketCapUsd: null, week52High: null, week52Low: null, valuation: null, tech: null,
+  };
+  if (bars.length >= 5) quote.tech = computeTechnicals(bars);
+  if (last && (quote.week52High === null || quote.week52Low === null)) {
+    const cutoff = new Date(Date.parse(last.date) - 52 * 7 * 86400000).toISOString().slice(0, 10);
+    const year = bars.filter(bar => bar.date > cutoff);
+    if (year.length && bars[0].date <= cutoff) {
+      quote.week52High ??= Math.max(...year.map(bar => bar.high));
+      quote.week52Low ??= Math.min(...year.map(bar => bar.low));
+    }
+  }
+  return { quote, bars, market: "us", currency: "$", demo: false, historical: !live };
+}
+
 export async function getInstrumentDetail(symbol: string): Promise<InstrumentDetail | null> {
   const normalized = symbol.toUpperCase();
+  if (isFeaturedSymbol(normalized)) return featuredDetail(normalized);
   const us = await getUsMarketSnapshot();
   let quote = [...us.indices, ...us.stocks].find((item) => item.symbol === normalized);
   let market: InstrumentMarket = "us";
