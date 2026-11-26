@@ -1,5 +1,6 @@
 "use client";
 
+import BrandLogo from "@/components/BrandLogo";
 import { useLanguage } from "@/components/LanguageProvider";
 import LangToggle from "@/components/LangToggle";
 import { Suspense } from "react";
@@ -27,8 +28,9 @@ function AuthPageInner({ mode }: { mode: AuthModalMode }) {
       <header className="relative z-10 mx-auto flex w-full max-w-md items-center pt-6">
         <Link
           href="/"
-          className="text-sm font-semibold tracking-tight text-white transition hover:text-purple-200"
+          className="flex items-center gap-2.5 text-sm font-semibold tracking-tight text-white transition hover:text-purple-200"
         >
+          <BrandLogo />
           FolioScope
         </Link>
         <div className="ml-auto"><LangToggle lang={lang} /></div>

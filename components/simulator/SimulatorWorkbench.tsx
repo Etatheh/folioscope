@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import MarketSearch from "@/components/watchlist/MarketSearch";
 import {
@@ -10,7 +10,6 @@ import {
   periodMonths,
   type PeriodKey,
 } from "@/components/dca/engine";
-import { useAnimatedNumber } from "@/components/dca/hooks";
 import MonthlyControl from "@/components/dca/MonthlyControl";
 import PeriodTabs from "@/components/dca/PeriodTabs";
 import { showToast } from "@/components/ui/ToastHost";
@@ -33,6 +32,10 @@ import {
   type SimMode,
 } from "./engine";
 import SimulatorChart from "./SimulatorChart";
+import ShareTicket from "./ShareTicket";
+import AllocationDonut from "./AllocationDonut";
+import { ASSET_COLORS, allocationPercentages, redistributeWeight } from "./allocation";
+import styles from "./simulator.module.css";
 
 const MAX_MONTHLY = 5000;
 const MIN_MONTHLY = 50;
@@ -135,6 +138,7 @@ export default function SimulatorWorkbench({
   }, [data.series, defaults]);
 
   const [selected, setSelected] = useState<string[]>(initialSelected);
+  const [activeAsset, setActiveAsset] = useState<string | null>(null);
   const [weights, setWeights] = useState<Record<string, number>>(() =>
     Object.fromEntries(initialSelected.map((symbol) => [symbol, 10]))
   );
@@ -150,30 +154,13 @@ export default function SimulatorWorkbench({
   const customIsActive = hasFullAccess && customActive;
   const months = Math.min(periodMonths(safePeriod), maxMonths);
 
-  const totalWeight = selected.reduce(
-    (sum, symbol) => sum + Math.max(0, weights[symbol] ?? 0),
-    0
+  const displayPcts = useMemo(() => allocationPercentages(selected, weights), [selected, weights]);
+  const allocationWeights = useMemo(
+    () => Object.fromEntries(selected.map((symbol, index) => [symbol, displayPcts[index]])),
+    [selected, displayPcts]
   );
-
-  const displayPcts = useMemo(() => {
-    if (selected.length === 0) return [];
-    const basis =
-      totalWeight > 0
-        ? selected.map((symbol) => Math.max(0, weights[symbol] ?? 0))
-        : selected.map(() => 1);
-    const basisSum = basis.reduce((sum, value) => sum + value, 0) || 1;
-    const raw = basis.map((value) => (value / basisSum) * 100);
-    const floors = raw.map((value) => Math.floor(value));
-    const remaining = 100 - floors.reduce((sum, value) => sum + value, 0);
-    const order = raw
-      .map((value, index) => ({ index, frac: value - Math.floor(value) }))
-      .sort((a, b) => b.frac - a.frac);
-    const out = [...floors];
-    for (let i = 0; i < remaining; i += 1) {
-      out[order[i % order.length].index] += 1;
-    }
-    return out;
-  }, [selected, totalWeight, weights]);
+  const colorFor = (symbol: string) => ASSET_COLORS[Math.max(0, selected.indexOf(symbol)) % ASSET_COLORS.length];
+  const holdings = selected.map((symbol, index) => ({ symbol, percent: displayPcts[index], color: colorFor(symbol) }));
 
   const result = useMemo(
     () =>
@@ -182,7 +169,7 @@ export default function SimulatorWorkbench({
         series: mergedData.series,
         benchmark: mergedData.benchmark.closes,
         selected,
-        weights,
+        weights: allocationWeights,
         mode,
         capital,
         initialDeposit,
@@ -197,7 +184,7 @@ export default function SimulatorWorkbench({
       mergedData.series,
       mergedData.benchmark.closes,
       selected,
-      weights,
+      allocationWeights,
       mode,
       capital,
       initialDeposit,
@@ -281,11 +268,15 @@ export default function SimulatorWorkbench({
     };
   }, [result, mode, t.legendPortfolio, t.legendBenchmark, t.legendValue, mergedData.benchmark.symbol]);
 
-  const invested = useAnimatedNumber(result?.invested ?? 0);
-  const finalValue = useAnimatedNumber(result?.finalValue ?? 0);
-  const totalReturn = useAnimatedNumber((result?.totalReturn ?? 0) * 100);
-  const maxDrawdown = useAnimatedNumber((result?.maxDrawdown ?? 0) * 100);
-  const cagr = useAnimatedNumber((result?.cagr ?? 0) * 100);
+  // Read the exact last plotted trading day. Independent count-up animations
+  // used to leave cards visibly behind the curve while adjusting controls.
+  const lastPoint = result?.curve.at(-1);
+  const invested = lastPoint?.invested ?? 0;
+  const finalValue = lastPoint?.value ?? 0;
+  const totalReturn = invested > 0 ? finalValue / invested - 1 : 0;
+  const netProfit = finalValue - invested;
+  const maxDrawdown = (result?.maxDrawdown ?? 0) * 100;
+  const cagr = result?.cagr ?? 0;
 
   const toggle = (symbol: string) => {
     setSelected((prev) =>
@@ -388,29 +379,25 @@ export default function SimulatorWorkbench({
       label: isDca ? "Total Invested" : t.invested,
       value: `$${fmtMoney(invested)}`,
       tone: "text-slate-200",
+      detail: lang === "zh" ? "累计投入本金" : "Capital deployed",
     },
     {
       label: isDca ? "Final Value" : t.finalValueLabel,
       value: `$${fmtMoney(finalValue)}`,
       tone: "text-white",
+      detail: result?.endDate ?? "",
     },
     {
       label: isDca ? "Net Profit" : t.returnLabel,
-      value: result
-        ? isDca
-          ? `${result.netProfit >= 0 ? "+" : "-"}$${fmtMoney(
-              Math.abs(result.netProfit)
-            )} (${fmtPct(result.totalReturn)})`
-          : fmtPct(result.totalReturn)
-        : "—",
-      tone: result
-        ? retColor(isDca ? result.netProfit : totalReturn)
-        : "text-slate-400",
+      value: result ? isDca ? `${netProfit >= 0 ? "+" : "-"}$${fmtMoney(Math.abs(netProfit))} (${fmtPct(totalReturn)})` : fmtPct(totalReturn) : "—",
+      tone: result ? retColor(totalReturn) : "text-slate-400",
+      detail: `${netProfit >= 0 ? "+" : "−"}$${fmtMoney(Math.abs(netProfit))} ${lang === "zh" ? "净收益" : "net profit"}`,
     },
     {
       label: isDca ? "Max Drawdown" : t.drawdownLabel,
       value: result ? `-${maxDrawdown.toFixed(1)}%` : "—",
       tone: "text-rose-400",
+      detail: lang === "zh" ? "峰值至谷值" : "Peak to trough",
     },
     {
       label: isDca ? "CAGR" : t.cagr,
@@ -422,29 +409,27 @@ export default function SimulatorWorkbench({
         result?.cagr === null || result?.cagr === undefined
           ? "text-slate-400"
           : retColor(cagr),
+      detail: lang === "zh" ? "年化资金加权收益" : "Annualized · money weighted",
     },
   ];
 
   return (
     <article
       id="simulator-workbench"
-      className="data-card min-w-0 overflow-x-clip rounded-2xl p-5 sm:p-6"
+      className={styles.workbench}
     >
-      <header className="flex flex-wrap items-start justify-between gap-3">
+      <header className={styles.header}>
         <div className="min-w-0">
           <h2 className="font-semibold text-white">
             {t.title}
-            <span className="ml-2 text-xs font-normal text-slate-500">
-              {t.subtitle}
-            </span>
           </h2>
-          <p className="mt-1 text-[11px] text-slate-500">{t.modeHint}</p>
+          <p>{t.modeHint}</p>
         </div>
 
         <div
           role="tablist"
           aria-label={t.title}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1"
+          className={styles.modeTabs}
         >
           {(
             [
@@ -460,11 +445,6 @@ export default function SimulatorWorkbench({
                 role="tab"
                 aria-selected={selectedMode}
                 onClick={() => setMode(option.key)}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
-                  selectedMode
-                    ? "bg-gradient-to-r from-blue-500/30 to-purple-500/35 text-white ring-1 ring-purple-400/30"
-                    : "text-slate-500 hover:text-slate-200"
-                }`}
               >
                 {option.label}
               </button>
@@ -473,7 +453,7 @@ export default function SimulatorWorkbench({
         </div>
       </header>
 
-      <div className="mt-4 grid min-w-0 gap-3 sm:flex sm:flex-wrap sm:items-end">
+      <div className={styles.parameters}>
         {mode === "lump" ? (
           <label className="flex min-w-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-slate-500">
             <span className="whitespace-nowrap">{t.startingCapital}</span>
@@ -577,6 +557,8 @@ export default function SimulatorWorkbench({
 
       {hasFullAccess && (
         <div
+          inert={!customIsActive}
+          aria-hidden={!customIsActive}
           className={`grid overflow-hidden transition-all duration-300 ease-out ${
             customIsActive
               ? "mt-3 grid-rows-[1fr] opacity-100"
@@ -652,7 +634,7 @@ export default function SimulatorWorkbench({
                       setCustomEnd(end < start ? start : end);
                       setCustomActive(true);
                     }}
-                    className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] text-slate-400 transition hover:border-purple-400/35 hover:bg-purple-500/10 hover:text-white"
+                    className="rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] text-zinc-400 transition hover:border-purple-400/35 hover:bg-purple-500/10 hover:text-white"
                   >
                     <span className="font-medium">{scenario.label}</span>
                     <span className="ml-1 text-slate-600">
@@ -667,115 +649,82 @@ export default function SimulatorWorkbench({
         </div>
       )}
 
-      <div className="mt-4 min-w-0">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <p className="text-[11px] uppercase tracking-wider text-slate-600">
-              {t.assets}
-            </p>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] tabular-nums text-slate-500">
-              {t.selectedCount(selected.length)}
-            </span>
-          </div>
+      <section className={`${styles.panel} ${styles.portfolio}`} aria-label={t.assets}>
+        <div className={styles.sectionHeading}>
+          <h3>{t.assets} <span className="ml-2 text-zinc-500">/ {selected.length.toString().padStart(2, "0")}</span></h3>
           {syncingSymbol && (
             <span className="text-[10px] text-purple-300">
               {syncingSymbol} · {dict[lang].watchlist.syncing}
             </span>
           )}
+          <span>{lang === "zh" ? "配置您的组合" : "Build your portfolio"}</span>
         </div>
 
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {stocks.map(({ symbol }) => {
+        <div className={styles.assetChips}>
+          {stocks.filter(({ symbol }) => selected.includes(symbol)).map(({ symbol }) => {
             const on = selected.includes(symbol);
             return (
               <button
                 key={symbol}
                 type="button"
                 onClick={() => toggle(symbol)}
-                className={`rounded-full border px-2.5 py-1 text-xs transition ${
-                  on
-                    ? "border-purple-400/40 bg-purple-500/15 text-white"
-                    : "border-white/10 bg-white/[0.03] text-slate-500 hover:border-white/20 hover:text-slate-300"
-                }`}
+                aria-pressed={on}
+                data-active={activeAsset === symbol}
+                className={styles.assetChip}
+                onPointerEnter={() => on && setActiveAsset(symbol)}
+                onPointerLeave={() => setActiveAsset(null)}
+                onFocus={() => on && setActiveAsset(symbol)}
+                onBlur={() => setActiveAsset(null)}
               >
+                <i aria-hidden="true" style={{ background: on ? colorFor(symbol) : "#3f3f46" }} />
                 {symbol}
+                {on && <span className="ml-0.5 text-zinc-500" aria-hidden="true">×</span>}
               </button>
             );
           })}
-        </div>
-
-        {!hasFullAccess && (
-          <p className="mt-2 text-[10px] leading-relaxed text-slate-600">
-            {t.freePoolHint}
-          </p>
-        )}
-        {hasFullAccess && (
-          <p className="mt-2 text-[10px] leading-relaxed text-slate-600">
-            {t.proSearchHint}
-          </p>
-        )}
-      </div>
-
-      {selected.length > 0 && (
-        <div className="mt-3 min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[11px] uppercase tracking-wider text-slate-600">
-              {t.weight}
-            </p>
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] tabular-nums text-slate-600">
-                {t.totalWeight}{" "}
-                <span className="text-slate-400">100%</span>
-              </span>
-              <button
-                type="button"
-                onClick={equalize}
-                className="text-[11px] text-purple-400 transition hover:text-purple-300"
-              >
-                {t.equalWeight}
-              </button>
+          <details className={styles.availableAssets}>
+            <summary>{lang === "zh" ? "+ 添加资产" : "+ Add assets"}</summary>
+            <div>
+              {stocks.filter(({ symbol }) => !selected.includes(symbol)).map(({ symbol }) => (
+                <button key={symbol} type="button" onClick={(event) => {
+                  toggle(symbol);
+                  event.currentTarget.closest("details")?.removeAttribute("open");
+                }}>{symbol}<span>+</span></button>
+              ))}
+              {stocks.every(({ symbol }) => selected.includes(symbol)) && <p>{lang === "zh" ? "所有资产均已添加" : "All available assets added"}</p>}
             </div>
-          </div>
-          <div className="mt-2 grid min-w-0 gap-x-4 gap-y-1.5 sm:grid-cols-2">
-            {selected.map((symbol, index) => {
-              const weight = weights[symbol] ?? 10;
-              const pct = displayPcts[index] ?? 0;
-              return (
-                <label
-                  key={symbol}
-                  className="flex min-w-0 items-center gap-2 text-xs text-slate-400"
-                >
-                  <span className="w-14 shrink-0 truncate tabular-nums">{symbol}</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={weight}
-                    onChange={(event) =>
-                      setWeights((prev) => ({
-                        ...prev,
-                        [symbol]: Number(event.target.value),
-                      }))
-                    }
-                    className="h-1 min-w-0 flex-1 cursor-pointer accent-purple-500"
-                    aria-label={`${symbol} ${t.weight}`}
-                  />
-                  <span className="w-10 shrink-0 text-right tabular-nums text-slate-500">
-                    {pct}%
-                  </span>
-                </label>
-              );
-            })}
-          </div>
+          </details>
         </div>
-      )}
 
-      {hasFullAccess && (
-        <div className="mt-3 min-w-0">
-          <MarketSearch lang={lang} plan={effectivePlan} />
+        <div className={styles.portfolioGrid}>
+          <div className="min-w-0">
+            <div className={styles.weightHeader}>
+              <span>{t.weight} <span className="ml-2 text-zinc-500">{selected.length ? "100%" : "0%"}</span></span>
+              <button type="button" onClick={equalize} disabled={!selected.length}>{t.equalWeight}</button>
+            </div>
+            <div className={styles.weightRows}>
+              {holdings.map(({ symbol, percent, color }) => (
+                <label key={symbol} className={styles.weightRow} data-active={activeAsset === symbol}
+                  onPointerEnter={() => setActiveAsset(symbol)} onPointerLeave={() => setActiveAsset(null)}>
+                  <span className={styles.ticker}>{symbol}</span>
+                  <input type="range" min={0} max={100} step={1} value={percent}
+                    disabled={selected.length === 1}
+                    onChange={(event) => setWeights((prev) => redistributeWeight(selected, prev, symbol, Number(event.target.value)))}
+                    onFocus={() => setActiveAsset(symbol)} onBlur={() => setActiveAsset(null)}
+                    className={styles.slider}
+                    style={{ "--asset-color": color, "--weight-position": `calc(7px + (100% - 14px) * ${percent / 100})` } as CSSProperties}
+                    aria-label={`${symbol} ${t.weight}`} aria-valuetext={`${percent}%`}
+                  />
+                  <output className={styles.weightValue}>{percent}%</output>
+                </label>
+              ))}
+            </div>
+            {hasFullAccess && <div className={styles.search}><MarketSearch lang={lang} plan={effectivePlan} /></div>}
+            {!hasFullAccess && <p className={styles.searchHint}>{t.freePoolHint}</p>}
+          </div>
+          <AllocationDonut holdings={holdings} active={activeAsset} onActive={setActiveAsset} lang={lang} />
         </div>
-      )}
+      </section>
 
       {result ? (
         <>
@@ -784,6 +733,7 @@ export default function SimulatorWorkbench({
               <div
                 key={stat.label}
                 className="min-w-0 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"
+                data-metric={stat.label}
               >
                 <p className="truncate text-[11px] text-slate-600">{stat.label}</p>
                 <p
@@ -795,13 +745,13 @@ export default function SimulatorWorkbench({
             ))}
           </div>
 
-          <div className="mt-4 min-w-0">
-            <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-              <p className="uppercase tracking-wider text-slate-600">
+          <section className={`${styles.panel} ${styles.equity}`}>
+            <div className={styles.equityHeader}>
+              <h3>
                 {t.chartTitleSim}
-              </p>
-              <div className="text-right">
-                <p className="tabular-nums text-slate-600">
+              </h3>
+              <div className={styles.equityDate}>
+                <p>
                   {result.days} {t.days} · {result.startDate} →{" "}
                   {result.endDate}
                 </p>
@@ -818,6 +768,13 @@ export default function SimulatorWorkbench({
                   </p>
                 )}
               </div>
+              <ShareTicket getData={() => {
+                const symbols = selected.filter((symbol) => !result.excludedSymbols.includes(symbol));
+                const percentages = allocationPercentages(symbols, allocationWeights);
+                const holdings = symbols.map((symbol, index) => ({ symbol, percent: percentages[index] }))
+                  .filter(({ percent }) => percent > 0);
+                return { result, holdings, benchmark: mergedData.benchmark.name, mode, contribution, frequency };
+              }} />
             </div>
             {chartData && (
               <SimulatorChart
@@ -832,7 +789,7 @@ export default function SimulatorWorkbench({
                 ariaLabel={t.chartTitleSim}
               />
             )}
-          </div>
+          </section>
         </>
       ) : (
         <p className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-sm text-slate-500">
@@ -842,7 +799,7 @@ export default function SimulatorWorkbench({
         </p>
       )}
 
-      <p className="mt-3 text-[11px] leading-relaxed text-slate-600">
+      <p className={styles.notes}>
         {t.statsNote}
         <br />
         {t.disclaimer}

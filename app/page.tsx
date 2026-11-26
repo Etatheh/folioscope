@@ -43,11 +43,24 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
     <main className={styles.landing}>
       <StaggerGroup as="section" className={styles.hero} scroll={false}>
         <Reveal inherit as="p" className={styles.eyebrow}>{zh ? "为更清晰的投资研究而构建" : "A clearer perspective on your portfolio"}</Reveal>
-        <Reveal inherit as="h1" className={styles.headline}>{zh ? "全球市场，" : "Global markets,"}<br /><span className="gradient-text">{zh ? "清晰洞见。" : "in focus."}</span></Reveal>
-        <Reveal inherit as="p" className={styles.heroCopy}>{zh ? "多市场行情、组合与定投回测、AI 财报分析。将全球视野与深度研究，汇聚在同一个工作空间。" : "Multi-market intelligence. Portfolio and DCA backtesting. AI-powered financial research. One workspace to connect the bigger picture with the finer details."}</Reveal>
+        <Reveal inherit as="h1" className={`${styles.headline} tracking-tight`}>
+          {zh ? "全球市场，" : "Global markets,"}<br />
+          <span className="bg-linear-to-r from-white via-zinc-100 to-purple-300 bg-clip-text text-transparent">
+            {zh ? "清晰洞见。" : "in focus."}
+          </span>
+        </Reveal>
+        <Reveal inherit as="p" className={`${styles.heroCopy} leading-relaxed text-zinc-300/90`}>
+          {zh
+            ? "多市场行情、组合与定投回测、AI 财报分析。将全球视野与深度研究，汇聚在同一个工作空间。"
+            : "Backtest U.S. equities, ETFs, and DCA strategies across market cycles—combining institutional risk metrics with filing-level research in one workspace."}
+        </Reveal>
         <Reveal inherit className="mt-9 flex flex-wrap justify-center gap-3">
-          <Link href="/dashboard" className="btn-primary rounded-full px-8 py-3.5 text-sm font-semibold text-white">{zh ? "进入看板" : "Launch Dashboard"}</Link>
-          <Link href="/register" className="btn-secondary rounded-full px-8 py-3.5 text-sm font-semibold text-white">{zh ? "免费开始" : "Get started — it's free"}</Link>
+          <Link href="/dashboard" className="inline-flex min-h-12 items-center justify-center rounded-lg bg-white px-8 py-3.5 text-sm font-semibold text-[#09090B] transition-colors duration-200 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-300">
+            {zh ? "进入看板" : "Launch Dashboard"}
+          </Link>
+          <Link href="/register" className="inline-flex min-h-12 items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-colors duration-200 hover:bg-white/[0.08] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-300">
+            {zh ? "免费开始" : "Get started — it's free"}
+          </Link>
         </Reveal>
         <Reveal inherit as="p" className="mt-5 text-sm text-slate-500">{zh ? "无需信用卡 · 仅供量化研究，不构成投资建议" : "No credit card required. Built for research, not investment advice."}</Reveal>
       </StaggerGroup>

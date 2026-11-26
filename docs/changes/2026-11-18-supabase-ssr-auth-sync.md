@@ -97,7 +97,7 @@
 ## 备注 / 未决
 
 - 必须在 Supabase Dashboard → Authentication → URL Configuration 的 Redirect URLs 中加入：
-  - `http://localhost:3000/auth/callback`
+  - 本地开发回调地址（当前生产实现固定为 `https://folioscope.live/auth/callback`）
   - `https://www.folioscope.live/auth/callback`
   - 如使用 apex 域名，也加入 `https://folioscope.live/auth/callback`
 - GitHub / Google OAuth App 的 callback 仍然是 Supabase 的 `https://<PROJECT>.supabase.co/auth/v1/callback`，不需要改成站点域名。

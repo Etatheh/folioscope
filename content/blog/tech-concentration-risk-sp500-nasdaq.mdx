@@ -1,0 +1,65 @@
+---
+title: "How to Check Tech Concentration Risk in SPY and QQQ ETFs"
+description: "Calculate your look-through exposure to NVDA, AAPL, and MSFT across SPY and QQQ. Then compare tech-heavy allocations against an S&P 500 benchmark."
+date: "2026-11-26"
+ctaTicker: "NVDA"
+tags:
+  - Portfolio research
+  - ETF research
+  - Risk management
+---
+
+Owning SPY, QQQ, and shares of Nvidia can spread your money across three positions while increasing your exposure to a single company. The parts of Nvidia you own through the two funds sit alongside your direct position. The same can happen with Apple and Microsoft. To check tech concentration risk, calculate your exposure through each fund, add direct positions, and test how changing the allocation would have affected a historical portfolio.
+
+## Measure what you own through each ETF
+
+Start with a dated holdings file from each fund provider. Record the weights of NVDA, AAPL, and MSFT as of the same date and use the current weights of SPY, QQQ, and any individual stocks in your portfolio. Fund weights move with prices and can change when the indexes update. A holdings file from a different month can materially change the result, particularly for the largest companies. [State Street SPY holdings](https://www.ssga.com/us/en/intermediary/etfs/state-street-spdr-sp-500-etf-trust-spy) · [Invesco QQQ holdings](https://www.invesco.com/qqq-etf/en/about.html)
+
+Multiply each ETF’s portfolio weight by the company’s weight in that ETF. Sum those contributions and add the direct position. Repeat for each company, then add the three totals if you want to monitor that group together.
+
+### Work through an illustrative NVDA calculation
+
+Suppose you have 50% in SPY, 25% in QQQ, and 25% directly in NVDA. If the funds hypothetically have NVDA weights of 5% and 8%, the look-through exposure is (0.50 × 0.05) + (0.25 × 0.08) + 0.25 = 29.5%. The two assumed fund weights are examples. Substitute the weights from actual holdings files to estimate your current exposure. Check other accounts too if they serve the same investing goal and hold the same companies.
+
+> **Takeaway:** The direct stock weight is the part you can see on your statement. Add the fund holdings to find how much of your portfolio actually moves with that company.
+
+### Check shared drivers as well as shared names
+
+Several companies can react to the same changes in interest rates, enterprise spending, or demand for computing infrastructure. Portfolio exposure can cluster around those drivers even when no single stock looks especially large. Sector classifications help organize the holdings, but a technology-related business can sit in a different sector. Read the business descriptions and check which assumptions are common across your largest positions. [FINRA on concentration risk](https://www.finra.org/investors/insights/concentration-risk)
+
+## Compare a concentrated mix with the S&P 500
+
+<BlogBacktestEmbed preset="tech-split" />
+
+The preset starts with 50% SPY, 25% QQQ, and 25% NVDA and holds the original units through the window. The comparison invests the same initial amount entirely in SPY. Because the preset does not rebalance, its actual weights drift. A fast-rising holding can become a much larger part of the account and account for more of a subsequent decline. The chart uses daily price changes and excludes cash distributions.
+
+### Stress-test the weight split
+
+1. Use lump-sum mode and the same 5Y window for each run. Keep initial dollars identical.
+2. Start with 100% SPY. Then test 75% SPY and 25% QQQ. Finally, add the direct NVDA position as in the chart.
+3. Compare ending return, drawdown, and recovery time. Inspect the same market episodes across runs and check when the paths diverge.
+4. Change one allocation at a time. You can substitute a smaller direct NVDA weight, shift that weight back to SPY, and see how the paths change.
+
+This exercise uses today’s chosen tickers on historical prices. It answers how those allocations would have behaved under the modeled rules. To simulate selecting holdings in the past, you need the market information that would have been available on the selection date. Use dated holdings when estimating past overlap. A current fact sheet can tell you little about a fund’s exact exposure earlier in the backtest.
+
+### Add a simple single-stock shock
+
+Multiply a hypothetical price decline by today’s look-through weight to estimate the immediate portfolio impact if everything else stays flat. For an illustrative 29.5% exposure and a hypothetical 30% decline, the direct effect is about 8.9 percentage points. If other holdings also move, the result changes. Try varying the size of the shock and consider a shared decline across correlated stocks to see how dependent the outcome is on your assumptions.
+
+Adjust the ETF and stock weights in the [FolioScope Simulator](/dashboard?view=simulator) and compare the same start and end dates.
+
+*For informational and educational purposes only — not investment advice.*
+
+## FAQ
+
+### Do SPY and QQQ overlap?
+
+Yes. Their indexes can both include large companies listed on the Nasdaq that also qualify for the S&P 500. Check dated holdings to see which companies overlap and how much weight each fund assigns them.
+
+### How do I calculate my actual Nvidia exposure?
+
+Multiply each ETF’s allocation in your portfolio by Nvidia’s weight in that ETF. Add those amounts to the percentage held directly and repeat for any other funds that own Nvidia.
+
+### Does adding an individual tech stock increase diversification?
+
+It depends on what you already hold. Adding shares of a company already held through your ETFs typically raises exposure to that company. Check position weights and shared business drivers before judging the effect.

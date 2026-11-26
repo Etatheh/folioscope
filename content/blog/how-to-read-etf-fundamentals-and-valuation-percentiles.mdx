@@ -1,0 +1,63 @@
+---
+title: "How to Read ETF Valuation Percentiles and Trend Signals"
+description: "Interpret ETF P/E and P/B percentiles alongside moving averages, RSI14, and MACD. Build a dashboard routine that helps you avoid trading on every signal."
+date: "2026-11-26"
+ctaTicker: "SPY"
+tags:
+  - ETF research
+  - Market research
+  - Getting started
+---
+
+An ETF can trade at a high valuation percentile while its price keeps rising. It can also become cheaper relative to earnings long before the price stabilizes. Valuation percentiles describe where a ratio sits in its own history. Moving averages, RSI, and MACD describe different aspects of recent price behavior. Use the tools to document what has changed and decide whether it affects the reason you hold the fund. That makes a dashboard easier to revisit without treating each new reading as a trade.
+
+## Read the valuation before reading the percentile
+
+P/E divides price by earnings. For an ETF, the published figure summarizes the earnings valuation of its holdings using the provider’s methodology. Trailing P/E is based on reported earnings, while forward P/E uses forecasts. Compare like with like and check how the provider treats companies with losses. A move in the ratio can come from a change in earnings or forecasts as well as a move in prices.
+
+P/B compares price with book equity. Industries with different balance sheets can have very different normal ranges. Book equity can be informative for businesses whose financial assets are central to their operations. It can give a less complete picture of businesses where internally developed software, research, or brands generate much of the value. An ETF’s sector mix affects what either ratio can tell you.
+
+### Interpret the lookback and observation date
+
+An illustrative P/E at the 80th percentile is near or above 80% of observations in the reference sample, depending on how ties are handled. That figure tells you the rank. To interpret it, record the lookback, the reading’s date, and whether observations are daily or monthly. A five-year distribution around high growth and low interest rates can look different from one that covers additional market environments. A fund can also change holdings over time, so its earlier ratios may reflect a different mix of industries.
+
+> **Takeaway:** Record the ratio, percentile, data date, and reference period together. A high percentile can persist for an extended stretch.
+
+## Give each technical indicator one job
+
+- **Moving average (MA).** Compare the current price with the average over a fixed number of bars, and check the slope. Averages on daily and weekly bars describe different horizons.
+- **RSI14.** A momentum oscillator on a zero-to-100 scale based on recent gains and losses over 14 periods. A high reading can persist in a strong trend. Read it alongside prior price behavior and the chart’s timeframe. [Fidelity’s RSI guide](https://www.fidelity.com/learning-center/trading-investing/technical-analysis/technical-indicator-guide/RSI)
+- **MACD.** Typically the difference between 12- and 26-period exponential moving averages, compared with a nine-period signal line. Crossings can occur repeatedly in a sideways market. Check whether price is establishing a trend or moving within the same range. [Fidelity’s MACD guide](https://www.fidelity.com/learning-center/trading-investing/technical-analysis/technical-indicator-guide/macd)
+
+All three draw on price history. Several indicators turning at once may reflect the same move. Check the timeframe and ask what fresh evidence would change your view before treating their agreement as confirmation.
+
+## Put a signal in the context of the price path
+
+<BlogBacktestEmbed preset="qqq-growth" />
+
+This five-year chart compares buy-and-hold paths for QQQ and SPY over the same dates. It shows price performance in dollars and applies no valuation or technical signals. Use it to examine where the funds moved together and where they separated. A historical rule based on P/E percentiles would need point-in-time fundamentals and explicit trade dates. If you test a moving-average rule, execute on a price that was available after the signal and include trading costs. A chart of today’s readings cannot supply the missing historical data.
+
+### Build a repeatable dashboard routine
+
+1. Open the instrument or index dashboard and write down the ratio definition and data date. Check the fund fact sheet if a figure refers to the index or has a different basis.
+2. Pick a review interval and one price timeframe. Record the direction of the moving average and what RSI14 or MACD adds to that observation.
+3. If an AI research summary is available, ask which observations support its explanation and which figures are missing. Verify any claim about holdings, earnings, or indicator readings against the underlying dashboard and fund documents.
+4. Define the evidence that would trigger another review, such as an allocation drifting from its target or a material change in the composition of the fund. Compare what actually changed since your last review.
+
+Keep the baseline price comparison handy in the [FolioScope Simulator](/dashboard?view=simulator) when evaluating a proposed rule.
+
+*For informational and educational purposes only — not investment advice.*
+
+## FAQ
+
+### What does a high P/E percentile mean for an ETF?
+
+Its P/E is high relative to most observations in the chosen reference period. The reading depends on the ratio methodology, the lookback, and the holdings at each observation.
+
+### Does RSI14 above 70 mean an ETF will fall?
+
+No. It signals strong recent momentum under a common convention. The reading can stay above 70 during an extended trend, and its interpretation depends on the chart timeframe.
+
+### Can I compare SPY and QQQ valuation percentiles directly?
+
+Compare them with the same lookback and ratio methodology. A percentile ranks each fund against its own history. Equal ranks can correspond to different P/E ratios, earnings expectations, and sector exposures.

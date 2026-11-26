@@ -135,8 +135,10 @@ function verifySignature(
     .createHmac("sha256", secret)
     .update(raw, "utf8")
     .digest("hex");
-  const expected = Buffer.from(digest, "utf8");
-  const received = Buffer.from(signature.trim().toLowerCase(), "utf8");
+  const normalizedSignature = signature.trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(normalizedSignature)) return false;
+  const expected = Buffer.from(digest, "hex");
+  const received = Buffer.from(normalizedSignature, "hex");
   if (expected.length !== received.length) return false;
   return crypto.timingSafeEqual(expected, received);
 }

@@ -222,9 +222,20 @@ export function computeSimulation({
   const excludedSymbols = selected.filter(
     (symbol) => !candidates.some((candidate) => candidate.symbol === symbol)
   );
-  const alignedStartIndex = Math.max(
+  let alignedStartIndex = Math.max(
     ...candidates.map((candidate) => candidate.firstValid)
   );
+  // A benchmark with leading gaps cannot buy at the original start. Align
+  // both portfolios to its first valid close so the mirror uses identical
+  // cash flows instead of silently remaining NaN for the entire backtest.
+  if (benchmark) {
+    for (let i = alignedStartIndex; i <= requestedEndIndex; i += 1) {
+      if (Number.isFinite(benchmark[i]) && benchmark[i] > 0) {
+        alignedStartIndex = i;
+        break;
+      }
+    }
+  }
   if (alignedStartIndex > requestedEndIndex) return null;
 
   const windowDates = dates.slice(alignedStartIndex, requestedEndIndex + 1);

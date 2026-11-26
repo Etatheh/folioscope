@@ -1,0 +1,67 @@
+---
+title: "SPY vs. QQQ DCA Backtest Guide for 5- and 10-Year Periods"
+description: "Compare monthly SPY and QQQ investments over five and ten years. Learn to match cash flows, read drawdowns, and test the same strategy in FolioScope."
+date: "2026-11-26"
+ctaTicker: "QQQ"
+tags:
+  - Backtesting
+  - Dollar-cost averaging
+  - ETF research
+---
+
+A SPY vs. QQQ dollar-cost averaging backtest asks what happened when the same investor bought each fund on the same schedule. Keep the monthly amount, execution dates, starting balance, and reporting currency identical. Then compare how much the investor ended up with and how difficult it was to stay invested along the way. Run five- and ten-year windows because a single start date can give an unusually flattering or punishing picture of either fund.
+
+## What changes when you choose SPY or QQQ?
+
+SPY tracks the S&P 500, giving buyers exposure to large U.S. companies across sectors such as financials, health care, industrials, and technology. QQQ tracks the Nasdaq-100, whose membership is drawn from large nonfinancial companies listed on the Nasdaq. That selection gives QQQ a pronounced technology and growth tilt. Both funds can hold many of the same mega-cap companies, and their weights change with market prices and index updates. [State Street SPY fund profile](https://www.ssga.com/us/en/intermediary/etfs/state-street-spdr-sp-500-etf-trust-spy) · [Invesco QQQ fund profile](https://www.invesco.com/qqq-etf/en/about.html)
+
+When those shared companies rise, QQQ’s heavier exposure can amplify the gains. When growth shares reprice, the same exposure can deepen losses. SPY’s broader mix gives more sectors a chance to contribute to returns, although its largest holdings can still drive a significant share of performance. Look up both funds’ dated holdings before explaining any result through a particular company or sector.
+
+> **Takeaway:** If the ending balances differ, check the worst decline and how long each line stayed underwater before deciding which historical path was easier to live with.
+
+## Explore a five-year, $500-per-month example
+
+<BlogBacktestEmbed preset="qqq-dca" />
+
+This chart makes one purchase per fund at each month-end close, starting with zero prior holdings. Each line uses the same dollar deposits. The total return pill measures QQQ’s ending account gain relative to total deposits. The S&P 500 comparison shows the percentage-point difference versus making the same deposits in SPY. Max drawdown follows the month-end account balance, so deposits can soften a measured decline. Daily prices can also show swings the month-end chart misses.
+
+### Set up both runs in FolioScope
+
+1. In the Simulator, select DCA, choose monthly contributions, and set the initial deposit to zero.
+2. Pick QQQ as the only holding, set it to 100%, and enter $500 as the monthly contribution. Start with the 5Y preset.
+3. Record the effective dates, contributions, ending value, and drawdown. Repeat with 100% SPY and keep the other inputs fixed.
+4. If your plan includes the 10Y preset, repeat both runs at 10Y. Record the number of contributions and compare the results within each window.
+
+The dashboard applies monthly buys on the first eligible trading date of the month, while this article uses month-end purchases. Use the dashboard for both sides of any dashboard comparison. A difference between an article balance and a dashboard balance can come from that timing convention or the exact reporting dates.
+
+## Compare five and ten years on equal terms
+
+### Track contributions and return separately
+
+Compute the amount contributed as monthly contribution × number of purchases. The gain is ending value minus contributions. Divide the gain by contributions to get the simple return on dollars deposited. This result reflects the whole stream of deposits and their unequal time in the market. For a comparison across windows of different lengths, examine the annualized money-weighted return where available, and keep the simple return beside it for context.
+
+Look at the lines around a shared downturn. An account can show a rising dollar balance while its holdings lose value because new deposits keep arriving. Compare a separate buy-and-hold run, with equal starting balances and zero new money, to study the funds’ underlying declines and recoveries.
+
+### Check your dates, currency, and distributions
+
+Test more than one start date if your plan supports custom ranges. A five-year window ending on a strong technology rally can give a very different impression from one ending during a selloff. The overlapping five- and ten-year windows also share years of market history, so treat them as related observations.
+
+The chart reports U.S. dollars and excludes cash distributions. If your savings or future spending use a different currency, the exchange rate on purchase and withdrawal dates can change what the account is worth to you. For a dividend-inclusive study, compare consistently distribution-adjusted series and account for any costs or withholding that apply to your situation.
+
+Open the [FolioScope Simulator](/dashboard?view=simulator) to run the two allocations and record the dates and cash flows for each result.
+
+*For informational and educational purposes only — not investment advice.*
+
+## FAQ
+
+### Is QQQ better than SPY for dollar-cost averaging?
+
+The answer depends on the dates and the risk measure. An equal-deposit backtest can show which fund finished higher in a particular window and how the paths differed. QQQ adds a growth and technology tilt, while SPY spreads exposure across a broader U.S. large-cap universe.
+
+### Should I compare ending value or annualized return?
+
+Use ending value when both funds received the same deposits on the same dates. Money-weighted annualized return helps compare windows of different lengths. Look at drawdown and time underwater alongside either measure.
+
+### Do I need ten years of data for a meaningful DCA backtest?
+
+Five years can show how regular contributions behaved through the conditions in that window. A ten-year test can capture additional market episodes and gives early deposits more time to compound. Multiple start dates help show how sensitive both results are to the chosen window.

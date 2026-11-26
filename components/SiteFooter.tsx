@@ -1,9 +1,9 @@
 "use client";
+import BrandLogo from "@/components/BrandLogo";
 import { useLanguage } from "./LanguageProvider";
 import Link from "next/link";
 
 import {
-  CONTACT_EMAIL,
   LEGAL_LINKS,
   SITE_DISCLAIMER,
   SITE_NAME,
@@ -22,10 +22,17 @@ export default function SiteFooter({ compact = false }: { compact?: boolean }) {
     >
       <div className="mx-auto max-w-5xl px-6">
         <div className="flex flex-col items-center gap-3 text-center">
+          <Link href="/" aria-label="FolioScope home" className="inline-flex items-center gap-2.5 text-sm font-semibold text-white">
+            <BrandLogo />
+            {SITE_NAME}
+          </Link>
           <nav
-            aria-label="Legal"
+            aria-label={zh ? "页脚导航" : "Footer navigation"}
             className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-slate-400"
           >
+            <Link href="/contact" className="transition hover:text-white">
+              {zh ? "联系我们" : "Contact"}
+            </Link>
             {LEGAL_LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -51,10 +58,6 @@ export default function SiteFooter({ compact = false }: { compact?: boolean }) {
               target="_blank"
             >
               folioscope.live
-            </a>
-            {" · "}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="transition hover:text-slate-400">
-              Contact: {CONTACT_EMAIL}
             </a>
           </p>
         </div>

@@ -1,0 +1,64 @@
+---
+title: "Lump Sum vs. Dollar-Cost Averaging: A Visual Backtest Guide"
+description: "Compare lump sum and dollar-cost averaging with a matched cash budget. Read SPY backtests across bear-market starts, cash drag, and recovery paths."
+date: "2026-11-26"
+ctaTicker: "SPY"
+tags:
+  - Backtesting
+  - Dollar-cost averaging
+  - Portfolio research
+---
+
+Suppose you already have money set aside for a long-term investment. You could buy an ETF today or invest a fixed amount at regular intervals. A lump sum vs. dollar-cost averaging backtest compares those decisions on the same price history. Give each strategy the same starting budget, the same holding, and the same ending date. Then count any cash still waiting to be invested. That cash belongs to the investor and changes both the balance and its response to a falling market.
+
+## Give both strategies the same cash budget
+
+Choose a deployment schedule before examining the historical result. For example, an illustrative $12,000 budget can fund an immediate $12,000 purchase or twelve $1,000 purchases. In the staged account, each purchase converts cash into shares. It adds no new wealth on the purchase date. Record any interest earned on cash and use the same assumptions for fees, dividends, and taxes on both sides.
+
+Investing part of every paycheck answers a different question. The later installments only become available when paid. A spreadsheet that credits all future paychecks as starting cash gives the immediate purchase an advantage the investor never had. FINRA discusses how spreading an available lump sum differs from investing money as you earn it. [FINRA on dollar-cost averaging](https://www.finra.org/investors/insights/dollar-cost-averaging)
+
+> **Takeaway:** Match the amount of money available and when it becomes available. A larger early stock position will naturally move more with the market.
+
+## Look at the two SPY paths
+
+<BlogBacktestEmbed preset="spy-entry" />
+
+The dashed line invests the whole budget in SPY at the first observed month-end. The other line invests $500 at each month-end and carries the unused balance as cash earning zero interest. Both use the same price series. The difference you see comes from how quickly each strategy takes on equity exposure. The S&P 500 comparison uses the lump-sum SPY line, and drawdown for the staged path includes the cash balance. The five-year staging schedule illustrates the mechanics. Shorter schedules answer a different and often more practical question about deploying an existing windfall.
+
+### Recreate the comparison with different purchase schedules
+
+Use the Simulator’s lump-sum mode with SPY at 100%. Record the effective dates and initial amount. Switch to DCA, use the same period, and record the contribution amount, cadence, and ending value. If modeling a budget held upfront, calculate the unused cash alongside the DCA run. Keep the amount that would otherwise be sitting in cash in the comparison until it is invested. If you stop adding cash earlier than the tool’s schedule, record that assumption and use separate dates or a spreadsheet to model the remaining holding period.
+
+Check the paths at the same dates, especially when one side reaches a low. The two troughs may occur at different times. Compare ending balances after the deployment period, then measure each strategy’s deepest loss and the time until its own previous peak returned.
+
+## Test what happens around a bear-market entry
+
+- **Decline soon after entry.** The immediate position absorbs the downturn on the whole budget. Staging retains cash and can buy more shares in later installments at lower prices.
+- **Fast rebound after a decline.** Early purchases participate in the rebound. Cash that has yet to be deployed misses part of it, so a favorable average purchase price alone tells you little about the ending balance.
+- **Rally before a slow decline.** Staging may purchase several installments at elevated prices. If the decline comes after deployment, both approaches can have substantial exposure by then.
+
+Choose entry dates using a rule you could have applied in real time or label historical turning points as stress tests. When you have access to custom dates, repeat the exercise before multiple downturns and during rising markets. A specific trough selected with hindsight can illustrate the effect of timing without estimating how often either strategy would prevail.
+
+### Distinguish cash drag from volatility drag
+
+Cash drag is the performance difference from holding some assets outside the market. It can help during falling prices and reduce participation during rising prices. Volatility drag describes compound returns. In an illustrative two-period sequence, a 20% rise followed by a 20% decline leaves $100 at $96. The arithmetic average is zero, while the compounded result is a loss. Staging reduces equity exposure during deployment. Once deployed, the account experiences the volatility of its holdings.
+
+Behavioral risk also matters. If an immediate drop would lead you to abandon an allocation, the loss and recovery path merits as much attention as the endpoint. A staged strategy has its own test of discipline. Future purchases must still happen when headlines are discouraging or prices seem too high.
+
+Explore a matched pair of runs in the [FolioScope Simulator](/dashboard?view=simulator).
+
+*For informational and educational purposes only — not investment advice.*
+
+## FAQ
+
+### Does lump sum always beat dollar-cost averaging?
+
+No. The ranking depends on the price path and the return on uninvested cash. A decline during deployment can favor staged entry. A sustained rise can favor investing the entire amount early.
+
+### How do I compare the strategies fairly?
+
+Start both accounts with the same available cash. Apply the same asset, time window, and cost assumptions, and include unspent cash when measuring the staged account’s value.
+
+### Can DCA eliminate a bear-market loss?
+
+DCA spreads purchases and changes how much money is exposed during deployment. Existing shares still lose value when the market falls. A fully invested DCA account remains exposed to further declines.

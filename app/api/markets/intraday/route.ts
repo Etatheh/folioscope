@@ -6,6 +6,7 @@ import { isFeaturedSymbol, normalizeSymbol } from "@/lib/watchlist";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 15;
 
 const NO_STORE = { "Cache-Control": "no-store" };
 

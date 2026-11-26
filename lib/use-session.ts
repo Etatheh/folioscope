@@ -232,11 +232,12 @@ function subscribe(listener: () => void) {
  */
 export function useSession() {
   const state = useSyncExternalStore(subscribe, () => snapshot, () => INITIAL);
-  const user = state.supabaseUser ?? state.legacyUser;
+  const localAdmin = process.env.NODE_ENV === "development" && state.legacyUser?.id === "local-admin";
+  const user = localAdmin ? state.legacyUser : state.supabaseUser ?? state.legacyUser;
 
   return {
     user,
     ready: state.legacyReady && state.supabaseReady,
-    mode: (state.supabaseUser ? "supabase" : state.legacyMode) as SessionMode,
+    mode: (state.supabaseUser && !localAdmin ? "supabase" : state.legacyMode) as SessionMode,
   };
 }

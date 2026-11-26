@@ -1,5 +1,6 @@
 "use client";
 
+import BrandLogo from "@/components/BrandLogo";
 import { useId, useRef, useState } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { useEntranceComplete } from "@/components/ui/Reveal";
@@ -88,7 +89,7 @@ export function WorkspacePreview({ lang }: { lang: Lang }) {
     ? [["组合市值", "$128,450"], ["累计收益", "+12.8%"], ["最大回撤", "−8.4%"]]
     : [["Portfolio value", "$128,450"], ["Total return", "+12.8%"], ["Max drawdown", "−8.4%"]];
   return <div className={styles.preview} aria-label={zh ? "FolioScope 工作台全景预览" : "FolioScope workspace overview"}>
-    <div className={styles.previewTop}><span className="font-semibold tracking-tight text-white">FolioScope<span className="ml-2 text-violet-300">/</span></span><span className={styles.demoLabel}>{zh ? "工作台预览 · 示例数据" : "Workspace preview · Illustrative data"}</span></div>
+    <div className={styles.previewTop}><span className="inline-flex items-center gap-2 font-semibold tracking-tight text-white"><BrandLogo className="h-6 w-6 shrink-0" />FolioScope<span className="ml-2 text-violet-300">/</span></span><span className={styles.demoLabel}>{zh ? "工作台预览 · 示例数据" : "Workspace preview · Illustrative data"}</span></div>
     <div className={styles.previewBody}>
       <aside className={styles.workspaceSidebar} aria-label={zh ? "工作台结构示意" : "Workspace structure illustration"}>
         <p className="mb-6 text-xs tracking-widest text-slate-500">WORKSPACE</p>
@@ -128,7 +129,7 @@ export default function ProductPreview({ lang, active, onChange, compact = false
   const zh = lang === "zh";
   const tabs = zh ? ["全球市场", "组合回测", "AI 财报"] : ["Markets", "Simulator", "AI Research"];
   return <div className={`${styles.preview} ${compact ? styles.compact : ""}`}>
-    <div className={styles.previewTop}><span className="font-semibold tracking-tight text-white">FolioScope<span className="ml-2 text-violet-300">/</span></span><span className={styles.demoLabel}>{zh ? "交互预览 · 示例数据" : "Interactive preview · Illustrative data"}</span></div>
+    <div className={styles.previewTop}><span className="inline-flex items-center gap-2 font-semibold tracking-tight text-white"><BrandLogo className="h-6 w-6 shrink-0" />FolioScope<span className="ml-2 text-violet-300">/</span></span><span className={styles.demoLabel}>{zh ? "交互预览 · 示例数据" : "Interactive preview · Illustrative data"}</span></div>
     <div className={styles.previewBody}>
       {!compact && <aside className={styles.previewSidebar}><span className="mb-8 block text-xs tracking-widest text-slate-500">WORKSPACE</span>{tabs.map((tab, i) => <button type="button" key={tab} onClick={() => onChange ? onChange(i) : setSelected(i)} aria-pressed={current === i} className={current === i ? styles.sideActive : ""}>{tab}</button>)}<div className="mt-auto pt-12 text-xs text-slate-500">{zh ? "你的研究，始终同步。" : "Your research, in sync."}</div></aside>}
       <div className={styles.previewContent}>

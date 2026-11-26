@@ -1,0 +1,66 @@
+---
+title: "Max Drawdown and Recovery Time in Portfolio Backtesting"
+description: "Learn to calculate max drawdown and recovery time, then compare your portfolio with the S&P 500 using matched dates, cash flows, and price assumptions."
+date: "2026-11-26"
+ctaTicker: "QQQ"
+tags:
+  - Portfolio research
+  - Backtesting
+  - Risk management
+---
+
+A portfolio can finish a backtest ahead of the S&P 500 and still spend months or years below its own high. Total return tells you how the investment ended. Maximum drawdown tells you the size of its steepest peak-to-trough decline during the test. Recovery time tells you how long the portfolio needed to regain that prior high. Together, those measures help you judge what the historical path could have meant for an investor funding a near-term expense or deciding whether to keep holding.
+
+## Calculate maximum drawdown from a running peak
+
+For every observation, record the highest portfolio value seen up to that point. Divide the current value by that running peak and subtract one. Maximum drawdown is the magnitude of the most negative observation. A new high starts a new peak. The lowest single-day return and the biggest decline from a peak can occur on different dates because a drawdown often develops over many trading sessions.
+
+### Why the recovery percentage is larger
+
+A loss reduces the amount of capital left to earn the recovery. If a portfolio falls by a fraction d, the gain needed to recover is d ÷ (1 − d). In an illustrative example, $100 falling to $70 is a 30% drawdown. A $30 recovery is roughly 42.9% of the $70 remaining. A 30% rebound from $70 would reach $91.
+
+> **Takeaway:** Drawdown is measured from the prior high, and the recovery gain is measured from the lower balance. Use the correct starting value for each calculation.
+
+### Record three dates for the same episode
+
+- **Peak date.** Find the high that preceded the drawdown under review.
+- **Trough date.** Find the low within that episode and record the decline from the peak.
+- **Recovery date.** Find the first later observation that equals or exceeds the peak. Mark the episode as still underwater if the test ends before recovery.
+
+Peak-to-recovery time includes the decline and the rebound. Trough-to-recovery time measures the rebound alone. State which one you use. The deepest episode and the longest episode can differ. A sharp decline may reverse quickly, while a smaller decline can take longer to repair if the portfolio moves sideways.
+
+## Compare a growth tilt with the S&P 500
+
+<BlogBacktestEmbed preset="qqq-growth" />
+
+The chart starts QQQ and SPY with the same investment. It tracks daily closing values in dollars, with SPY as an investable proxy for the S&P 500. Hover around a visible decline and compare the portfolios on the same day. Locate each line’s own prior high, then check whether they recovered together or at different times. The card reports QQQ’s deepest drawdown and its ending return difference versus SPY. You can use the hover values to examine a particular episode on either line.
+
+### Use a benchmark that matches the comparison
+
+The S&P 500 provides a baseline for a U.S. large-cap allocation with a growth tilt. For a mixed portfolio with bonds or international stocks, a blended benchmark may answer a closer question about the intended allocation. In either case, line up starting and ending dates, reporting currency, dividend treatment, and observation frequency. The card uses closing prices without cash distributions. A dividend-reinvested series can recover on a different date.
+
+Calculate each portfolio’s drawdown from its own peak. Even when two series reach their lowest values on the same day, they may have started from different highs and experienced different losses. Daily closes can capture more of a decline than month-end closes, and intraday lows can be deeper than either. A drawdown number only describes the frequency and dates you measured.
+
+## Account for deposits, withdrawals, and currency
+
+New deposits can lift the raw balance during a market decline, and withdrawals can pull it down even on a flat market day. Use an equal-capital buy-and-hold comparison to study the underlying investments or measure drawdown on a cash-flow-adjusted return series for a strategy that receives deposits. The raw account curve remains useful when the question is how many dollars would have been available at a given date.
+
+If you spend in another currency, convert both curves at consistent dates to see how exchange-rate movements change the decline and recovery. An account can regain a prior dollar high while remaining below its peak in your spending currency. Likewise, a nominal high can recover before the account regains the same purchasing power.
+
+Run your preferred weights against the benchmark in the [FolioScope Simulator](/dashboard?view=simulator). Keep a note of the three episode dates alongside the ending return so you can compare windows later.
+
+*For informational and educational purposes only — not investment advice.*
+
+## FAQ
+
+### Is maximum drawdown the same as volatility?
+
+No. Drawdown measures a loss from a running peak. Volatility measures how widely periodic returns vary and typically includes both upside and downside movements.
+
+### How long does it take a portfolio to recover from a drawdown?
+
+There is no fixed recovery time. Count from the prior peak or from the trough to the first later observation that reaches the prior high, and state which convention you used.
+
+### Can two portfolios have the same return and different drawdowns?
+
+Yes. Total return uses the starting and ending observations. Two portfolios can finish at the same value after experiencing very different declines and recovery times.

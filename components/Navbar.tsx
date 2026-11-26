@@ -1,5 +1,6 @@
 "use client";
 
+import BrandLogo from "@/components/BrandLogo";
 import { useLanguage } from "./LanguageProvider";
 import LangToggle from "./LangToggle";
 import { useState } from "react";
@@ -16,6 +17,7 @@ export default function Navbar({ lang: requestedLang }: { lang?: Lang }) {
   const navLinks = [
     { label: lang === "zh" ? "功能" : "Features", href: "/#features" },
     { label: lang === "zh" ? "价格" : "Pricing", href: "/pricing" },
+    { label: lang === "zh" ? "博客" : "Blog", href: "/blog" },
     { label: lang === "zh" ? "看板" : "Dashboard", href: "/dashboard" },
   ];
   const [open, setOpen] = useState(false);
@@ -32,21 +34,7 @@ export default function Navbar({ lang: requestedLang }: { lang?: Lang }) {
             aria-label="FolioScope home"
             className="flex shrink-0 items-center gap-2.5"
           >
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-500/25">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth={2.2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M3 17l5-5 4 4 8-8" />
-                <path d="M14 8h6v6" />
-              </svg>
-            </span>
+            <BrandLogo className="h-8 w-8 shrink-0" />
             <span className="text-sm font-semibold tracking-tight text-white">
               FolioScope
             </span>

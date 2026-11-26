@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 
 import { loginAccount } from "@/lib/server/auth-service";
 import { COOKIE_NAME, SESSION_TTL_MS } from "@/lib/server/auth";
+import { localAdminLogin } from "@/lib/server/local-admin";
 
 export const runtime = "nodejs";
 
@@ -30,6 +31,12 @@ export async function POST(request: Request) {
   }
 
   try {
+    const localToken = localAdminLogin(email, password);
+    if (localToken) {
+      const store = await cookies();
+      store.set(COOKIE_NAME, localToken, { httpOnly: true, sameSite: "strict", path: "/", maxAge: 86400 });
+      return Response.json({ ok: true });
+    }
     const result = await loginAccount(email, password, lang);
     if (!result.ok) {
       return Response.json({ ok: false, error: result.error }, { status: result.status });

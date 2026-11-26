@@ -6,6 +6,16 @@
 
 ---
 
+## 2026-11-26 - 行情、回测与内容整合
+
+1. **日期与版本主题**：2026-11-26 — 整合深蓝行情与回测更新。
+2. **核心改动内容**：纳入回测工作台、分享票根、Blog 回测嵌入及联系页。
+3. **涉及的核心文件路径**：`components/simulator/`、`app/blog/`、`app/contact/`。
+4. **架构与设计约定（Do Not Break）**：保留最新行情图表及权限判断，开发账号仅在开发环境启用。
+
+---
+
+
 ## 2026-11-26 - Blue UI 行情主题补齐
 
 1. **日期与版本主题**：2026-11-26 — 补齐深蓝行情看板主题。
@@ -213,7 +223,7 @@
    - **AI Analysis 视图**：新增 `AiAnalysisPanel`，集中展示 AI 市场摘要与 14 只精选股的 `AI Earnings Analysis` 触发入口；卡片按钮仍复用原 `StockReportButton` 弹窗。
    - **移动端与排版修复**：根布局/主区域/网格/卡片补齐 `overflow-x-hidden` / `overflow-x-clip` / `min-w-0`；修复移动端 Simulator 控件行重叠、图表 y 轴顶裁切、AI 悬浮按钮压住抽屉底部；删除 `Recent activity` / `WEEKLY FOCUS` 等建站模板占位及对应 i18n 文案。
    - **预览与验证**：新增 `public/_preview/gallery.html` + 截图（仅用于效果确认，可整目录删除）；通过 `tsc --noEmit`、`eslint`、`next build` 与页面/接口 200 冒烟（all/us/europe/asia/watchlist/simulator/ai 及新指数 quote/series）。
-3. **涉及的核心文件路径**：`app/dashboard/page.tsx`（重写为视图分发）、`components/dashboard/DashboardShell.tsx`（新增）、`lib/dashboard-views.ts`（新增）、`components/markets/GlobalMarketsOverview.tsx`（新增）、`lib/europe-markets.ts`（新增）、`lib/index-quotes.ts`（新增）、`lib/index-symbols.ts`（新增）、`lib/market-series.ts`（新增）、`lib/asia-markets.ts`、`lib/instruments.ts`、`lib/access.ts`、`lib/watchlist.ts`、`lib/i18n.ts`、`lib/us-stocks.ts`、`app/api/markets/quote/route.ts`、`app/api/markets/series/route.ts`、`components/simulator/SimulatorWorkbench.tsx`（新增）、`components/simulator/SimulatorChart.tsx`（新增，基于旧版代码还原）、`components/simulator/engine.ts`（新增）、`components/ai/AiAnalysisPanel.tsx`（新增）、`components/MarketBoard.tsx`、`components/UsStockPanel.tsx`、`components/market-cards.tsx`、`components/ui/Icon.tsx`、`components/watchlist/`（`WatchlistHub.tsx`、`WatchlistNavButton.tsx`、`MarketSearch.tsx`、`QuoteCard.tsx`）、`app/dashboard/markets/[symbol]/page.tsx`、`public/_preview/`（临时预览，可删）。
+3. **涉及的核心文件路径**：`app/dashboard/page.tsx`（重写为视图分发）、`components/dashboard/DashboardShell.tsx`（新增）、`lib/dashboard-views.ts`（新增）、`components/markets/GlobalMarketsOverview.tsx`（新增）、`lib/europe-markets.ts`（新增）、`lib/index-quotes.ts`（新增）、`lib/index-symbols.ts`（新增）、`lib/market-series.ts`（新增）、`lib/asia-markets.ts`、`lib/instruments.ts`、`lib/access.ts`、`lib/watchlist.ts`、`lib/i18n.ts`、`lib/us-stocks.ts`、`app/api/markets/quote/route.ts`、`app/api/markets/series/route.ts`、`components/simulator/SimulatorWorkbench.tsx`（新增）、`components/simulator/SimulatorChart.tsx`（新增，基于旧版代码还原）、`components/simulator/engine.ts`（新增）、`components/ai/AiAnalysisPanel.tsx`（新增）、`components/MarketBoard.tsx`、`components/UsStockPanel.tsx`、`components/market-cards.tsx`、`components/ui/Icon.tsx`、`components/watchlist/`（`WatchlistHub.tsx`、`WatchlistNavButton.tsx`、`MarketSearch.tsx`、`QuoteCard.tsx`）、`app/dashboard/markets/[symbol]/page.tsx`（临时预览，可删）。
 4. **架构与设计约定（Do Not Break）**：
    - **Simulator 图表样式即核心视觉资产**：必须保持旧版 `PortfolioSimulator` 的青绿色 2px 实线（#34d399）、灰色 1.4px 虚线（#94a3b8）、绿色辉光、十字准线 + 端点圆点 + 每日数值读数、`720×240` viewBox 与 `MM-DD` 日期轴；**不得再用紫色简化折线或普通双线面积图替换**。Lump Sum 灰线 = S&P 500 基准（归一化 100），DCA 灰线 = 累计投入本金（绝对值），这一语义不可混用。
    - **视图结构**：侧边栏 + `?view=` 独立视图是新的信息架构，不要回退到单页长滚动堆叠；Markets 父级默认展开且含 4 个子项（All Markets / U.S. Markets / Europe / Asia-Pacific），移动端抽屉选中后必须自动收起并锁定背景滚动。

@@ -1,58 +1,17 @@
 "use client";
 
-import { useId, useMemo, useState, type PointerEvent } from "react";
-
+import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from "react";
 import { fmtMoney } from "@/components/dca/engine";
 import { fmtSigned } from "@/components/market-ui";
+import { niceValueDomain, valueAxisLabel } from "./chart-math";
+import styles from "./simulator.module.css";
 
-const W = 720;
-const H = 240;
 const PL = 8;
-const PR = 56;
-const PT = 12;
-const PB = 22;
-const PLOT_W = W - PL - PR;
-const PLOT_H = H - PT - PB;
+const PR = 70;
+const PT = 14;
+const PB = 25;
 
-function axisLabel(value: number, mode: "percent" | "value") {
-  if (mode === "percent") return value.toFixed(0);
-  const sign = value < 0 ? "-" : "";
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000) {
-    return `${sign}$${(abs / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  }
-  if (abs >= 1_000) {
-    return `${sign}$${(abs / 1_000).toFixed(1).replace(/\.0$/, "")}k`;
-  }
-  return `${sign}$${abs.toFixed(0)}`;
-}
-
-function pnlLabel(value: number) {
-  return `${value >= 0 ? "+" : "-"}$${fmtMoney(Math.abs(value))}`;
-}
-
-/**
- * The original Investment Simulator chart, restored from the pre-merge
- * PortfolioSimulator component.
- *
- * Visual contract:
- * - emerald 2px portfolio line (subtle glow, same geometry)
- * - slate 1.4px dashed S&P 500 comparison line
- * - optional light-violet stepped principal line for DCA
- * - 720×240 viewBox, five grid lines, MM-DD x-axis labels
- * - pointer/touch crosshair, endpoint dot and the date/value readout
- */
-export default function SimulatorChart({
-  labels,
-  primary,
-  secondary,
-  tertiary,
-  mode,
-  legendPrimary,
-  legendSecondary,
-  legendTertiary,
-  ariaLabel,
-}: {
+export default function SimulatorChart({ labels, primary, secondary, tertiary, mode, legendPrimary, legendSecondary, legendTertiary, ariaLabel, monthly = false, accountLabel, relativeLabel = "Alpha" }: {
   labels: string[];
   primary: number[];
   secondary: number[];
@@ -62,389 +21,122 @@ export default function SimulatorChart({
   legendSecondary: string;
   legendTertiary?: string;
   ariaLabel: string;
+  monthly?: boolean;
+  accountLabel?: string;
+  relativeLabel?: string;
 }) {
-  const uid = useId().replace(/[:]/g, "");
-  const glowId = `sim-legacy-glow-${uid}`;
+  const uid = useId().replace(/:/g, "");
+  const plotRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 960, height: 240 });
   const [hover, setHover] = useState<number | null>(null);
+  useEffect(() => {
+    if (!plotRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) setSize({ width, height });
+    });
+    observer.observe(plotRef.current);
+    return () => observer.disconnect();
+  }, []);
 
+  const W = size.width;
+  const H = size.height;
+  const plotWidth = Math.max(1, W - PL - PR);
+  const plotHeight = Math.max(1, H - PT - PB);
+  const hasBenchmark = secondary.some(Number.isFinite);
   const chart = useMemo(() => {
-    const n = labels.length;
-    if (n < 2) return null;
-
-    const values = [...primary, ...secondary, ...(tertiary ?? [])].filter(
-      (value) => Number.isFinite(value)
-    );
-    let min = Math.min(...values);
-    let max = Math.max(...values);
-    if (!Number.isFinite(min) || !Number.isFinite(max)) {
-      min = 90;
-      max = 110;
-    }
-    const pad = (max - min) * 0.08 || 1;
-    min -= pad;
-    max += pad;
-    // Portfolio / invested dollars never go below zero; keep the baseline clean.
-    if (mode === "value" && min < 0) min = 0;
-
-    const x = (i: number) => PL + (i / Math.max(1, n - 1)) * PLOT_W;
-    const y = (value: number) =>
-      PT + ((max - value) / Math.max(1, max - min)) * PLOT_H;
-    const line = (series: readonly number[]) => {
-      let d = "";
+    if (labels.length < 2) return null;
+    const values = [...primary, ...secondary, ...(tertiary ?? [])].filter(Number.isFinite);
+    const { min, max, ticks } = niceValueDomain(values, mode === "value");
+    const x = (i: number) => PL + i / (labels.length - 1) * plotWidth;
+    const y = (value: number) => PT + (max - value) / (max - min) * plotHeight;
+    const line = (series: number[], stepped = false) => {
+      let path = "";
+      let connected = false;
       series.forEach((value, i) => {
-        if (!Number.isFinite(value)) return;
-        d += `${d ? "L" : "M"}${x(i).toFixed(1)} ${y(value).toFixed(1)}`;
+        if (!Number.isFinite(value)) { connected = false; return; }
+        const px = x(i).toFixed(2);
+        const py = y(value).toFixed(2);
+        path += !connected ? `M${px},${py}` : stepped ? `H${px}V${py}` : `L${px},${py}`;
+        connected = true;
       });
-      return d;
+      return path;
     };
-    const stepLine = (series: readonly number[]) => {
-      let d = "";
-      let previousY: number | null = null;
-      series.forEach((value, i) => {
-        if (!Number.isFinite(value)) return;
-        const px = x(i).toFixed(1);
-        const py = y(value).toFixed(1);
-        if (!d) d = `M${px} ${py}`;
-        else if (previousY !== null) d += `H${px}V${py}`;
-        previousY = Number(py);
-      });
-      return d;
-    };
+    const primaryPath = line(primary);
+    return { x, y, ticks, primaryPath, secondaryPath: line(secondary), tertiaryPath: tertiary ? line(tertiary, true) : "",
+      area: `${primaryPath}L${x(labels.length - 1)},${H - PB}L${PL},${H - PB}Z`,
+      labelIndices: Array.from(new Set(Array.from({ length: W < 500 ? 4 : 6 }, (_, index) => Math.round(index / (W < 500 ? 3 : 5) * (labels.length - 1))))) };
+  }, [labels.length, primary, secondary, tertiary, mode, plotWidth, plotHeight, H, W]);
 
-    return {
-      n,
-      x,
-      y,
-      primaryPath: line(primary),
-      secondaryPath: line(secondary),
-      tertiaryPath: tertiary ? stepLine(tertiary) : "",
-      grid: [0, 1, 2, 3, 4].map((i) => min + ((max - min) * i) / 4),
-      labelEvery: Math.max(1, Math.ceil(n / 6)),
-    };
-  }, [labels.length, mode, primary, secondary, tertiary]);
-
-  const setHoverFromPointer = (event: PointerEvent<SVGSVGElement>) => {
-    if (!chart) return;
+  const inspect = (event: PointerEvent<SVGSVGElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    if (!rect.width) return;
-    const px = ((event.clientX - rect.left) / rect.width) * W;
-    setHover(
-      Math.min(
-        chart.n - 1,
-        Math.max(0, Math.round(((px - PL) / PLOT_W) * (chart.n - 1)))
-      )
-    );
+    const x = (event.clientX - rect.left) / rect.width * W;
+    setHover(Math.min(labels.length - 1, Math.max(0, Math.round((x - PL) / plotWidth * (labels.length - 1)))));
   };
-
-  const hoveredPrimary = hover !== null ? primary[hover] : null;
-  const hoveredSecondary = hover !== null ? secondary[hover] : null;
-  const hoveredTertiary = hover !== null && tertiary ? tertiary[hover] : null;
-
-  const hoverReadout = useMemo(() => {
-    if (hover === null) return null;
-    const primaryValue = Number.isFinite(hoveredPrimary)
-      ? (hoveredPrimary as number)
-      : null;
-    const secondaryValue = Number.isFinite(hoveredSecondary)
-      ? (hoveredSecondary as number)
-      : null;
-    const tertiaryValue = Number.isFinite(hoveredTertiary)
-      ? (hoveredTertiary as number)
-      : null;
-    const alpha =
-      primaryValue !== null &&
-      secondaryValue !== null &&
-      secondaryValue > 0
-        ? (primaryValue / secondaryValue - 1) * 100
-        : null;
-    const pnl =
-      primaryValue !== null && tertiaryValue !== null
-        ? primaryValue - tertiaryValue
-        : null;
-    const pnlPct =
-      primaryValue !== null &&
-      tertiaryValue !== null &&
-      tertiaryValue > 0
-        ? (primaryValue / tertiaryValue - 1) * 100
-        : null;
-    return {
-      date: labels[hover] ?? "",
-      primary: primaryValue,
-      secondary: secondaryValue,
-      tertiary: tertiaryValue,
-      alpha,
-      pnl,
-      pnlPct,
-    };
-  }, [hover, labels, hoveredPrimary, hoveredSecondary, hoveredTertiary]);
+  const index = hover === null ? null : Math.min(hover, labels.length - 1);
+  const primaryValue = index === null ? NaN : primary[index];
+  const benchmarkValue = index === null ? NaN : secondary[index];
+  const investedValue = index === null ? NaN : tertiary?.[index] ?? NaN;
+  const last = primary.length - 1;
+  const format = (value: number) => mode === "value" ? `$${fmtMoney(value)}` : `${value.toFixed(1)}%`;
 
   return (
-    <div className="relative min-w-0">
-      <div className="flex flex-wrap items-center justify-end gap-3 text-[10px] text-slate-500">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block h-0.5 w-4 rounded bg-emerald-400" />
-          {legendPrimary}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block w-4 border-t border-dashed border-slate-400/70" />
-          {legendSecondary}
-        </span>
-        {tertiary && legendTertiary && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block w-4 border-t border-dashed border-[#c4b5fd]/80" />
-            {legendTertiary}
-          </span>
-        )}
+    <div className={styles.chart}>
+      <div className={styles.chartLegend}>
+        <span><i />{legendPrimary}</span>
+        <span><i className={styles.benchmarkLine} />{legendSecondary}</span>
+        {tertiary && <span><i className={styles.principalLine} />{legendTertiary}</span>}
       </div>
-
-      <div className="min-h-5 text-right text-[11px] tabular-nums text-slate-500">
-        {hoverReadout ? (
-          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-            <span className="text-slate-500">{hoverReadout.date}</span>
-            {hoverReadout.primary !== null && (
-              <span>
-                {legendPrimary}{" "}
-                <span className="font-medium text-emerald-400">
-                  ${fmtMoney(hoverReadout.primary)}
-                </span>
-              </span>
-            )}
-            {hoverReadout.secondary !== null && (
-              <span>
-                {legendSecondary}{" "}
-                <span className="font-medium text-slate-200">
-                  ${fmtMoney(hoverReadout.secondary)}
-                </span>
-              </span>
-            )}
-            {hoverReadout.tertiary !== null && legendTertiary && (
-              <span>
-                {legendTertiary}{" "}
-                <span className="font-medium text-[#c4b5fd]">
-                  ${fmtMoney(hoverReadout.tertiary)}
-                </span>
-              </span>
-            )}
-            {hoverReadout.pnl !== null && (
-              <span>
-                P/L{" "}
-                <span
-                  className={
-                    hoverReadout.pnl >= 0
-                      ? "font-medium text-emerald-400"
-                      : "font-medium text-rose-400"
-                  }
-                >
-                  {pnlLabel(hoverReadout.pnl)}
-                  {hoverReadout.pnlPct !== null
-                    ? ` (${fmtSigned(hoverReadout.pnlPct)}%)`
-                    : ""}
-                </span>
-              </span>
-            )}
-            {hoverReadout.alpha !== null && (
-              <span>
-                Alpha{" "}
-                <span
-                  className={
-                    hoverReadout.alpha >= 0
-                      ? "font-medium text-emerald-400"
-                      : "font-medium text-rose-400"
-                  }
-                >
-                  {fmtSigned(hoverReadout.alpha)}%
-                </span>
-              </span>
-            )}
-          </div>
-        ) : (
-          <span className="text-slate-600">
-            Hover or drag the curve to inspect daily values
-          </span>
-        )}
+      {!hasBenchmark && <p role="status" className="mb-2 text-[11px] text-amber-300/80">S&amp;P 500 history is temporarily unavailable for this range. Reload to retry.</p>}
+      <div ref={plotRef} className={styles.plot}>
+        {chart && <>
+          <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={ariaLabel} tabIndex={0}
+            aria-describedby={`chart-help-${uid}`}
+            onPointerMove={inspect} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); inspect(event); }}
+            onPointerUp={(event) => { event.currentTarget.releasePointerCapture(event.pointerId); if (event.pointerType === "touch") setHover(null); }}
+            onPointerLeave={() => setHover(null)} onPointerCancel={() => setHover(null)} onBlur={() => setHover(null)}
+            onKeyDown={(event) => {
+              if (!["ArrowLeft", "ArrowRight", "Home", "End", "Escape"].includes(event.key)) return;
+              event.preventDefault();
+              if (event.key === "Escape") setHover(null);
+              else if (event.key === "Home") setHover(0);
+              else if (event.key === "End") setHover(last);
+              else setHover((current) => Math.min(last, Math.max(0, (current ?? last) + (event.key === "ArrowRight" ? 1 : -1))));
+            }}>
+            <defs>
+              <linearGradient id={`area-${uid}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#59c9a5" stopOpacity=".12" /><stop offset="100%" stopColor="#59c9a5" stopOpacity="0" /></linearGradient>
+              <filter id={`glow-${uid}`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+            </defs>
+            {chart.ticks.map((value) => <g key={value}>
+              <line x1={PL} x2={W - PR} y1={chart.y(value)} y2={chart.y(value)} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 5" />
+              <text x={W - PR + 14} y={chart.y(value) + 3.5} fontSize="10" fill="#71717a">{mode === "value" ? valueAxisLabel(value) : `${value}%`}</text>
+            </g>)}
+            <path d={chart.area} fill={`url(#area-${uid})`} />
+            <path d={chart.secondaryPath} fill="none" stroke="#d4d4d8" strokeWidth="1.2" strokeDasharray="5 4" opacity=".75" />
+            {tertiary && <path d={chart.tertiaryPath} fill="none" stroke="#dbb76b" strokeWidth="1.2" strokeDasharray="3 4" opacity=".8" />}
+            <path d={chart.primaryPath} fill="none" stroke="#59c9a5" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" filter={`url(#glow-${uid})`} />
+            {Number.isFinite(primary[last]) && <g aria-label={`Final value ${format(primary[last])}`} data-value={primary[last]}>
+              <circle cx={chart.x(last)} cy={chart.y(primary[last])} r="6" fill="#59c9a5" opacity=".16" className={styles.endpoint} />
+              <circle cx={chart.x(last)} cy={chart.y(primary[last])} r="2.8" fill="#59c9a5" stroke="#11131a" strokeWidth="1.5" />
+            </g>}
+            {index !== null && Number.isFinite(primaryValue) && <g pointerEvents="none">
+              <line x1={PL} x2={W - PR} y1={chart.y(primaryValue)} y2={chart.y(primaryValue)} stroke="#a1a1aa" strokeDasharray="3 4" opacity=".25" />
+              <line x1={chart.x(index)} x2={chart.x(index)} y1={PT} y2={H - PB} stroke="#a1a1aa" strokeDasharray="3 4" opacity=".5" />
+              <circle cx={chart.x(index)} cy={chart.y(primaryValue)} r="4" fill="#59c9a5" stroke="#11131a" strokeWidth="2" />
+            </g>}
+            {chart.labelIndices.map((i) => <text key={i} x={chart.x(i)} y={H - 5} fontSize="10" fill="#71717a" textAnchor={i === 0 ? "start" : i === labels.length - 1 ? "end" : "middle"}>{(monthly || (accountLabel && W < 500)) ? labels[i].slice(2, 7) : labels[i]}</text>)}
+          </svg>
+          {index !== null && Number.isFinite(primaryValue) && <div className={styles.tooltip} role="status" style={{ left: Math.max(8, Math.min(W - Math.min(240, W * 0.8) - 8, chart.x(index) > W / 2 ? chart.x(index) - Math.min(240, W * 0.8) - 16 : chart.x(index) + 16)) }}>
+            <time>{labels[index]}</time>
+            <div><span>{legendPrimary}</span><b style={{ color: "#59c9a5" }}>{format(primaryValue)}</b></div>
+            {Number.isFinite(benchmarkValue) && <div><span>{legendSecondary}</span><b>{format(benchmarkValue)}</b></div>}
+            {Number.isFinite(investedValue) && <div><span>{legendTertiary}</span><b style={{ color: "#dbb76b" }}>{format(investedValue)}</b></div>}
+            {investedValue > 0 && <div><span>P/L</span><b>{fmtSigned((primaryValue / investedValue - 1) * 100)}%</b></div>}
+            {benchmarkValue > 0 && <div><span>{relativeLabel}</span><b>{fmtSigned((primaryValue / benchmarkValue - 1) * 100)}%</b></div>}
+          </div>}
+        </>}
       </div>
-
-      {chart && (
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          className="w-full select-none"
-          style={{ touchAction: "pan-y" }}
-          onPointerMove={setHoverFromPointer}
-          onPointerDown={(event) => {
-            event.currentTarget.setPointerCapture(event.pointerId);
-            setHoverFromPointer(event);
-          }}
-          onPointerLeave={() => setHover(null)}
-          onPointerCancel={() => setHover(null)}
-          role="img"
-          aria-label={ariaLabel}
-        >
-          <defs>
-            <filter id={glowId} x="-25%" y="-25%" width="150%" height="150%">
-              <feGaussianBlur stdDeviation="2.2" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-
-          {chart.grid.map((value) => (
-            <g key={value}>
-              <line
-                x1={PL}
-                x2={W - PR}
-                y1={chart.y(value)}
-                y2={chart.y(value)}
-                stroke="rgba(148,163,184,0.10)"
-              />
-              <text
-                x={W - PR + 6}
-                y={chart.y(value) + 3.5}
-                fontSize="10"
-                fill="#64748b"
-              >
-                {axisLabel(value, mode)}
-              </text>
-            </g>
-          ))}
-
-          <path
-            d={chart.secondaryPath}
-            fill="none"
-            stroke="#94a3b8"
-            strokeWidth="1.4"
-            strokeDasharray="5 4"
-            opacity="0.7"
-          />
-          {tertiary && (
-            <path
-              d={chart.tertiaryPath}
-              fill="none"
-              stroke="#c4b5fd"
-              strokeWidth="1.4"
-              strokeDasharray="3 4"
-              opacity="0.85"
-            />
-          )}
-          <path
-            d={chart.primaryPath}
-            fill="none"
-            stroke="#34d399"
-            strokeWidth="2"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            filter={`url(#${glowId})`}
-          />
-
-          {hover !== null &&
-            Number.isFinite(hoveredPrimary) && (
-              <g>
-                <line
-                  x1={PL}
-                  x2={W - PR}
-                  y1={chart.y(hoveredPrimary as number)}
-                  y2={chart.y(hoveredPrimary as number)}
-                  stroke="#94a3b8"
-                  strokeWidth="1"
-                  strokeDasharray="3 3"
-                  opacity="0.35"
-                />
-                <line
-                  x1={chart.x(hover)}
-                  x2={chart.x(hover)}
-                  y1={12}
-                  y2={H - 22}
-                  stroke="#94a3b8"
-                  strokeWidth="1"
-                  strokeDasharray="3 3"
-                  opacity="0.6"
-                />
-                <circle
-                  cx={chart.x(hover)}
-                  cy={chart.y(hoveredPrimary as number)}
-                  r="3.5"
-                  fill="#34d399"
-                  stroke="#030712"
-                  strokeWidth="1.5"
-                />
-                <g pointerEvents="none">
-                  <rect
-                    x={W - PR + 2}
-                    y={Math.min(
-                      Math.max(chart.y(hoveredPrimary as number) - 8, PT),
-                      PT + PLOT_H - 16
-                    )}
-                    width={PR - 4}
-                    height={16}
-                    rx={3}
-                    fill="#111827"
-                    stroke="#34d399"
-                    strokeOpacity="0.6"
-                  />
-                  <text
-                    x={W - PR + 2 + (PR - 4) / 2}
-                    y={Math.min(
-                      Math.max(chart.y(hoveredPrimary as number) - 8, PT),
-                      PT + PLOT_H - 16
-                    ) + 11.5}
-                    textAnchor="middle"
-                    fontSize="9.5"
-                    fill="#e2e8f0"
-                  >
-                    {axisLabel(hoveredPrimary as number, mode)}
-                  </text>
-                  <rect
-                    x={Math.min(
-                      Math.max(chart.x(hover) - 28, PL),
-                      W - PR - 56
-                    )}
-                    y={H - 17}
-                    width={56}
-                    height={14}
-                    rx={3}
-                    fill="#111827"
-                    stroke="#475569"
-                    strokeOpacity="0.7"
-                  />
-                  <text
-                    x={
-                      Math.min(Math.max(chart.x(hover) - 28, PL), W - PR - 56) +
-                      28
-                    }
-                    y={H - 6.5}
-                    textAnchor="middle"
-                    fontSize="9"
-                    fill="#e2e8f0"
-                  >
-                    {(labels[hover] ?? "").slice(5)}
-                  </text>
-                </g>
-              </g>
-            )}
-
-          {labels.map((date, index) =>
-            index % chart.labelEvery === 0 || index === labels.length - 1 ? (
-              <text
-                key={`${date}-${index}`}
-                x={chart.x(index)}
-                y={H - 4}
-                fontSize="10"
-                fill="#64748b"
-                textAnchor={
-                  index === 0
-                    ? "start"
-                    : index === labels.length - 1
-                      ? "end"
-                      : "middle"
-                }
-              >
-                {date.slice(5)}
-              </text>
-            ) : null
-          )}
-        </svg>
-      )}
+      <div className={styles.chartFooter}><span id={`chart-help-${uid}`}>Hover or drag to inspect · {monthly ? "Month-end" : "Daily"} close<span className="sr-only">. Use left and right arrows to inspect observations. Home and End jump to endpoints.</span></span><span>USD · {accountLabel ?? (tertiary ? "Includes cash flows" : "Buy & hold")}</span></div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { getSupabaseServerUser } from "@/lib/supabase/server";
 import { COOKIE_NAME } from "./auth";
 import { getSessionUser, type AuthUser } from "./auth-service";
 import { authUserFromSupabaseUser } from "./supabase-user";
+import { localAdminUser } from "./local-admin";
 
 /**
  * Resolve the viewer inside Server Components.
@@ -13,6 +14,8 @@ import { authUserFromSupabaseUser } from "./supabase-user";
  * a Supabase login.
  */
 export async function getServerViewer(): Promise<AuthUser | null> {
+  const local = localAdminUser((await cookies()).get(COOKIE_NAME)?.value);
+  if (local) return local;
   try {
     const supabaseUser = await getSupabaseServerUser();
     if (supabaseUser) return await authUserFromSupabaseUser(supabaseUser);

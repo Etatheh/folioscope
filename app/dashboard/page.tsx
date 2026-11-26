@@ -222,7 +222,7 @@ async function DashboardContent({ lang, plan, view, watchlistTab }: {
         {view === "ai" && <AiAnalysisPanel lang={lang} plan={plan} />}
       </Reveal>
 
-      <AiAssistantDrawer lang={lang} marketContext={chatContext} />
+      <AiAssistantDrawer lang={lang} marketContext={chatContext} compactTrigger={view === "simulator"} />
     </>
   );
 }

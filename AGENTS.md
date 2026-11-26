@@ -58,6 +58,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## 5. 接到任务时的最小检查清单
 
+### 模块定位与检查范围
+
+- 功能入口、依赖和按需验证范围见 [`docs/architecture-map.md`](docs/architecture-map.md)。后续局部任务先查该索引，再确认目标文件当前引用；不默认重新扫描整个项目。
+- “回测模块”默认指 `/dashboard?view=simulator` 的 `components/simulator/SimulatorWorkbench.tsx` 链路；不要误改未挂载的旧模拟组件。
+- 检查以目标模块及受影响的上下游为范围；修改共享行情、权限、套餐、语言或全局样式时必须扩大到相关消费者。框架/接口变动及发布仍执行相应类型、构建和运行验证。
+- 若修改改变了功能入口或依赖，同步维护架构索引。
+
 - [ ] 已读 `AGENTS.md` + `CHANGELOG.md` 最近 3 条记录
 - [ ] 大改前工作区干净且已 commit 快照（或已与用户确认如何处理未提交改动）
 - [ ] 改动遵守上述 Do Not Break 约定

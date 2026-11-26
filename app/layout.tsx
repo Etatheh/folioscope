@@ -1,6 +1,7 @@
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { getRequestLang } from "@/lib/server/lang";
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
 import ToastHost from "@/components/ui/ToastHost";
 import CheckoutReturn from "@/components/CheckoutReturn";
@@ -11,6 +12,13 @@ import {
   SITE_URL,
 } from "@/lib/site";
 import "./globals.css";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-plus-jakarta-sans",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -43,7 +51,7 @@ export default async function RootLayout({
 }>) {
   const lang = await getRequestLang();
   return (
-    <html lang={lang} className="h-full scroll-smooth antialiased" data-scroll-behavior="smooth">
+    <html lang={lang} className={`${plusJakartaSans.variable} h-full scroll-smooth antialiased`} data-scroll-behavior="smooth">
       <body className="min-h-full overflow-x-hidden text-slate-100">
         <LanguageProvider lang={lang}>
         <AuthModalProvider>

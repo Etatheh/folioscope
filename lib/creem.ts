@@ -5,7 +5,6 @@
 //   CREEM_WEBHOOK_SECRET       — "whsec_..." signing secret
 //   CREEM_MONTHLY_PRODUCT_ID   — "prod_..." monthly product
 //   CREEM_YEARLY_PRODUCT_ID    — "prod_..." yearly product
-//   NEXT_PUBLIC_APP_URL        — public origin used for checkout success_url
 //
 // The API key prefix decides the environment, so a test key can never create
 // live charges and vice versa.
@@ -57,12 +56,6 @@ export function isCreemConfigured(): boolean {
 }
 
 /** Public app origin used as the hosted-checkout success URL. */
-export function getAppUrl(request?: Request): string {
-  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (configured) return configured.replace(/\/+$/, "");
-  const origin = request?.headers.get("origin")?.trim();
-  return (origin || "https://folioscope.live").replace(/\/+$/, "");
-}
 
 /** Normalizes the various Creem date fields into an ISO timestamp. */
 export function toIsoTimestamp(value: unknown): string | null {

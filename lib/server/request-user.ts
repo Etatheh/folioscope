@@ -6,6 +6,7 @@ import { getSessionUser, type AuthUser } from "./auth-service";
 import { COOKIE_NAME } from "./auth";
 import { readSupabaseEnv } from "./env";
 import { authUserFromSupabaseUser } from "./supabase-user";
+import { localAdminUser } from "./local-admin";
 
 /** Verify a Supabase access token sent by the browser client. */
 async function getBearerUser(
@@ -78,6 +79,8 @@ export type RequestSession = {
 export async function resolveRequestUser(
   request: Request
 ): Promise<RequestSession | null> {
+  const local = localAdminUser((await cookies()).get(COOKIE_NAME)?.value);
+  if (local) return { user: local, source: "cookie" };
   const bearer = await getBearerUser(request);
   if (bearer) {
     return { user: bearer.user, source: "supabase", token: bearer.token };

@@ -50,5 +50,5 @@
 
 - 需要在 Supabase Dashboard → Authentication → Providers 中启用 GitHub，并配置 GitHub OAuth App：
   - Authorization callback URL：`https://<SUPABASE_PROJECT>.supabase.co/auth/v1/callback`
-- 前端 OAuth 回调仍使用 `window.location.origin`；本地开发时记得把 `http://localhost:3000` 加入 Supabase 的 Redirect URLs，生产环境加入 `https://folioscope.live`。
+- 该历史版本的 OAuth 回调曾使用浏览器 origin；当前实现已固定使用生产回调 `https://folioscope.live/auth/callback`。
 - 若 GitHub provider 未启用，点击按钮会显示统一的第三方登录失败提示，邮箱登录仍可用。

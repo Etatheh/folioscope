@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo from "@/components/BrandLogo";
 import { localizedError } from "@/lib/localized-text";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -72,9 +73,11 @@ function Sparkles({ className = "h-4 w-4" }: { className?: string }) {
 export default function AiAssistantDrawer({
   lang,
   marketContext,
+  compactTrigger = false,
 }: {
   lang: Lang;
   marketContext: ChatMarketContext;
+  compactTrigger?: boolean;
 }) {
   const t = dict[lang].assistant;
   const { user, ready } = useSession();
@@ -388,12 +391,13 @@ export default function AiAssistantDrawer({
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label={t.open}
+        title={t.open}
         aria-expanded={open}
-        className="fixed bottom-5 right-4 z-30 flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-purple-500/30 transition hover:-translate-y-0.5 hover:shadow-purple-500/50 sm:bottom-6 sm:right-6"
+        className={`fixed bottom-5 right-4 z-30 flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-white/10 bg-white/[0.06] text-sm font-medium text-zinc-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl transition hover:border-white/20 hover:bg-white/10 sm:bottom-6 sm:right-6 ${compactTrigger ? "h-11 w-11" : "px-4 py-3"}`}
       >
         <Sparkles className="h-5 w-5" />
-        <span>{t.open}</span>
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />
+        <span className={compactTrigger ? "sr-only" : ""}>{t.open}</span>
+        {!compactTrigger && <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />}
       </button>
 
       <AnimatePresence>
@@ -422,9 +426,7 @@ export default function AiAssistantDrawer({
 
             <header className="relative flex items-start justify-between gap-3 border-b border-white/10 px-4 py-3">
               <div className="flex min-w-0 items-center gap-2.5">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-amber-400 text-white shadow-lg shadow-purple-500/25">
-                  <Sparkles className="h-4 w-4" />
-                </span>
+                <BrandLogo />
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 whitespace-nowrap">
                     <p className="text-sm font-semibold tracking-tight text-white">
@@ -604,9 +606,7 @@ export default function AiAssistantDrawer({
                     }`}
                   >
                     {!isUser && (
-                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-500/80 to-purple-600/80 text-white">
-                        <Sparkles className="h-3 w-3" />
-                      </span>
+                      <BrandLogo className="mt-0.5 h-6 w-6 shrink-0" />
                     )}
                     <div
                       className={`max-w-[86%] break-words rounded-2xl px-3.5 py-2.5 ${
