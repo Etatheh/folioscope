@@ -16,7 +16,16 @@ export type ChatIndexContext = {
   pePercentile?: number | null;
 };
 
-export type ChatDcaContext = {
+type BacktestContext = {
+  startDate?: string | null;
+  endDate?: string | null;
+  benchmarkReturn?: number;
+  benchmarkMaxDrawdown?: number;
+  volatility?: number;
+  sharpe?: number;
+};
+
+export type ChatDcaContext = BacktestContext & {
   target: "sp500" | "nasdaq";
   targetName: string;
   period: string;
@@ -34,7 +43,7 @@ export type ChatSimulatorHolding = {
   weight: number;
 };
 
-export type ChatSimulatorContext = {
+export type ChatSimulatorContext = BacktestContext & {
   mode: "lump" | "dca";
   period: string;
   months: number;
@@ -42,8 +51,6 @@ export type ChatSimulatorContext = {
   initialDeposit?: number;
   contribution?: number;
   frequency?: "weekly" | "biweekly" | "monthly";
-  startDate?: string | null;
-  endDate?: string | null;
   holdings: ChatSimulatorHolding[];
   invested?: number;
   finalValue?: number;
@@ -77,6 +84,7 @@ export type ChatFocusedContext = {
 };
 
 export type ChatMarketContext = {
+  activeSection?: "markets" | "watchlist" | "simulator" | "ai-analysis";
   page?: string;
   asOf?: number;
   lang?: Lang;
@@ -84,11 +92,6 @@ export type ChatMarketContext = {
   dca?: ChatDcaContext | null;
   simulator?: ChatSimulatorContext | null;
   focused?: ChatFocusedContext | null;
-};
-
-export const COMPLIANCE_NOTE: Record<Lang, string> = {
-  zh: "仅供参考，不构成投资建议。",
-  en: "For reference only — not investment advice.",
 };
 
 const MAX_MESSAGES = 16;
@@ -135,6 +138,17 @@ export function normalizeMessages(raw: unknown): ChatMessage[] {
   return messages.slice(start);
 }
 
+function normalizeBacktest(value: Record<string, unknown>): BacktestContext {
+  return {
+    startDate: safeText(value.startDate, 10) || null,
+    endDate: safeText(value.endDate, 10) || null,
+    benchmarkReturn: finite(value.benchmarkReturn) ?? undefined,
+    benchmarkMaxDrawdown: finite(value.benchmarkMaxDrawdown ?? value.benchmarkDrawdown) ?? undefined,
+    volatility: finite(value.portfolioVolatility ?? value.volatility) ?? undefined,
+    sharpe: finite(value.portfolioSharpe ?? value.sharpe ?? value.sharpeRatio) ?? undefined,
+  };
+}
+
 /** Validate the live page context sent by the browser. */
 export function normalizeMarketContext(raw: unknown): ChatMarketContext {
   const empty: ChatMarketContext = { indices: [] };
@@ -170,6 +184,7 @@ export function normalizeMarketContext(raw: unknown): ChatMarketContext {
     const months = finite(value.months);
     if (monthly !== null && months !== null) {
       dca = {
+        ...normalizeBacktest(value),
         target,
         targetName:
           safeText(value.targetName, 40) || (target === "sp500" ? "S&P 500" : "Nasdaq 100"),
@@ -209,6 +224,7 @@ export function normalizeMarketContext(raw: unknown): ChatMarketContext {
           ? value.frequency
           : undefined;
       simulator = {
+        ...normalizeBacktest(value),
         mode: value.mode === "dca" ? "dca" : "lump",
         period: safeText(value.period, 24) || `${Math.round(months)}M`,
         months: Math.max(1, Math.min(240, Math.round(months))),
@@ -216,8 +232,6 @@ export function normalizeMarketContext(raw: unknown): ChatMarketContext {
         initialDeposit: optionalNumber(value.initialDeposit) ?? undefined,
         contribution: optionalNumber(value.contribution) ?? undefined,
         frequency,
-        startDate: safeText(value.startDate, 12) || null,
-        endDate: safeText(value.endDate, 12) || null,
         holdings,
         invested: optionalNumber(value.invested) ?? undefined,
         finalValue: optionalNumber(value.finalValue) ?? undefined,
@@ -264,6 +278,9 @@ export function normalizeMarketContext(raw: unknown): ChatMarketContext {
   }
 
   return {
+    activeSection: input.activeSection === "markets" || input.activeSection === "watchlist" ||
+      input.activeSection === "simulator" || input.activeSection === "ai-analysis"
+      ? input.activeSection : undefined,
     page: safeText(input.page, 32) || undefined,
     asOf: finite(input.asOf) ?? undefined,
     lang: input.lang === "zh" ? "zh" : input.lang === "en" ? "en" : undefined,
@@ -281,11 +298,28 @@ function pct(value: number) {
   return `${value >= 0 ? "+" : ""}${nf(value)}%`;
 }
 
-/** Human-readable context block appended to the system prompt. */
-export function formatMarketContext(context: ChatMarketContext, lang: Lang): string {
+function backtestDetails(plan: ChatDcaContext | ChatSimulatorContext, emptyStatus: string) {
+  const lines = [plan.startDate && plan.endDate
+    ? `- Custom window: startDate=${plan.startDate}, endDate=${plan.endDate}`
+    : `- Period: ${plan.period} (${plan.months} months)`];
+  const metrics = [plan.invested, plan.finalValue, plan.totalReturn, plan.volatility, plan.sharpe,
+    plan.benchmarkReturn, plan.benchmarkMaxDrawdown,
+    ...("mode" in plan ? [plan.maxDrawdown, plan.cagr] : [plan.xirr])];
+  lines.push(`- Backtest results: ${metrics.some(n => typeof n === "number") ? "available" : emptyStatus}`);
+  if (plan.benchmarkReturn !== undefined) lines.push(`- Benchmark return: ${pct(plan.benchmarkReturn * 100)}`);
+  if (plan.benchmarkMaxDrawdown !== undefined) lines.push(`- Benchmark maximum drawdown: ${nf(Math.abs(plan.benchmarkMaxDrawdown) * 100)}%`);
+  if (plan.volatility !== undefined) lines.push(`- Portfolio volatility: ${nf(plan.volatility * 100)}%`);
+  if (plan.sharpe !== undefined) lines.push(`- Portfolio Sharpe ratio: ${nf(plan.sharpe)}`);
+  return lines;
+}
+
+/** Human-readable snapshot attached to the current user turn. */
+export function formatMarketContext(context: ChatMarketContext, lang: Lang, isPro: boolean): string {
   const zh = lang === "zh";
   const lines: string[] = [];
 
+  lines.push(`isPro: ${isPro}`);
+  if (context.activeSection) lines.push(`activeSection: ${context.activeSection}`);
   if (context.asOf) {
     lines.push(
       `${zh ? "数据时间" : "Data timestamp"}: ${new Date(context.asOf).toISOString()}`
@@ -319,11 +353,7 @@ export function formatMarketContext(context: ChatMarketContext, lang: Lang): str
     lines.push(
       `- ${zh ? "标的" : "Target"}: ${d.targetName} (${d.target})`
     );
-    lines.push(
-      `- ${zh ? "周期" : "Period"}: ${d.period} (${d.months} ${
-        zh ? "个月" : "months"
-      })`
-    );
+    lines.push(...backtestDetails(d, isPro ? "not_run_yet" : "locked"));
     lines.push(
       `- ${zh ? "每月定投" : "Monthly contribution"}: $${nf(d.monthly, 0)}`
     );
@@ -344,18 +374,14 @@ export function formatMarketContext(context: ChatMarketContext, lang: Lang): str
     if (d.benchmark) {
       lines.push(`- ${zh ? "对比基准" : "Comparison benchmark"}: ${d.benchmark}`);
     }
-    if (typeof d.invested !== "number") {
-      lines.push(
-        `- ${zh ? "回测结果：当前套餐未解锁（仅方案参数可用）" : "Backtest results: locked on the current plan (only plan inputs are available)"}`
-      );
-    }
+
   }
 
   if (context.simulator) {
     const s = context.simulator;
     lines.push(`\n[Current portfolio backtest]`);
     lines.push(`- Mode: ${s.mode === "dca" ? "DCA" : "Lump sum"}`);
-    lines.push(`- Period: ${s.period} (${s.months} months)`);
+    lines.push(...backtestDetails(s, "not_run_yet"));
     lines.push(`- Starting capital: $${nf(s.capital, 0)}`);
     if (typeof s.initialDeposit === "number" && s.initialDeposit > 0) {
       lines.push(`- Initial deposit: $${nf(s.initialDeposit, 0)}`);
@@ -364,9 +390,6 @@ export function formatMarketContext(context: ChatMarketContext, lang: Lang): str
       lines.push(
         `- Contribution: $${nf(s.contribution, 0)} ${s.frequency ?? "monthly"}`
       );
-    }
-    if (s.startDate && s.endDate) {
-      lines.push(`- Custom window: ${s.startDate} to ${s.endDate}`);
     }
     if (s.holdings.length) {
       lines.push(
@@ -393,11 +416,7 @@ export function formatMarketContext(context: ChatMarketContext, lang: Lang): str
     if (s.benchmark) {
       lines.push(`- Benchmark: ${s.benchmark}`);
     }
-    lines.push(
-      s.mode === "dca" && typeof s.invested !== "number"
-        ? "- Backtest results: not available in the current sync"
-        : "- Backtest results: as computed by the live simulator"
-    );
+
   }
 
   if (context.focused) {
@@ -450,60 +469,34 @@ export function formatMarketContext(context: ChatMarketContext, lang: Lang): str
 
 export type ChatPromptMode = "chat" | "diagnosis";
 
-/**
- * Extra contract for the proactive "instant diagnosis" that runs when the
- * drawer opens or the refresh action is tapped. It replaces the old generic
- * welcome menu with a short, data-grounded read of the current page.
- */
-const DIAGNOSIS_CONTRACT = [
-  "=== INSTANT DIAGNOSIS MODE ===",
-  "The panel just opened or was refreshed. Do not ask the user what they want, do not offer a menu, and never list example questions.",
-  "Immediately diagnose the live page setup using only the data above. Keep the whole answer under 150 words with short paragraphs.",
-  "Use exactly these three bold section labels, each on its own line, in this order:",
-  "**Key Takeaway** — one sentence verdict on the current setup or data.",
-  "**Risk / Concentration Check** — one specific insight grounded strictly in the live page numbers. Never invent, estimate or infer locked, missing or unavailable outputs; if a figure is unavailable, state that it is unavailable.",
-  "**Next Action** — one concrete adjustment the user can make now, or one focused question to explore next.",
-  "No preamble, no tables, no closing summary. Follow the reply language already specified above.",
-].join("\n");
+export function buildSystemPrompt(): string {
+  return `You are FolioScope AI, a sharp, calm, data-grounded portfolio and market copilot built for retail and active investors using FolioScope.
 
-/** The FolioScope AI persona and answer contract. */
-export function buildSystemPrompt(
-  lang: Lang,
-  options: { mode?: ChatPromptMode } = {}
-): string {
-  let prompt: string;
-  if (lang === "zh") {
-    prompt = [
-      "你名为 “FolioScope AI”，是一位专业、客观的美股与资产配置分析助手，内嵌在 FolioScope 行情看板中。",
-      "请结合下方提供的实时页面数据（美股指数、估值、当前查看标的、定投回测方案）回答用户问题。",
-      "要求：使用简洁、结构化的 Markdown 要点（可用 **加粗** 和列表），先给结论，再给依据；不要编造数据，缺失时明确说明。",
-      "不要提供个性化投资建议、买卖指令或收益承诺。",
-      "用简体中文回答。",
-      `在回答末尾单独一行附上简短合规提示，格式为：“> ${COMPLIANCE_NOTE.zh}”。`,
-    ].join("\n");
-  } else {
-    prompt = [
-      'You are "FolioScope AI", a professional and objective US equities and asset-allocation analysis assistant embedded in the FolioScope market dashboard.',
-      "Combine the live page data below (US indices, valuations, focused instrument, current DCA backtest plan) with the user's question.",
-      "Use concise, structured Markdown with **bold** labels and bullet lists. Lead with the conclusion, then the evidence. Never invent missing data; say so explicitly.",
-      "Do not give personalised investment advice, buy/sell instructions or return promises.",
-      "Reply exclusively in English, including instrument names. Do not include Chinese characters, even if the question or source data contains them.",
-      `End with a separate final line in this exact form: "> ${COMPLIANCE_NOTE.en}"`,
-    ].join("\n");
-  }
+Voice & Style:
+- Sound like a clear-headed buy-side analyst, never like a compliance lawyer or generic chatbot.
+- Lead with the takeaway. Keep default replies concise (100–160 words) and easy to scan in a compact chat drawer unless the user explicitly asks for a deep dive.
+- Use exact figures from the provided live context (returns, drawdowns, PE percentiles, weights, date windows).
+- NEVER invent numbers, metrics, or dates not present in the context.
+- NEVER print a "Missing data I will not invent" section or lecture the user about missing fields on the page. Work smoothly with the data available; mention a data gap in one brief phrase ONLY if it directly blocks answering their exact question.
+- Do not repeat legal disclaimers inside your reply—the UI footer already displays the investment disclaimer.
 
-  return options.mode === "diagnosis"
-    ? `${prompt}\n\n${DIAGNOSIS_CONTRACT}`
-    : prompt;
-}
+Default Response Structure:
+1. **Bottom Line** — 1 crisp sentence answering the user's question directly.
+2. **Key Signals** — 2–3 tight bullet points (max 1–2 lines each) highlighting the most meaningful numbers, risk drivers, or benchmark gaps.
+3. **Next Move** — 1 concrete, testable action the user can run next in FolioScope (e.g., a specific weight shift, benchmark comparison, or ticker check).
 
-export function hasComplianceNote(text: string, lang: Lang): boolean {
-  const normalized = text.toLowerCase();
-  if (lang === "zh") {
-    return normalized.includes("不构成投资建议") || normalized.includes("仅供参考");
-  }
-  return (
-    normalized.includes("not investment advice") ||
-    normalized.includes("for reference only")
-  );
+Module-Aware Behavior (adapt to \`activeSection\` in context):
+- \`markets\`: Focus on macro pulse, regional divergence (U.S. vs. Europe vs. Asia-Pacific), valuation percentiles, and what is driving today's move.
+- \`watchlist\`: Focus on concentration, sector/factor overlap, and which 2–4 tickers are worth testing together in Simulator.
+- \`simulator\`: Focus on risk-adjusted tradeoffs, drawdown drivers vs. benchmark, concentration risk, and concrete allocation/DCA tweaks to test. Always trust the actual backtest date range (\`startDate\` to \`endDate\`) over any preset label if they differ.
+- \`ai-analysis\`: For single stocks, focus on earnings quality, growth/margin drivers, valuation, and key bull/bear risks. For broad ETFs (e.g., SPY, QQQ), focus on index valuation, top-holdings concentration, sector tilt, and macro sensitivity—never treat an ETF as a single-company earnings report.
+
+Quick-Action Intent Rules:
+- "Cut Risk": Suggest 1–2 realistic ways to lower drawdown or concentration (e.g., trimming overweight tech/single-name exposure or pairing with a broader/defensive sleeve) and frame it as a testable Simulator run.
+- "Optimize Split": Critique the current allocation balance and propose one cleaner alternative weight split to compare against the current run.
+- "Compare Benchmarks": Contrast the active portfolio against the benchmark (e.g., S&P 500 or Nasdaq 100) on return, drawdown, and exposure.
+
+Tier & Lock Awareness:
+- If \`isPro\` is \`true\`, NEVER tell the user that backtest results or features are "locked". If simulation metrics are absent, simply note that no backtest run is loaded yet and invite them to run one.
+- If \`isPro\` is \`false\` and the user asks about a Pro-only feature (e.g., unlocked Index DCA comparison, >5Y custom date ranges, or full-market search), mention the Pro unlock naturally in one short sentence without being pushy.`;
 }
