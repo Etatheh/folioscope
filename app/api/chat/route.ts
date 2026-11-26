@@ -1,9 +1,8 @@
+import { getViewerPlan, isProTier } from "@/lib/access";
 import { containsCjk } from "@/lib/localized-text";
 import {
-  COMPLIANCE_NOTE,
   buildSystemPrompt,
   formatMarketContext,
-  hasComplianceNote,
   normalizeMarketContext,
   normalizeMessages,
   type ChatMarketContext,
@@ -70,7 +69,7 @@ const SSE_HEADERS: Record<string, string> = {
 
 /** Hidden user turn that kicks off the proactive page diagnosis. */
 const DIAGNOSIS_PROMPT =
-  "Run the instant diagnosis now, following the diagnosis contract. Use only the live page data above and do not ask what I want.";
+  "Give me a concise read of the current page using the live context.";
 
 function usageHeaders(usage: Usage | null): Record<string, string> {
   if (!usage) return {};
@@ -101,14 +100,10 @@ function parseDelta(data: string): string | null {
 }
 
 /** Stream a non-SSE JSON completion as a single SSE delta. */
-function streamJsonReply(text: string, lang: Lang, usage: Usage | null) {
+function streamJsonReply(text: string, usage: Usage | null) {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      let answer = text;
-      if (!hasComplianceNote(answer, lang)) {
-        answer += `\n\n> ${COMPLIANCE_NOTE[lang]}`;
-      }
-      controller.enqueue(sse({ delta: answer }));
+      controller.enqueue(sse({ delta: text }));
       controller.enqueue(sse({ done: true }));
       controller.close();
     },
@@ -178,6 +173,15 @@ export async function POST(request: Request) {
   const rawLang = body.lang === "zh" ? "zh" : "en";
   const mode: ChatPromptMode = body.mode === "diagnosis" ? "diagnosis" : "chat";
   const marketContext: ChatMarketContext = normalizeMarketContext(body.marketContext);
+  const referrer = request.headers.get("referer");
+  if (!marketContext.activeSection && referrer && URL.canParse(referrer)) {
+    const page = new URL(referrer);
+    if (page.origin === new URL(request.url).origin && page.pathname === "/dashboard") {
+      const view = page.searchParams.get("view");
+      marketContext.activeSection = view === "ai" ? "ai-analysis"
+        : view === "simulator" || view === "watchlist" ? view : "markets";
+    }
+  }
   marketContext.asOf = marketContext.asOf ?? Date.now();
   const lang: Lang = rawLang;
   marketContext.lang = lang;
@@ -216,15 +220,15 @@ export async function POST(request: Request) {
     return jsonError(t.notConfigured, 503, "AI_NOT_CONFIGURED");
   }
 
-  const system = `${buildSystemPrompt(lang, { mode })}\n\n=== Live page context ===\n${formatMarketContext(
-    marketContext,
-    lang
-  )}`;
-
-  const upstreamMessages =
-    mode === "diagnosis"
-      ? [{ role: "user" as const, content: DIAGNOSIS_PROMPT }]
-      : messages;
+  const liveContext = formatMarketContext(marketContext, lang, isProTier(getViewerPlan(user)));
+  const question = mode === "diagnosis" ? DIAGNOSIS_PROMPT : messages[messages.length - 1].content;
+  const upstreamMessages = [
+    ...(mode === "diagnosis" ? [] : messages.slice(0, -1)),
+    {
+      role: "user",
+      content: [liveContext, question, lang === "zh" ? "Reply in Simplified Chinese." : "Reply in English."].join("\n\n"),
+    },
+  ];
 
   const upstreamController = new AbortController();
   const timeout = setTimeout(() => upstreamController.abort(), 60_000);
@@ -245,7 +249,7 @@ export async function POST(request: Request) {
         temperature: 0.4,
         max_tokens: 1_000,
         stream: true,
-        messages: [{ role: "system", content: system }, ...upstreamMessages],
+        messages: [{ role: "system", content: buildSystemPrompt() }, ...upstreamMessages],
       }),
       cache: "no-store",
       signal: upstreamController.signal,
@@ -286,7 +290,7 @@ export async function POST(request: Request) {
           // usage is best-effort
         }
       }
-      return streamJsonReply(text.trim(), lang, usage);
+      return streamJsonReply(text.trim(), usage);
     } catch {
       return jsonError(t.upstream, 502, "UPSTREAM_ERROR");
     }
@@ -339,8 +343,6 @@ export async function POST(request: Request) {
 
         if (!answer.trim()) {
           emit({ error: t.emptyReply });
-        } else if (!hasComplianceNote(answer, lang)) {
-          emit({ delta: `\n\n> ${COMPLIANCE_NOTE[lang]}` });
         }
 
         emit({ done: true });
