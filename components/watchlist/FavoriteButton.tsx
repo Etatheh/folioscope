@@ -40,8 +40,8 @@ export default function FavoriteButton({
         size === "sm" ? "h-7 w-7 text-sm" : "h-8 w-8 text-base"
       } ${
         saved
-          ? "border-purple-400/50 bg-purple-500/20 text-purple-300 shadow-[0_0_16px_-4px_rgba(168,85,247,0.85)]"
-          : "border-white/10 bg-white/[0.03] text-slate-500 hover:border-purple-400/40 hover:bg-purple-500/10 hover:text-purple-300"
+          ? "border-sky-400/50 bg-sky-500/20 text-sky-300 shadow-[0_0_16px_-4px_rgba(56,189,248,0.85)]"
+          : "border-white/10 bg-white/[0.03] text-slate-500 hover:border-sky-400/40 hover:bg-sky-500/10 hover:text-sky-300"
       } ${pending ? "animate-pulse cursor-wait opacity-70" : ""} ${className}`}
     >
       <span aria-hidden className="leading-none transition-transform group-hover/heart:scale-110">

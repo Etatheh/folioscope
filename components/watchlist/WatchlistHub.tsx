@@ -34,7 +34,7 @@ function EmptyCard({
   loading?: boolean;
 }) {
   return (
-    <div className="col-span-full flex min-h-44 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-purple-400/25 bg-purple-500/[0.04] p-6 text-center">
+    <div className="col-span-full flex min-h-44 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-sky-400/25 bg-sky-500/[0.04] p-6 text-center">
       <span className="text-2xl" aria-hidden>
         {loading ? "◌" : "♡"}
       </span>
@@ -55,7 +55,7 @@ function EmptyCard({
 
 function PendingCard({ symbol, lang }: { symbol: string; lang: Lang }) {
   return (
-    <div className="data-card flex h-full min-h-40 flex-col justify-between rounded-xl p-4">
+    <div className="border border-[#94beff14] bg-[#0B1120] hover:border-sky-300/30 flex h-full min-h-40 flex-col justify-between rounded-xl p-4">
       <div>
         <p className="text-sm font-medium text-slate-200">
           {symbol}
@@ -155,7 +155,7 @@ export default function WatchlistHub({
   );
 
   return (
-    <article id="watchlist-panel" className="glass min-w-0 overflow-x-clip rounded-2xl p-5 sm:p-6">
+    <article id="watchlist-panel" className="border border-[#94beff14] bg-[#060A14] min-w-0 overflow-x-clip rounded-2xl p-5 sm:p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex flex-wrap items-center gap-2 font-semibold text-white">
@@ -173,7 +173,7 @@ export default function WatchlistHub({
             {t.featuredNote}
           </span>
           <span
-            className="rounded-full border border-purple-400/20 bg-purple-500/[0.08] px-2.5 py-1 text-[10px] tabular-nums text-purple-200"
+            className="rounded-full border border-sky-400/20 bg-sky-500/[0.08] px-2.5 py-1 text-[10px] tabular-nums text-sky-200"
             title={lang === "zh" ? "已保存自选股（无数量上限）" : "Saved watchlist entries (no count cap)"}
           >
             {count} / ∞
@@ -197,7 +197,7 @@ export default function WatchlistHub({
             onClick={() => setTab("featured")}
             className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
               tab === "featured"
-                ? "bg-gradient-to-r from-blue-500/30 to-purple-500/35 text-white ring-1 ring-purple-400/30"
+                ? "bg-gradient-to-r from-blue-500/30 to-sky-500/35 text-white ring-1 ring-sky-400/30"
                 : "text-slate-500 hover:text-slate-200"
             }`}
           >
@@ -211,7 +211,7 @@ export default function WatchlistHub({
             onClick={() => setTab("mine")}
             className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
               tab === "mine"
-                ? "bg-gradient-to-r from-blue-500/30 to-purple-500/35 text-white ring-1 ring-purple-400/30"
+                ? "bg-gradient-to-r from-blue-500/30 to-sky-500/35 text-white ring-1 ring-sky-400/30"
                 : "text-slate-500 hover:text-slate-200"
             }`}
           >
@@ -219,7 +219,7 @@ export default function WatchlistHub({
             <span
               className={`grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] tabular-nums ${
                 count > 0
-                  ? "bg-purple-500/30 text-purple-100"
+                  ? "bg-sky-500/30 text-sky-100"
                   : "bg-white/10 text-slate-500"
               }`}
             >
@@ -289,7 +289,7 @@ export default function WatchlistHub({
       {tab === "featured" && (
         <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-600">
           <span className="inline-flex items-center gap-1">
-            <span className="text-purple-300">♥</span>
+            <span className="text-sky-300">♥</span>
             {t.add}
           </span>
           <span>{t.guests}</span>

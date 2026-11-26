@@ -54,9 +54,9 @@ export default function WatchlistNavButton({
       onClick={handleClick}
       aria-label={t.navTitle}
       title={t.navTitle}
-      className={`glass relative flex h-9 items-center gap-1.5 rounded-full px-3 text-slate-300 transition hover:border-purple-400/40 hover:text-white ${className}`}
+      className={`border border-[#94beff14] bg-[#0B1120] relative flex h-9 items-center gap-1.5 rounded-full px-3 text-slate-300 transition hover:border-sky-400/40 hover:text-white ${className}`}
     >
-      <span aria-hidden className="text-[15px] leading-none text-purple-300">
+      <span aria-hidden className="text-[15px] leading-none text-sky-300">
         {count > 0 ? "♥" : "♡"}
       </span>
       <span className="hidden text-[11px] font-medium sm:inline">
@@ -65,7 +65,7 @@ export default function WatchlistNavButton({
       <span
         className={`grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-semibold tabular-nums ${
           count > 0
-            ? "bg-gradient-to-r from-purple-500/60 to-fuchsia-500/50 text-white shadow-[0_0_10px_-2px_rgba(168,85,247,0.9)]"
+            ? "bg-gradient-to-r from-sky-500/60 to-blue-500/50 text-white shadow-[0_0_10px_-2px_rgba(56,189,248,0.9)]"
             : "bg-white/10 text-slate-500"
         }`}
       >
