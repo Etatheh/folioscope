@@ -50,16 +50,16 @@ function CardShell({
   children: React.ReactNode;
 }) {
   const body = (
-    <article className="data-card h-full min-w-0 overflow-x-clip rounded-xl p-4">
+    <article className="group/quote flex h-full min-w-0 flex-col rounded-xl border border-[rgba(148,190,255,.08)] bg-[#0B1120] p-4 tabular-nums shadow-[inset_0_1px_0_rgba(165,205,255,.12)] transition-colors hover:border-[rgba(148,190,255,.18)] hover:bg-[#0E1629] focus-within:border-[rgba(56,189,248,.55)] focus-within:bg-[#0F1A30] focus-within:shadow-[inset_0_1px_0_rgba(125,211,252,.35),0_0_24px_-8px_rgba(56,189,248,.25)] [&_.text-slate-600]:text-[#64748B] [&_span.text-slate-600_span]:text-[#CBD5E1]">
       {href ? (
-        <Link href={href} title={title} className="block">
+        <Link href={href} title={title} className="block flex-1 rounded-sm focus-visible:outline-sky-300">
           {children}
         </Link>
       ) : (
         children
       )}
       {action && (
-        <div className="mt-2.5 flex justify-end border-t border-white/5 pt-2">
+        <div className="mt-2.5 flex justify-end border-t border-[rgba(148,190,255,.06)] pt-2">
           {action}
         </div>
       )}
@@ -72,21 +72,10 @@ function DayRangeBar({ quote }: { quote: UsQuote }) {
   const span = quote.high - quote.low;
   const pct =
     span > 0 ? Math.min(100, Math.max(0, ((quote.price - quote.low) / span) * 100)) : 50;
-  const up = quote.change >= 0;
   return (
-    <div className="relative mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800">
-      <div
-        className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out ${
-          up
-            ? "bg-gradient-to-r from-emerald-500/50 to-emerald-400"
-            : "bg-gradient-to-r from-rose-500/50 to-rose-400"
-        }`}
-        style={{ width: `${pct}%` }}
-      />
-      <div
-        className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow transition-[left] duration-500 ease-out"
-        style={{ left: `${pct}%` }}
-      />
+    <div aria-hidden="true" className="relative mx-[3px] mt-3 h-[3px] rounded-full bg-[rgba(148,190,255,.12)]">
+      <div className="h-full rounded-full bg-[#38BDF8]" style={{ width: `${pct}%` }} />
+      <div className="absolute top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#38BDF8] shadow-[0_0_5px_#38bdf855]" style={{ left: `${pct}%` }} />
     </div>
   );
 }
@@ -106,7 +95,7 @@ export function IndexCard({
   const { primary, secondary } = names(quote, lang);
   return (
     <CardShell href={href} title={href ? `${t.viewDetail} · ${primary}` : undefined}>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-slate-200">{primary}</p>
           {secondary && (
@@ -117,18 +106,18 @@ export function IndexCard({
           <ChangeChip quote={quote} />
         </div>
       </div>
-      <div className="mt-3 flex min-w-0 items-end justify-between gap-3">
+      <div className="mt-3 min-w-0">
         <p className="min-w-0 truncate text-xl font-semibold tabular-nums text-white">
           <AnimatedNumber value={quote.price} digits={2} group />
         </p>
-        {tech && <Sparkline points={tech.sparkline} />}
+        {tech && <Sparkline points={tech.sparkline} change={quote.change} />}
       </div>
       <div className="mt-2 flex justify-between text-[11px] tabular-nums text-slate-600">
         <span>
-          {t.high} {fmtPrice(quote.high)}
+          {t.high} <span className="text-[#CBD5E1]">{fmtPrice(quote.high)}</span>
         </span>
         <span>
-          {t.low} {fmtPrice(quote.low)}
+          {t.low} <span className="text-[#CBD5E1]">{fmtPrice(quote.low)}</span>
         </span>
       </div>
       {valuation && (
@@ -158,7 +147,7 @@ export function IndexCard({
         </div>
       )}
       {tech && (
-        <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 border-t border-white/5 pt-2 text-[11px] tabular-nums">
+        <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 border-t border-[rgba(148,190,255,.06)] pt-2 text-[11px] tabular-nums">
           <MaValue label="MA5" value={tech.ma5} price={quote.price} lang={lang} />
           <MaValue label="MA20" value={tech.ma20} price={quote.price} lang={lang} />
           <RsiValue value={tech.rsi14} lang={lang} />
@@ -197,39 +186,27 @@ export function StockCard({
         />
       }
     >
-      <div className="flex items-start justify-between gap-3">
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-200">
-            {primary}
-            <span className="ml-1 text-slate-600">· {quote.symbol}</span>
+          <p className="whitespace-nowrap text-base font-bold tracking-tight text-[#F1F5F9]">{quote.symbol}</p>
+          <p title={primary} className="truncate text-xs text-[#8B9BB4]">{primary}</p>
+          {secondary && <p title={secondary} className="truncate text-[11px] text-[#8B9BB4]">{secondary}</p>}
+        </div>
+        <div className="whitespace-nowrap text-right tabular-nums">
+          <p className="text-lg font-semibold leading-tight tracking-tight text-[#F1F5F9]">
+            {currency}<AnimatedNumber value={quote.price} digits={2} group />
           </p>
-          {secondary && (
-            <p className="mt-0.5 truncate text-[11px] text-slate-600">{secondary}</p>
-          )}
+          <p className={`mt-0.5 text-xs ${quote.change >= 0 ? "text-[#34D399]" : "text-[#F87171]"}`}>
+            <AnimatedNumber value={quote.change} digits={2} signed /> (<AnimatedNumber value={quote.changePct} digits={2} signed />%)
+          </p>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
-          {tech && <Sparkline points={tech.sparkline} />}
-          <div className="text-right">
-            <p className="text-base font-semibold tabular-nums text-white">
-              {currency}
-              <AnimatedNumber value={quote.price} digits={2} group />
-            </p>
-            <p
-              className={`mt-0.5 text-xs tabular-nums ${
-                quote.change >= 0 ? "text-emerald-400" : "text-rose-400"
-              }`}
-            >
-              <AnimatedNumber value={quote.change} digits={2} signed /> (
-              <AnimatedNumber value={quote.changePct} digits={2} signed />%)
-            </p>
-          </div>
-        </div>
-      </div>
+      </header>
+      {tech && <Sparkline points={tech.sparkline} change={quote.change} />}
 
       <DayRangeBar quote={quote} />
 
       {tech && (
-        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-white/5 pt-2 text-[11px] tabular-nums">
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-[rgba(148,190,255,.06)] pt-2 text-[11px] tabular-nums">
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             <MaValue label="MA5" value={tech.ma5} price={quote.price} lang={lang} />
             <MaValue label="MA10" value={tech.ma10} price={quote.price} lang={lang} />
@@ -240,33 +217,19 @@ export function StockCard({
         </div>
       )}
 
-      <div className="mt-2.5 flex flex-wrap justify-between gap-x-4 gap-y-1 text-[11px] tabular-nums text-slate-600">
-        <span>
-          {t.open} {currency}
-          {fmtPrice(quote.open)}
-        </span>
-        <span>
-          {t.highLabel} {currency}
-          {fmtPrice(quote.high)}
-        </span>
-        <span>
-          {t.lowLabel} {currency}
-          {fmtPrice(quote.low)}
-        </span>
-      </div>
-      <div className="mt-1.5 flex flex-wrap justify-between gap-x-4 gap-y-1 text-[11px] tabular-nums text-slate-600">
-        <span>
-          {t.marketCap} {quote.marketCapUsd ? fmtCap(quote.marketCapUsd, currency || "$") : "—"}
-        </span>
-        <span>{t.pe} {quote.pe !== null ? quote.pe.toFixed(2) : "—"}</span>
-        {quote.week52High !== null && quote.week52Low !== null && (
-          <span>
-            {t.week52} {currency}
-            {fmtPrice(quote.week52Low)}–{currency}
-            {fmtPrice(quote.week52High)}
-          </span>
-        )}
-      </div>
+      <dl className="mt-3 grid grid-cols-3 gap-x-2 gap-y-2 border-t border-[rgba(148,190,255,.06)] pt-3 text-[11px] leading-relaxed tabular-nums [&_dd]:text-[#CBD5E1] [&_dt]:text-[#64748B]">
+        <div><dt>{t.open}</dt><dd>{currency}{fmtPrice(quote.open)}</dd></div>
+        <div><dt>{t.highLabel}</dt><dd>{currency}{fmtPrice(quote.high)}</dd></div>
+        <div><dt>{t.lowLabel}</dt><dd>{currency}{fmtPrice(quote.low)}</dd></div>
+        <div><dt>{t.marketCap}</dt><dd>{quote.marketCapUsd ? fmtCap(quote.marketCapUsd, currency || "$") : "—"}</dd></div>
+        <div><dt>{t.pe}</dt><dd>{quote.pe !== null ? quote.pe.toFixed(2) : "—"}</dd></div>
+        <div>
+          <dt>{t.week52}</dt>
+          <dd>{quote.week52Low !== null && quote.week52High !== null ? (
+            <><span className="whitespace-nowrap">{currency}{fmtPrice(quote.week52Low)}</span>–<wbr /><span className="whitespace-nowrap">{currency}{fmtPrice(quote.week52High)}</span></>
+          ) : "—"}</dd>
+        </div>
+      </dl>
     </CardShell>
   );
 }

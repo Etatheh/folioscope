@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import AccountModal from "@/components/account/AccountModal";
-import BackgroundEffects from "@/components/BackgroundEffects";
 import LangToggle from "@/components/LangToggle";
 import UserMenu from "@/components/UserMenu";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
@@ -24,6 +23,9 @@ import { dict, type Lang } from "@/lib/i18n";
 import { useSession } from "@/lib/use-session";
 import { useViewerPlan } from "@/lib/use-profile";
 import { FEATURED_SYMBOLS } from "@/lib/watchlist";
+
+const activeNav = "rounded-full border border-[rgba(56,189,248,0.2)] bg-[rgba(56,189,248,0.1)] text-sky-100";
+const idleNav = "rounded-full border border-transparent text-[#64748B] hover:bg-[rgba(148,190,255,0.04)] hover:text-slate-200";
 
 const MARKET_ITEMS: {
   key: DashboardView;
@@ -116,8 +118,7 @@ export default function DashboardShell({
   const badge = isAdmin ? t.admin : isPro ? t.pro : t.free;
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
-      <BackgroundEffects />
+    <div className="relative min-h-screen overflow-x-clip bg-[#060A14]">
 
       {mobileOpen && (
         <button
@@ -130,7 +131,7 @@ export default function DashboardShell({
 
       <aside
         aria-label={t.menuLabel}
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[86vw] flex-col border-r border-purple-500/10 bg-[#050917]/95 px-3 py-5 backdrop-blur-xl transition-[transform,width] duration-300 lg:translate-x-0 lg:bg-[#050917]/85 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[86vw] flex-col border-r border-[rgba(148,190,255,0.07)] bg-[#050811] tabular-nums px-3 py-5 transition-[transform,width] duration-300 lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         } ${collapsed ? "lg:w-20 lg:px-2.5" : "lg:w-64 lg:px-4"}`}
       >
@@ -139,7 +140,7 @@ export default function DashboardShell({
           onClick={toggleCollapsed}
           aria-label={collapsed ? t.expand : t.collapse}
           title={collapsed ? t.expand : t.collapse}
-          className="absolute -right-3 top-7 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-purple-400/25 bg-[#0a0f1d] text-slate-400 shadow-lg shadow-black/40 transition hover:border-purple-400/50 hover:text-white lg:flex"
+          className="absolute -right-3 top-7 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-sky-400/25 bg-[#0a0f1d] text-slate-400 transition hover:border-sky-400/50 hover:text-white lg:flex"
         >
           <svg
             viewBox="0 0 24 24"
@@ -162,7 +163,7 @@ export default function DashboardShell({
             }`}
             aria-label="FolioScope dashboard"
           >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-500/25">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-sky-300/20 bg-[#13283b]">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -213,10 +214,10 @@ export default function DashboardShell({
                 }
               }}
               aria-expanded={marketsOpen}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+              className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm transition ${
                 marketsActive
-                  ? "bg-gradient-to-r from-blue-500/15 to-purple-500/15 text-white ring-1 ring-purple-400/20"
-                  : "text-slate-500 hover:bg-white/5 hover:text-slate-200"
+                  ? activeNav
+                  : idleNav
               } ${collapsed ? "lg:justify-center lg:px-2" : ""}`}
             >
               <Icon name="markets" className="h-5 w-5 shrink-0" />
@@ -238,12 +239,13 @@ export default function DashboardShell({
                 return (
                   <Link
                     key={item.key}
+                    aria-current={active ? "page" : undefined}
                     href={dashboardViewHref(lang, item.key)}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2.5 rounded-xl py-2 pl-9 pr-3 text-[13px] transition ${
+                    className={`flex items-center gap-2.5 py-2 pl-9 pr-3 text-[13px] transition ${
                       active
-                        ? "bg-purple-500/15 text-white ring-1 ring-purple-400/20"
-                        : "text-slate-500 hover:bg-white/5 hover:text-slate-200"
+                        ? activeNav
+                        : idleNav
                     }`}
                   >
                     <Icon name={item.icon} className="h-4 w-4 shrink-0" />
@@ -256,8 +258,8 @@ export default function DashboardShell({
             {/* Icon-mode fly-out: hovering Markets reveals its four views. */}
             {collapsed && (
               <div className="pointer-events-none absolute left-full top-0 z-50 hidden w-56 lg:group-hover/markets:pointer-events-auto lg:group-hover/markets:block">
-                <div className="glass-panel rounded-2xl p-1.5 shadow-2xl shadow-black/60">
-                  <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-purple-300/80">
+                <div className="rounded-2xl border border-[rgba(148,190,255,0.07)] bg-[#050811] p-1.5">
+                  <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300/80">
                     {t.markets}
                   </p>
                   {MARKET_ITEMS.map((item) => {
@@ -265,11 +267,12 @@ export default function DashboardShell({
                     return (
                       <Link
                         key={item.key}
+                        aria-current={active ? "page" : undefined}
                         href={dashboardViewHref(lang, item.key)}
-                        className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs transition ${
+                        className={`flex items-center gap-2.5 px-3 py-2 text-xs transition ${
                           active
-                            ? "bg-purple-500/15 text-white"
-                            : "text-slate-400 hover:bg-white/5 hover:text-white"
+                            ? activeNav
+                            : idleNav
                         }`}
                       >
                         <Icon name={item.icon} className="h-4 w-4 shrink-0" />
@@ -283,13 +286,14 @@ export default function DashboardShell({
           </div>
 
           <Link
+            aria-current={view === "watchlist" ? "page" : undefined}
             href={dashboardViewHref(lang, "watchlist")}
             onClick={() => setMobileOpen(false)}
             title={t.watchlist}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm transition ${
               view === "watchlist"
-                ? "bg-gradient-to-r from-blue-500/15 to-purple-500/15 text-white ring-1 ring-purple-400/20"
-                : "text-slate-500 hover:bg-white/5 hover:text-slate-200"
+                ? activeNav
+                : idleNav
             } ${collapsed ? "lg:justify-center lg:px-2" : ""}`}
           >
             <Icon name="watchlist" className="h-5 w-5 shrink-0" />
@@ -306,13 +310,14 @@ export default function DashboardShell({
           </Link>
 
           <Link
+            aria-current={view === "simulator" ? "page" : undefined}
             href={dashboardViewHref(lang, "simulator")}
             onClick={() => setMobileOpen(false)}
             title={t.simulator}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm transition ${
               view === "simulator"
-                ? "bg-gradient-to-r from-blue-500/15 to-purple-500/15 text-white ring-1 ring-purple-400/20"
-                : "text-slate-500 hover:bg-white/5 hover:text-slate-200"
+                ? activeNav
+                : idleNav
             } ${collapsed ? "lg:justify-center lg:px-2" : ""}`}
           >
             <Icon name="simulator" className="h-5 w-5 shrink-0" />
@@ -322,13 +327,14 @@ export default function DashboardShell({
           </Link>
 
           <Link
+            aria-current={view === "ai" ? "page" : undefined}
             href={dashboardViewHref(lang, "ai")}
             onClick={() => setMobileOpen(false)}
             title={t.aiAnalysis}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm transition ${
               view === "ai"
-                ? "bg-gradient-to-r from-blue-500/15 to-purple-500/15 text-white ring-1 ring-purple-400/20"
-                : "text-slate-500 hover:bg-white/5 hover:text-slate-200"
+                ? activeNav
+                : idleNav
             } ${collapsed ? "lg:justify-center lg:px-2" : ""}`}
           >
             <Icon name="ai" className="h-5 w-5 shrink-0" />
@@ -347,7 +353,7 @@ export default function DashboardShell({
             <span
               className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide ${
                 isPro
-                  ? "bg-gradient-to-r from-amber-400/25 to-purple-400/25 text-amber-300 ring-1 ring-amber-300/30"
+                  ? "bg-gradient-to-r from-amber-400/25 to-amber-400/10 text-amber-300 ring-1 ring-amber-300/30"
                   : "bg-white/10 text-slate-300 ring-1 ring-white/10"
               }`}
             >
@@ -373,7 +379,7 @@ export default function DashboardShell({
             type="button"
             onClick={openAccount}
             title={t.accountSettings}
-            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-500 transition hover:bg-white/5 hover:text-slate-200 ${
+            className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm transition ${idleNav} ${
               collapsed ? "lg:justify-center lg:px-2" : ""
             }`}
           >
@@ -408,7 +414,7 @@ export default function DashboardShell({
           <Link
             href="/"
             onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-[11px] text-slate-600 transition hover:text-slate-300 ${
+            className={`flex items-center gap-3 px-3 py-2 text-[11px] transition ${idleNav} ${
               collapsed ? "lg:justify-center lg:px-2" : ""
             }`}
             title={t.backToSite}
@@ -436,13 +442,13 @@ export default function DashboardShell({
           collapsed ? "lg:ml-20" : "lg:ml-64"
         }`}
       >
-        <header className="sticky top-0 z-30 border-b border-white/5 bg-[#05070d]/70 backdrop-blur-xl">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-4 sm:px-6 lg:px-8">
+        <header className="relative z-30 border-b sm:sticky sm:top-0 border-[rgba(148,190,255,0.07)] bg-[#060A14]/95 backdrop-blur-xl">
+          <div className="mx-auto grid w-full max-w-[96rem] grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 px-4 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:px-6 sm:py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8">
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
               aria-label={t.openMenu}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-purple-500/20 text-slate-300 transition hover:border-purple-500/40 hover:text-white lg:hidden"
+              className="grid size-11 shrink-0 place-items-center rounded-lg border border-sky-500/20 text-slate-300 transition hover:border-sky-500/40 hover:text-white lg:hidden"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -456,19 +462,16 @@ export default function DashboardShell({
               </svg>
             </button>
 
-            <StaggerGroup key={`${view}-${lang}`} scroll={false} className="min-w-0 flex-1">
-              <Reveal inherit as="p" className="truncate text-[10px] font-medium uppercase tracking-[0.2em] text-purple-400">
-                {dict[lang].eyebrow}
-              </Reveal>
-              <Reveal inherit as="h1" className="mt-1 truncate text-xl font-semibold tracking-tight text-white sm:text-2xl">
+            <StaggerGroup key={`${view}-${lang}`} scroll={false} className="col-span-full row-start-2 min-w-0 sm:col-auto sm:row-start-1 sm:col-start-2 lg:col-start-1">
+              <Reveal inherit as="h1" className="text-pretty text-2xl font-semibold leading-tight tracking-tight text-white">
                 {viewCopy.title}
               </Reveal>
-              <Reveal inherit as="p" className="mt-0.5 hidden truncate text-xs text-slate-500 sm:block">
+              <Reveal inherit as="p" className="mt-1 hidden max-w-prose text-xs leading-relaxed text-[#8B9BB4] sm:block">
                 {viewCopy.subtitle}
               </Reveal>
             </StaggerGroup>
 
-            <Reveal key={`actions-${view}-${lang}`} scroll={false} delay={0.57} className="flex w-full shrink-0 items-center justify-end gap-1.5 sm:w-auto sm:gap-2">
+            <Reveal key={`actions-${view}-${lang}`} scroll={false} delay={0.57} className="col-start-2 row-start-1 flex items-center justify-end gap-2 sm:col-start-3 lg:col-start-2">
               <LangToggle
                 lang={lang}
                 path="/dashboard"
@@ -480,7 +483,7 @@ export default function DashboardShell({
           </div>
         </header>
 
-        <main className="min-w-0 px-4 pb-12 pt-6 sm:px-6 lg:px-8">
+        <main className="mx-auto w-full max-w-[96rem] min-w-0 px-4 pb-16 pt-4 sm:px-6 sm:pt-6 lg:px-8">
           {children}
         </main>
       </div>

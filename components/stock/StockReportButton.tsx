@@ -31,7 +31,7 @@ function useIsClient() {
 
 const VARIANT_CLASS: Record<Variant, string> = {
   chip:
-    "inline-flex items-center gap-1 rounded-full border border-purple-400/20 bg-purple-500/[0.07] px-2.5 py-1 text-[10px] font-medium text-purple-200 transition hover:border-purple-400/45 hover:bg-purple-500/15 hover:text-white",
+    "inline-flex items-center gap-1 rounded-full border border-[rgba(56,189,248,.18)] bg-[rgba(56,189,248,.08)] px-2.5 py-1 text-[10px] font-medium text-[#7DD3FC] transition group-hover/quote:border-[rgba(56,189,248,.4)] group-hover/quote:text-sky-100 hover:border-[rgba(56,189,248,.4)] hover:text-sky-100",
   detail:
     "btn-secondary inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-xs font-medium text-white",
 };

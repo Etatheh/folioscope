@@ -55,7 +55,7 @@ export default function MarketBoard({
   const lockedCount = stocks.length - visibleStocks.length;
 
   return (
-    <article className="glass min-w-0 overflow-x-clip rounded-2xl p-5 sm:p-6">
+    <article className="min-w-0 rounded-2xl border border-[#94beff12] bg-[#060A14] p-3 sm:p-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <h2 className="font-semibold text-white">
@@ -99,7 +99,7 @@ export default function MarketBoard({
 
       {visibleStocks.length > 0 && (
         <StaggerGrid
-          className="mt-3 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3"
+          className="mt-3 grid min-w-0 gap-3 grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))]"
           stagger={0.05}
           delay={0.12}
         >

@@ -6,7 +6,15 @@
 
 ---
 
-## 2026-11-26 - Markets 看板与完整价格图
+## 2026-11-26 - Blue UI 行情主题补齐
+
+1. **日期与版本主题**：2026-11-26 — 补齐深蓝行情看板主题。
+2. **核心改动内容**：同步深蓝画布、侧栏、区域概览、共享行情卡与财报入口。
+3. **涉及的核心文件路径**：`components/dashboard/DashboardShell.tsx`、`components/markets/GlobalMarketsOverview.tsx`、`components/MarketBoard.tsx`、`components/market-cards.tsx`、`components/stock/StockReportButton.tsx`。
+4. **架构与设计约定（Do Not Break）**：保留行情路由、权限校验、报价计算与 AI 报告行为。
+
+---
+\n## 2026-11-26 - Markets 看板与完整价格图
 
 1. **日期与版本主题**：2026-11-26 — 优化美股行情浏览与图表详情。
 2. **核心改动内容**：紧凑行情卡片、走势周期、市场涨跌分布及快捷操作。股票和指数共用完整价格图，详情使用真实历史 OHLCV。

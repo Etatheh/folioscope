@@ -27,10 +27,10 @@ function RegionCard({
 }) {
   const t = dict[lang].markets;
   return (
-    <article className="glass min-w-0 overflow-x-clip rounded-2xl p-5 sm:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+    <article className="min-w-0 rounded-2xl border border-[#94beff14] bg-[#0B1120] p-4 sm:p-5">
+      <header className="flex items-start justify-between gap-3 border-b border-[#94beff12] pb-3">
         <div className="min-w-0">
-          <h2 className="font-semibold text-white">
+          <h2 className="text-base font-semibold tracking-tight text-white sm:text-lg">
             {title}
             {lang === "zh" && titleEn && (
               <span className="ml-2 align-middle text-xs font-normal text-slate-500">
@@ -38,11 +38,10 @@ function RegionCard({
               </span>
             )}
           </h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-[#8B9BB4]">
             {snapshot.demo
               ? t.demoNote
-              : `${t.updated} ${fmtTime(snapshot.fetchedAt, lang)}`}{" "}
-            · {t.disclaimer}
+              : `${t.updated} ${fmtTime(snapshot.fetchedAt, lang)}`}
           </p>
         </div>
         <span
@@ -57,7 +56,7 @@ function RegionCard({
       </header>
 
       {snapshot.indices.length > 0 ? (
-        <StaggerGrid className="mt-4 grid min-w-0 gap-3 sm:grid-cols-2">
+        <StaggerGrid className="mt-4 grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-3">
           {snapshot.indices.map((quote) => (
             <IndexCard
               key={quote.symbol}
@@ -97,7 +96,7 @@ export default function GlobalMarketsOverview({
   const markets = dict[lang].markets;
 
   return (
-    <section className="grid min-w-0 gap-5 xl:grid-cols-2" aria-label={dict[lang].views.all.title}>
+    <section className="grid min-w-0 gap-4 sm:gap-5" aria-label={dict[lang].views.all.title}>
       <RegionCard
         lang={lang}
         title={markets.title}
@@ -124,6 +123,7 @@ export default function GlobalMarketsOverview({
           snapshot={{ ...cn, stocks: [] }}
         />
       )}
+      <p className="px-1 text-xs text-[#8B9BB4]">{markets.disclaimer}</p>
     </section>
   );
 }
