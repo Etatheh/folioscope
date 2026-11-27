@@ -16,7 +16,12 @@ export type TicketData = {
 const WIDTH = 1200;
 const HEIGHT = 630;
 const SCALE = 2;
-const TICKET = { left: 56, top: 108, right: 1144, bottom: 532, split: 710, corner: 24, notch: 16 };
+const CARD_INSET = 56;
+const CARD_WIDTH = WIDTH - 2 * CARD_INSET;
+const CARD = {
+  left: CARD_INSET, top: 108, width: CARD_WIDTH, bottom: 532,
+  right: WIDTH - CARD_INSET, split: CARD_INSET + 0.65 * CARD_WIDTH, corner: 16,
+};
 const SANS = 'system-ui, "Segoe UI", sans-serif';
 const MONO = '"Cascadia Mono", Consolas, monospace';
 const money = new Intl.NumberFormat("en-US", {
@@ -29,17 +34,21 @@ const cadence: Record<SimFrequency, string> = { weekly: "/wk", biweekly: " every
 
 const palettes = {
   light: {
+    backdrop: "#F1F5F9", texture: null,
     paper: "#ffffff", stub: "#f6f8ff", border: "#ffffff", ink: "#172347", muted: "#52617d",
-    grid: "#dce4f2", pill: "#eaf0ff", perf: "#a6b6d4", emerald: "#047a56", line: "#00a873",
+    grid: "#dce4f2", pill: "#eaf0ff", divider: "rgba(23, 35, 71, .14)",
+    emerald: "#047a56", negative: "#b93b45", line: "#00a873",
     fill: "rgba(16, 185, 129, .24)", benchmark: "#586b8c",
   },
   dark: {
+    backdrop: "#090D16", texture: "rgba(255, 255, 255, .065)",
     paper: "#111e37", stub: "#162543", border: "#6483b2", ink: "#edf4ff", muted: "#a7b9d7",
-    grid: "#334765", pill: "#243857", perf: "#6680a8", emerald: "#63efb9", line: "#3ceaa8",
+    grid: "#334765", pill: "#243857", divider: "rgba(255, 255, 255, .10)",
+    emerald: "#63efb9", negative: "#ff8085", line: "#3ceaa8",
     fill: "rgba(52, 211, 153, .26)", benchmark: "#a2b4d1",
   },
 };
-type Palette = typeof palettes.light;
+type Palette = (typeof palettes)[TicketTheme];
 type Context = CanvasRenderingContext2D;
 
 function receiptRows(data: TicketData) {
@@ -48,15 +57,16 @@ function receiptRows(data: TicketData) {
   const spread = benchmarkEnd !== undefined && Number.isFinite(benchmarkEnd)
     ? (result.finalValue - benchmarkEnd) / result.invested
     : null;
+  const drawdown = -result.maxDrawdown;
   return {
     headline: spread !== null && spread > 0 ? `Beat ${data.benchmark}` : "Backtest Summary",
     spread,
     rows: [
-      ["Invested", money.format(result.invested)],
-      ["Total Return", percent.format(result.totalReturn)],
-      ["Max Drawdown", percent.format(-result.maxDrawdown)],
-      ["vs. Benchmark", spread === null ? "Unavailable" : percent.format(spread).replace("%", " pp")],
-    ],
+      ["Invested", money.format(result.invested), null],
+      ["Total Return", percent.format(result.totalReturn), result.totalReturn],
+      ["Max Drawdown", percent.format(drawdown), drawdown],
+      ["vs. Benchmark", spread === null ? "Unavailable" : percent.format(spread).replace("%", " pp"), spread],
+    ] as const,
   };
 }
 
@@ -81,36 +91,13 @@ export function ticketPostUrl(data: TicketData) {
   return `https://x.com/intent/tweet?${params}`;
 }
 
-function drawTicketOutline() {
-  const { left, top, right, bottom, split, corner, notch } = TICKET;
-  const path = new Path2D();
-  path.moveTo(left + corner, top);
-  path.lineTo(split - notch, top);
-  path.arc(split, top, notch, Math.PI, 0, true);
-  path.arcTo(right, top, right, bottom, corner);
-  path.arcTo(right, bottom, left, bottom, corner);
-  path.lineTo(split + notch, bottom);
-  path.arc(split, bottom, notch, 0, Math.PI, true);
-  path.arcTo(left, bottom, left, top, corner);
-  path.arcTo(left, top, right, top, corner);
-  path.closePath();
-  return path;
-}
-
-function drawBackdrop(ctx: Context, data: TicketData, logo: HTMLImageElement) {
-  const gradient = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
-  gradient.addColorStop(0, "#135deb");
-  gradient.addColorStop(.5, "#2548e2");
-  gradient.addColorStop(1, "#4030c4");
-  ctx.fillStyle = gradient;
+function drawBackdrop(ctx: Context, colors: Palette, data: TicketData, logo: HTMLImageElement) {
+  ctx.fillStyle = colors.backdrop;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
-  ctx.fillStyle = "rgba(222, 237, 255, .20)";
-  for (let x = 7; x < WIDTH; x += 14) {
-    for (let y = 7; y < HEIGHT; y += 14) {
-      ctx.beginPath();
-      ctx.arc(x, y, 1, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  if (colors.texture) {
+    ctx.fillStyle = colors.texture;
+    for (let x = 16; x < WIDTH; x += 16) ctx.fillRect(x, 0, 0.5, HEIGHT);
+    for (let y = 16; y < HEIGHT; y += 16) ctx.fillRect(0, y, WIDTH, 0.5);
   }
 
   const { result, mode, contribution, frequency } = data;
@@ -121,9 +108,9 @@ function drawBackdrop(ctx: Context, data: TicketData, logo: HTMLImageElement) {
   const pillLeft = (WIDTH - pillWidth) / 2;
   ctx.beginPath();
   ctx.roundRect(pillLeft, 33, pillWidth, 48, 24);
-  ctx.fillStyle = "rgba(11, 21, 70, .79)";
+  ctx.fillStyle = colors.pill;
   ctx.fill();
-  ctx.strokeStyle = "rgba(224, 234, 255, .29)";
+  ctx.strokeStyle = colors.divider;
   ctx.stroke();
   const dot = ctx.createLinearGradient(pillLeft + 19, 48, pillLeft + 33, 65);
   dot.addColorStop(0, "#67f3dc");
@@ -132,7 +119,7 @@ function drawBackdrop(ctx: Context, data: TicketData, logo: HTMLImageElement) {
   ctx.beginPath();
   ctx.arc(pillLeft + 24, 57, 7, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#f1f6ff";
+  ctx.fillStyle = colors.ink;
   ctx.fillText(tag, pillLeft + 43, 63);
 
   const credit = `${SITE_NAME} · ${new URL(SITE_URL).hostname}`;
@@ -141,15 +128,16 @@ function drawBackdrop(ctx: Context, data: TicketData, logo: HTMLImageElement) {
   ctx.drawImage(logo, creditLeft, 551, 26, 26);
   ctx.fillText(credit, creditLeft + 35, 571);
   ctx.textAlign = "center";
-  ctx.fillStyle = "#d2dcff";
+  ctx.fillStyle = colors.muted;
   ctx.font = `500 14px ${SANS}`;
   ctx.fillText("Historical backtest · Not investment advice", WIDTH / 2, 603);
   ctx.textAlign = "left";
 }
 
 function drawPaper(ctx: Context, colors: Palette) {
-  const { left, top, right, bottom, split, notch } = TICKET;
-  const outline = drawTicketOutline();
+  const { left, top, width, right, bottom, split, corner } = CARD;
+  const outline = new Path2D();
+  outline.roundRect(left, top, width, bottom - top, corner);
   ctx.save();
   ctx.shadowColor = "rgba(5, 12, 56, .42)";
   ctx.shadowBlur = 36;
@@ -161,17 +149,16 @@ function drawPaper(ctx: Context, colors: Palette) {
   ctx.clip(outline);
   ctx.fillStyle = colors.stub;
   ctx.fillRect(split, top, right - split, bottom - top);
+  ctx.beginPath();
+  ctx.moveTo(split, top);
+  ctx.lineTo(split, bottom);
+  ctx.strokeStyle = colors.divider;
+  ctx.lineWidth = 1;
+  ctx.stroke();
   ctx.restore();
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = colors.border;
   ctx.stroke(outline);
-  ctx.beginPath();
-  ctx.moveTo(split, top + notch + 7);
-  ctx.lineTo(split, bottom - notch - 7);
-  ctx.strokeStyle = colors.perf;
-  ctx.setLineDash([4, 6]);
-  ctx.stroke();
-  ctx.setLineDash([]);
   ctx.lineWidth = 1;
   return left + 32;
 }
@@ -183,12 +170,12 @@ function drawAllocation(ctx: Context, colors: Palette, holdings: TicketData["hol
   ctx.textAlign = "right";
   ctx.fillStyle = colors.muted;
   ctx.font = `650 14px ${SANS}`;
-  ctx.fillText(SITE_NAME, TICKET.split - 32, 154);
+  ctx.fillText(SITE_NAME, CARD.split - 32, 154);
   ctx.textAlign = "left";
 
   ctx.font = `650 15px ${MONO}`;
   let chipX = x;
-  const limit = TICKET.split - 32;
+  const limit = CARD.split - 32;
   for (const [index, holding] of holdings.entries()) {
     const label = `${holding.percent}% ${holding.symbol}`;
     const width = ctx.measureText(label).width + 24;
@@ -242,14 +229,14 @@ function drawChart(ctx: Context, colors: Palette, data: TicketData, x: number) {
   const hasBenchmark = secondary.some(Number.isFinite);
   const domain = niceValueDomain([...primary, ...secondary]);
   const left = x + 69;
-  const right = 577;
+  const right = CARD.split - 32;
   const top = 269;
   const bottom = 467;
   const mapY = (value: number) => bottom - (value - domain.min) / (domain.max - domain.min) * (bottom - top);
   const mapX = (index: number) => left + index / (primary.length - 1) * (right - left);
   const series = [
-    { label: "Portfolio", values: primary, line: colors.line, text: colors.emerald, dashed: false },
-    { label: benchmark, values: secondary, line: colors.benchmark, text: colors.benchmark, dashed: true },
+    { label: "Portfolio", values: primary, line: colors.line, dashed: false },
+    { label: benchmark, values: secondary, line: colors.benchmark, dashed: true },
   ];
   ctx.font = `600 15px ${SANS}`;
   let legendX = x;
@@ -286,7 +273,6 @@ function drawChart(ctx: Context, colors: Palette, data: TicketData, x: number) {
   ctx.fillText(result.endDate, right, 495);
   ctx.textAlign = "left";
 
-  const endLabels: { y: number; value: number; color: string }[] = [];
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   for (const item of series) {
@@ -327,46 +313,35 @@ function drawChart(ctx: Context, colors: Palette, data: TicketData, x: number) {
     ctx.arc(right, y, 4, 0, Math.PI * 2);
     ctx.fillStyle = item.line;
     ctx.fill();
-    endLabels.push({ y, value: last, color: item.text });
   }
   ctx.lineWidth = 1;
   ctx.setLineDash([]);
-  endLabels.sort((a, b) => a.y - b.y);
-  const gap = 22;
-  if (endLabels.length === 2 && endLabels[1].y - endLabels[0].y < gap) {
-    const center = (endLabels[0].y + endLabels[1].y) / 2;
-    endLabels[0].y = Math.max(top, Math.min(bottom - gap, center - gap / 2));
-    endLabels[1].y = endLabels[0].y + gap;
-  }
-  ctx.font = `700 15px ${MONO}`;
-  for (const label of endLabels) {
-    ctx.fillStyle = label.color;
-    ctx.fillText(valueAxisLabel(label.value), right + 12, label.y + 5, 86);
-  }
 }
 
 function drawReceipt(ctx: Context, colors: Palette, data: TicketData) {
   const { headline, spread, rows } = receiptRows(data);
-  const left = TICKET.split + 38;
-  const right = TICKET.right - 36;
+  const left = CARD.split + 38;
+  const right = CARD.right - 36;
   ctx.fillStyle = spread !== null && spread > 0 ? colors.emerald : colors.ink;
   ctx.font = `800 36px ${SANS}`;
   ctx.fillText(headline, left, 175, right - left);
-  rows.forEach(([label, value], index) => {
+  rows.forEach(([label, value, signedValue], index) => {
     const y = 228 + index * 39;
     ctx.font = `550 19px ${SANS}`;
     ctx.fillStyle = colors.muted;
     ctx.fillText(label, left, y);
     ctx.textAlign = "right";
     ctx.font = `700 19px ${MONO}`;
-    ctx.fillStyle = index === 3 && spread !== null && spread > 0 ? colors.emerald : colors.ink;
+    ctx.fillStyle = colors.ink;
+    if (signedValue !== null && signedValue > 0) ctx.fillStyle = colors.emerald;
+    if (signedValue !== null && signedValue < 0) ctx.fillStyle = colors.negative;
     ctx.fillText(value, right, y);
     ctx.textAlign = "left";
   });
   ctx.beginPath();
   ctx.moveTo(left, 371);
   ctx.lineTo(right, 371);
-  ctx.strokeStyle = colors.perf;
+  ctx.strokeStyle = colors.divider;
   ctx.stroke();
   ctx.fillStyle = colors.muted;
   ctx.font = `650 19px ${SANS}`;
@@ -386,8 +361,8 @@ export async function renderTicketPng(data: TicketData, theme: TicketTheme) {
   const ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) throw new Error("Canvas 2D unavailable");
   ctx.scale(SCALE, SCALE);
-  drawBackdrop(ctx, data, logo);
   const colors = palettes[theme];
+  drawBackdrop(ctx, colors, data, logo);
   const contentLeft = drawPaper(ctx, colors);
   drawAllocation(ctx, colors, data.holdings, contentLeft);
   drawChart(ctx, colors, data, contentLeft);

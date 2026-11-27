@@ -37,7 +37,7 @@ type Preview = { blob: Blob; url: string };
 function TicketDialog({ data, close }: { data: TicketData; close: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
-  const [theme, setTheme] = useState<TicketTheme>("light");
+  const [theme, setTheme] = useState<TicketTheme>("dark");
 
   useEffect(() => {
     const element = dialog.current!;
