@@ -166,7 +166,8 @@ async function fetchFinancials(symbol: string): Promise<StockFinancials> {
 const SYSTEM_PROMPT = `You are a senior equity research analyst writing a fundamental earnings report for retail investors.
 
 Rules:
-- Use ONLY the Yahoo Finance data provided. Never invent or extrapolate figures.
+- Use only the financial data provided. Never invent or extrapolate figures.
+- Refer to the supplied figures without naming or linking to data providers.
 - If a metric is missing, explicitly say "数据缺失 / data unavailable" instead of guessing.
 - Write in both Simplified Chinese (zh) and English (en). The two versions must carry the same meaning. English fields must contain only English text and English instrument names, with no Chinese characters.
 - Return STRICT JSON only, with no markdown, no code fences and no extra text.
@@ -198,7 +199,7 @@ function buildUserPrompt(financials: StockFinancials): string {
   };
   return `Produce the bilingual fundamental earnings report for ${financials.symbol}.
 
-Yahoo Finance data:
+Financial data:
 ${JSON.stringify(payload, null, 2)}`;
 }
 
@@ -288,15 +289,20 @@ function parseJsonObject(text: string): Record<string, unknown> | null {
   return null;
 }
 
-function text(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
+function text(value: unknown, lang: Lang): string {
+  if (typeof value !== "string") return "";
+  const neutralSource = lang === "zh" ? "公开财务数据" : "public financial data";
+  return value
+    .replace(/(?:https?:\/\/)?(?:[a-z\d-]+\.)*(?:yahoo\.com|eastmoney\.com|finance\.sina\.com\.cn|finance\.qq\.com)\b[^\s<>)，。；]*/gi, neutralSource)
+    .replace(/\b(?:Yahoo\s+Finance|Eastmoney(?:\s+Finance)?|Sina\s+Finance|Tencent\s+(?:Finance|Quotes))\b|雅虎财经|雅虎財經|腾讯行情|新浪财经|东方财富(?:网|行情)/gi, neutralSource)
+    .trim();
 }
 
 function localizedText(value: unknown): BilingualText | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
-  const zh = text(record.zh);
-  const en = text(record.en);
+  const zh = text(record.zh, "zh");
+  const en = text(record.en, "en");
   if (!zh || !en || containsCjk(en)) return null;
   return { zh, en };
 }
@@ -304,23 +310,21 @@ function localizedText(value: unknown): BilingualText | null {
 function localizedList(value: unknown): BilingualList | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
-  const pick = (raw: unknown): string[] => {
+  const pick = (raw: unknown, lang: Lang): string[] => {
     if (Array.isArray(raw)) {
-      return raw.map(text).filter(Boolean).slice(0, 5);
+      return raw.map(value => text(value, lang)).filter(Boolean).slice(0, 5);
     }
-    const line = text(raw);
+    const line = text(raw, lang);
     return line ? [line] : [];
   };
-  const zh = pick(record.zh);
-  const en = pick(record.en);
+  const zh = pick(record.zh, "zh");
+  const en = pick(record.en, "en");
   if (zh.length === 0 || en.length === 0 || en.some(containsCjk)) return null;
   return { zh, en };
 }
 
-function normalizeReport(raw: string): StockReport {
-  const parsed = parseJsonObject(raw);
-  if (!parsed) throw new ReportFormatError("report is not valid JSON");
-
+function normalizeReport(parsed: Record<string, unknown> | null): StockReport | null {
+  if (!parsed) return null;
   const summary = localizedText(parsed.summary);
   const highlights = localizedList(parsed.highlights);
   const valuation = localizedText(parsed.valuation);
@@ -328,7 +332,7 @@ function normalizeReport(raw: string): StockReport {
   const verdict = localizedText(parsed.verdict);
 
   if (!summary || !highlights || !valuation || !risks || !verdict) {
-    throw new ReportFormatError("report is missing required sections");
+    return null;
   }
 
   return { summary, highlights, valuation, risks, verdict };
@@ -358,11 +362,13 @@ async function handleStockReport(
 
   // 1) 24-hour cache hit: return immediately without touching Yahoo or the LLM.
   const cached = await readStockReportCache(symbol);
-  if (cached && !containsCjk(JSON.stringify([cached.report.summary.en, cached.report.highlights.en, cached.report.valuation.en, cached.report.risks.en, cached.report.verdict.en]))) {
+  const cachedReport = normalizeReport(cached?.report ?? null);
+  if (cached && cachedReport) {
     const response: StockReportResult & { ok: true; cached: true } = {
       ok: true,
       cached: true,
       ...cached,
+      report: cachedReport,
     };
     return Response.json(response, {
       headers: { "Cache-Control": "private, no-store" },
@@ -384,7 +390,9 @@ async function handleStockReport(
 
   let report: StockReport;
   try {
-    report = normalizeReport(await callDeepSeek(config, financials));
+    const generated = normalizeReport(parseJsonObject(await callDeepSeek(config, financials)));
+    if (!generated) throw new ReportFormatError("report is invalid or missing required sections");
+    report = generated;
   } catch (error) {
     console.error(`[ai/stock-report] DeepSeek failed for ${symbol}`, error);
     if (error instanceof ReportFormatError) {

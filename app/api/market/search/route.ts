@@ -234,6 +234,7 @@ export async function GET(request: Request) {
         symbol,
         name,
         nameEn: name,
+        fullName: yahooQuote?.longName || candidate.longname,
         exchange:
           yahooQuote?.fullExchangeName ||
           candidate.exchDisp ||

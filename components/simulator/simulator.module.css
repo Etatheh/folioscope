@@ -256,7 +256,7 @@
 @media(prefers-reduced-motion:reduce) { .workbench *, .dashboard, .sector { transition: none !important; animation: none !important; } }
 
 /* Keep every interactive control in the workbench pill-shaped. */
-.workbench button, .workbench summary, .workbench [role=tablist], .workbench [role=tab], .parameters [role=tab] > span[class*=absolute] { border-radius: 9999px; }
+.workbench button:not([data-stock-card-trigger]), .workbench summary, .workbench [role=tablist], .workbench [role=tab], .parameters [role=tab] > span[class*=absolute] { border-radius: 9999px; }
 
 /* Restore the existing AI label using CSS; the component stays untouched. */
 .dashboard main > button[title][aria-expanded] { width: auto; height: auto; padding: 12px 16px; border-radius: 9999px; color: white; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #a855f7 100%); border-color: rgba(192, 132, 252, 0.3); }

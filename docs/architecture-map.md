@@ -35,6 +35,7 @@
 - 页面：`/dashboard?view=simulator`。
 - 首屏装配：`app/dashboard/page.tsx` 的 `SimulatorPanel`；根据套餐取历史长度、过滤标的、传默认组合。
 - 参数、持仓、模式、场景和结果交互：`components/simulator/SimulatorWorkbench.tsx`。
+- 搜索结果卡片：`components/watchlist/MarketSearch.tsx` → `components/simulator/LoadedStockCard.tsx`，复用美股卡片和抽屉，缺少迷你走势时读取 `/api/markets/series`。
 - 收益计算：`components/simulator/engine.ts` 的 `computeSimulation`。
 - 曲线、图例、悬浮交互：`components/simulator/SimulatorChart.tsx`。
 - 回测票根分享：`SimulatorWorkbench` 图表标题栏 → `components/simulator/ShareTicket.tsx` → `ticket-canvas.ts`。复用当前回测结果生成 2× PNG，Free 和 Pro 均可使用。
@@ -62,7 +63,7 @@
 
 ### 行情看板与个股详情
 - 区域看板：`components/MarketBoard.tsx`、`components/UsStockPanel.tsx`、`components/markets/GlobalMarketsOverview.tsx`。
-- 美股股票／ETF 极简卡片与详情抽屉：`components/UsStockPanel.tsx` → `components/markets/StockGrid.tsx`。
+- 美股股票／ETF：`components/UsStockPanel.tsx` → `components/markets/StockGrid.tsx` → `StockCard.tsx`、`StockDrawer.tsx`（同目录）。
 - 数据：`lib/us-stocks.ts`、`cn-markets.ts`、`asia-markets.ts`、`europe-markets.ts`、`index-quotes.ts`、`index-symbols.ts`。
 - 详情路由：`app/dashboard/markets/[symbol]/page.tsx`；与开发预览 `app/markets-preview/page.tsx` 共用 `components/markets/InstrumentDetailView.tsx`。行情装配：`lib/instruments.ts`。
 - K 线及指标：`components/PriceChart.tsx`、`components/chart/indicators.ts`。

@@ -296,8 +296,8 @@ export default function SimulatorWorkbench({
   // forward-fill them onto the simulator calendar.
   useEffect(() => {
     const onAdd = async (event: Event) => {
-      const raw = (event as CustomEvent<{ symbol?: string }>).detail?.symbol;
-      const symbol = normalizeSymbol(raw ?? "");
+      const detail = (event as CustomEvent<{ symbol?: string; scrollToWorkbench?: boolean }>).detail;
+      const symbol = normalizeSymbol(detail?.symbol ?? "");
       if (!symbol) return;
 
       const addToSelection = () => {
@@ -305,14 +305,16 @@ export default function SimulatorWorkbench({
         setWeights((prev) =>
           prev[symbol] !== undefined ? prev : { ...prev, [symbol]: 10 }
         );
+        showToast(dict[lang].watchlist.syncedToast(symbol));
+        if (detail?.scrollToWorkbench !== false) {
+          document
+            .getElementById("simulator-workbench")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
       };
 
       if (mergedData.series[symbol]) {
         addToSelection();
-        showToast(dict[lang].watchlist.syncedToast(symbol));
-        document
-          .getElementById("simulator-workbench")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
 
@@ -345,10 +347,6 @@ export default function SimulatorWorkbench({
 
         setExtraSeries((current) => ({ ...current, [symbol]: closes }));
         addToSelection();
-        showToast(dict[lang].watchlist.syncedToast(symbol));
-        document
-          .getElementById("simulator-workbench")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch {
         showToast(dict[lang].watchlist.syncFailed);
       } finally {
@@ -719,7 +717,9 @@ export default function SimulatorWorkbench({
                 </label>
               ))}
             </div>
-            {hasFullAccess && <div className={styles.search}><MarketSearch lang={lang} plan={effectivePlan} /></div>}
+            {hasFullAccess && <div className={styles.search}>
+              <MarketSearch lang={lang} plan={effectivePlan} backtest={{ selectedSymbols: selected, syncingSymbol }} />
+            </div>}
             {!hasFullAccess && <p className={styles.searchHint}>{t.freePoolHint}</p>}
           </div>
           <AllocationDonut holdings={holdings} active={activeAsset} onActive={setActiveAsset} lang={lang} />

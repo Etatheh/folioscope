@@ -56,7 +56,7 @@ function fmtRatio(value: number | null): string {
   return value === null ? "—" : value.toFixed(2);
 }
 
-/** Yahoo returns margins/growth as fractions; EPS surprise as a percentage. */
+/** Margins and growth are stored as fractions. */
 function fmtFractionAsPct(value: number | null): string {
   return value === null ? "—" : `${(value * 100).toFixed(1)}%`;
 }

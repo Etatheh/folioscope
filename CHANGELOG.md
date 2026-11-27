@@ -6,6 +6,15 @@
 
 ---
 
+## 2026-11-27 - 回测搜索结果与财报文案
+
+1. **日期与版本主题**：2026-11-27，统一回测搜索结果与美股标的卡片。
+2. **核心改动内容**：回测搜索结果复用美股卡片和详情抽屉，有历史数据时显示最近 30 个交易日的走势。卡片内提供全宽添加按钮和已加入状态。财报弹窗使用通用数据描述，服务端同步清理新生成及缓存财报中的供应商名称和链接。
+3. **涉及的核心文件路径**：`components/simulator/LoadedStockCard.tsx`、`components/simulator/SimulatorWorkbench.tsx`、`components/markets/StockCard.tsx`、`components/markets/StockDrawer.tsx`、`app/api/market/search/route.ts`、`app/api/ai/stock-report/route.ts`、`lib/i18n.ts`。
+4. **架构与设计约定（Do Not Break）**：保留回测 Pro 权限和服务端行情校验。卡片主体与添加按钮独立响应点击，空走势隐藏，财报保留投资提示与双语输出。
+
+---
+
 ## 2026-11-26 - 行情、回测与内容整合
 
 1. **日期与版本主题**：2026-11-26 — 整合深蓝行情与回测更新。

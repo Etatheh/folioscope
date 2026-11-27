@@ -11,6 +11,7 @@ import { BACKTEST_ADD_EVENT, queueBacktestSymbol } from "@/lib/watchlist";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import ProBadge from "@/components/ui/ProBadge";
 import UpgradeModal from "@/components/ui/UpgradeModal";
+import LoadedStockCard from "@/components/simulator/LoadedStockCard";
 import FavoriteButton from "./FavoriteButton";
 import QuoteCard from "./QuoteCard";
 
@@ -40,16 +41,18 @@ function SearchIcon() {
 /**
  * Full U.S. market search.
  *
- * Pro/Admin users get live Yahoo Finance suggestions and can push a hit into
+ * Pro/Admin users get live market suggestions and can push a hit into
  * the watchlist, the current board, or the backtest pool. Everyone else sees a
  * blurred teaser that opens the auth / upgrade flow.
  */
 export default function MarketSearch({
   lang,
   plan,
+  backtest,
 }: {
   lang: Lang;
   plan: ViewerPlan;
+  backtest?: { selectedSymbols: readonly string[]; syncingSymbol: string | null };
 }) {
   const t = dict[lang].watchlist;
   const { user, ready, isPro } = useProfile();
@@ -154,9 +157,9 @@ export default function MarketSearch({
     }, 60);
   };
 
-  const syncToBacktest = (symbol: string) => {
+  const syncToBacktest = (symbol: string, scrollToWorkbench = true) => {
     window.dispatchEvent(
-      new CustomEvent(BACKTEST_ADD_EVENT, { detail: { symbol } })
+      new CustomEvent(BACKTEST_ADD_EVENT, { detail: { symbol, scrollToWorkbench } })
     );
 
     // The simulator listens for the event, but search also lives in the
@@ -237,6 +240,7 @@ export default function MarketSearch({
   }
 
   return (
+    <>
     <div ref={wrapRef} className="relative mt-4">
       <div className="group/search glass flex items-center gap-2.5 rounded-2xl border-white/10 px-3.5 py-2.5 transition focus-within:border-purple-400/45 focus-within:shadow-[0_0_28px_-12px_rgba(168,85,247,0.85)]">
         <span className="text-slate-500 transition group-focus-within/search:text-purple-300">
@@ -368,7 +372,7 @@ export default function MarketSearch({
         </div>
       )}
 
-      {loaded && (
+      {loaded && !backtest && (
         <div
           id="market-search-loaded"
           className="mt-6 rounded-2xl border border-purple-400/20 bg-gradient-to-br from-purple-500/[0.08] via-white/[0.02] to-blue-500/[0.05] p-4"
@@ -413,5 +417,13 @@ export default function MarketSearch({
         source="market-search"
       />
     </div>
+    {loaded && backtest && (
+      <LoadedStockCard key={loaded.symbol} hit={loaded} lang={lang} plan={plan}
+        added={backtest.selectedSymbols.includes(loaded.symbol)}
+        syncing={backtest.syncingSymbol === loaded.symbol}
+        onAdd={() => syncToBacktest(loaded.symbol, false)}
+        onRemove={() => setLoaded(null)} />
+    )}
+    </>
   );
 }

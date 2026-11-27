@@ -5,6 +5,7 @@ export type MarketSearchHit = {
   symbol: string;
   name: string;
   nameEn: string;
+  fullName?: string;
   exchange: string;
   quoteType: "EQUITY" | "ETF";
   quote: UsQuote;
